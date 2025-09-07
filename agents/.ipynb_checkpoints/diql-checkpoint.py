@@ -89,7 +89,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=100.0,
+            gn=10.0,
             actor_loss='awr',  # Actor loss type ('awr' or 'ddpgbc').
             actor_update_start=0.,
             alpha=10.0,  # Temperature in AWR or BC coefficient in DDPG+BC.

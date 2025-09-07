@@ -14,11 +14,52 @@ from utils.networks import ActorVectorField, Value
 from functools import partial
 import math
 
-from agents.iql import IQLAgent
 
-class TrigFQLAgent(IQLAgent):
+class TrigFQLAgent(flax.struct.PyTreeNode):
     """Flow Q-learning (FQL) agent."""
 
+    rng: Any
+    network: Any
+    config: Any = nonpytree_field()
+    @staticmethod
+    def expectile_loss(adv, diff, expectile):
+        """Compute the expectile loss."""
+        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
+        return weight * (diff**2)
+
+    def value_loss(self, batch, grad_params, aux={}):
+        """Compute the IQL value loss."""
+        q1, q2 = self.network.select("target_critic")(
+            batch["observations"], actions=batch["actions"]
+        )
+        q = jnp.minimum(q1, q2)
+        v = self.network.select("value")(batch["observations"], params=grad_params)        
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  * lam
+
+
+        aux.update({"v": v,"q": q,"lam": lam })
+        return value_loss, {
+            "value_loss": value_loss,
+            "v_mean": v.mean(),
+            "v_max": v.max(),
+            "v_min": v.min(),
+        }, aux
+
+    def critic_loss(self, batch, grad_params, aux={}):
+        """Compute the IQL critic loss."""
+        next_v = self.network.select("value")(batch["next_observations"])
+        q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
+
+        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
+        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() * aux["lam"]
+
+        return critic_loss, {
+            "critic_loss": critic_loss,
+            "q_mean": q.mean(),
+            "q_max": q.max(),
+            "q_min": q.min(),
+        }, aux
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the FQL actor loss."""
         batch_size, action_dim = batch['actions'].shape
@@ -66,6 +107,49 @@ class TrigFQLAgent(IQLAgent):
             'q': q.mean(),
         }
 
+    @jax.jit
+    def total_loss(self, batch, grad_params, rng=None):
+        """Compute the total loss."""
+        info = {}
+        rng = rng if rng is not None else self.rng
+
+        value_loss, value_info, aux = self.value_loss(batch, grad_params)
+        for k, v in value_info.items():
+            info[f"value/{k}"] = v
+
+        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params, aux)
+        for k, v in critic_info.items():
+            info[f"critic/{k}"] = v
+
+        rng, actor_rng = jax.random.split(rng)
+        actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng, aux)
+        for k, v in actor_info.items():
+            info[f"actor/{k}"] = v
+
+        loss = value_loss + critic_loss + actor_loss
+        return loss, info
+
+    def target_update(self, network, module_name):
+        """Update the target network."""
+        new_target_params = jax.tree_util.tree_map(
+            lambda p, tp: p * self.config["tau"] + tp * (1 - self.config["tau"]),
+            self.network.params[f"modules_{module_name}"],
+            self.network.params[f"modules_target_{module_name}"],
+        )
+        network.params[f"modules_target_{module_name}"] = new_target_params
+
+    @jax.jit
+    def update(self, batch):
+        """Update the agent and return a new agent with information dictionary."""
+        new_rng, rng = jax.random.split(self.rng)
+
+        def loss_fn(grad_params):
+            return self.total_loss(batch, grad_params, rng=rng)
+
+        new_network, info = self.network.apply_loss_fn(loss_fn=loss_fn)
+        self.target_update(new_network, "critic")
+
+        return self.replace(network=new_network, rng=new_rng), info
         
     @jax.jit
     def sample_actions(
@@ -202,7 +286,7 @@ def get_config():
             return_next_actions=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             expectile=0.9,  # IQL expectile.
-            gn=100.0,
+            gn=10.0,
             alpha_actor = 100.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             delta=1.0,   #control adjustment

@@ -37,14 +37,14 @@ class DFQLAgent(DOALAgent,FQLAgent):
         noises = jax.random.normal(noise_rng, (batch_size, action_dim))
         target_flow_actions = self.compute_flow_actions(batch['observations'], noises=noises)
 
-        alpha = self.config["alpha"] / aux["lam"]
+        alpha = self.config["alpha"] 
         adjusted_actions , adjustment, q = self.get_guided_action(  target_flow_actions, target_flow_actions,batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
         actor_actions = self.network.select('actor_onestep_flow')(batch['observations'], noises, params=grad_params)
         distill_loss = jnp.mean((actor_actions - adjusted_actions) ** 2)
 
 
         # Total loss.
-        actor_loss = bc_flow_loss + self.config['alpha_actor'] * distill_loss 
+        actor_loss = bc_flow_loss + self.config['alpha_actor'] *  distill_loss 
 
         # Additional metrics for logging.
         actions = self.sample_actions(batch['observations'], seed=rng)
@@ -78,8 +78,8 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             adjusted_target=True,
-            solver="linear",
-            gn=100.0,
+            solver="diag_hess",
+            gn=10.0,
             q_agg='min',  # Aggregation method for target Q values.
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # this is the alpha in fql, we need to use hps to configure
