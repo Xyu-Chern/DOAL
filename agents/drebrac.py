@@ -212,7 +212,7 @@ class DReBRACAgent(DOALAgent):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-             optax.clip_by_global_norm(max_norm=config["gn"]),
+      #       optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']

@@ -85,7 +85,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t)
 
-        bc_flow_loss = (( pred_actions - batch['actions'] ) ** 2).mean()  +  (( F_theta - vel ) ** 2).mean()  #/ jnp.sin(t).clip(min=0.1)
+        bc_flow_loss =   (( F_theta - vel ) ** 2).mean()  #/ jnp.sin(t).clip(min=0.1)
         qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
         if self.config['q_agg'] == 'min':
             q = jnp.min(qs, axis=0)
@@ -253,7 +253,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-             optax.clip_by_global_norm(max_norm=config["gn"]),
+     #        optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']
@@ -276,7 +276,7 @@ def get_config():
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
-            value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
+            value_hidden_dims=( 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
@@ -285,7 +285,7 @@ def get_config():
             q_steps=10,
             return_next_actions=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
-            expectile=0.9,  # IQL expectile.
+            expectile=0.7,  # IQL expectile.
             gn=100.0,
             alpha_actor = 100.0,
             alpha_critic=0.0,  # Critic BC coefficient.
