@@ -3,6 +3,7 @@ from agents.dfql import DFQLAgent
 from agents.difql import DIFQLAgent
 from agents.iql import IQLAgent
 from agents.rebrac import ReBRACAgent
+from agents.drebrac import DReBRACAgent
 from agents.ifql import IFQLAgent
 from agents.diql import DIQLAgent
 from agents.trigflow import TrigFQLAgent
@@ -17,5 +18,6 @@ agents = dict(
     dtrigflow = DTrigFQLAgent,
     fql=FQLAgent,
     rebrac=ReBRACAgent,
+    drebrac=DReBRACAgent,
     dfql=DFQLAgent,
 )
