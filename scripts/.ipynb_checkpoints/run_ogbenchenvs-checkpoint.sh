@@ -20,8 +20,8 @@ if [ "$#" -eq 2 ]; then
     EXP_NAME=$2
 fi
 
-# Define the list of alpha parameters "antmaze-large-navigate-singletask-v0" 'antmaze-giant-navigate-singletask-v0' 
-env_names=('humanoidmaze-medium-navigate-singletask-v0' 'humanoidmaze-large-navigate-singletask-v0' "antsoccer-arena-navigate-singletask-task4-v0" "cube-single-play-singletask-task2-v0" "cube-double-play-singletask-task2-v0"  "scene-play-singletask-task2-v0" "puzzle-3x3-play-singletask-task4-v0" "puzzle-4x4-play-singletask-task4-v0")
+# Define the list of alpha parameters
+env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-task4-v0" "cube-single-play-singletask-task2-v0"   "scene-play-singletask-task2-v0" )
 
 # Loop through all alpha values
 for env_name in "${env_names[@]}"; do
