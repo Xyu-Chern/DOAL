@@ -114,7 +114,7 @@ def get_config():
             return_next_actions=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
-            delta=0.1,
+            delta=1.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
