@@ -25,7 +25,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         batch_size, action_dim = batch['actions'].shape
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
-        alpha = self.config["alpha"] / aux["lam"]
+        alpha = self.config["alpha"] 
         adjusted_actions , adjustment, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
         # BC flow loss.
@@ -33,13 +33,14 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
         x_t = jnp.cos(t)* adjusted_actions + jnp.sin(t) * z
 
-        vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
+    #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
 
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
 
+        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t)
 
-        bc_flow_loss = (( F_theta - vel ) ** 2).mean()  #/ jnp.sin(t).clip(min=0.1)
+        bc_flow_loss = (( pred_actions - adjusted_actions ) ** 2).mean()  #/ jnp.sin(t).clip(min=0.1)
 
         # Total loss.
         total_loss = self.config['alpha_actor'] * bc_flow_loss 

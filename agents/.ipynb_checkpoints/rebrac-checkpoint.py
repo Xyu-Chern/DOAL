@@ -47,7 +47,7 @@ class ReBRACAgent(flax.struct.PyTreeNode):
 
         q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
         lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
-        critic_loss = jnp.square(q - target_q).mean() * lam
+        critic_loss = jnp.square(q - target_q).mean() 
 
         
         aux = {"lam":lam}

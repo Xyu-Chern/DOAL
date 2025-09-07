@@ -60,7 +60,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             h_diagonal = jax.vmap(hvp_dot_basis_vector)(basis)
             q, g = v_grad_q(q_action)
 
-            gap = jnp.clip( 1  / (2 * alpha - h_diagonal ), min= 0,max= 1.0 / alpha)
+            gap = jnp.clip( 1  / (2 * alpha - h_diagonal ), min= 0)
             b =  g * gap
 
             normb = jnp.linalg.norm(b)

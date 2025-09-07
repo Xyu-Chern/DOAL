@@ -22,7 +22,7 @@ class DIQLAgent(DOALAgent,IQLAgent):
         """Compute the actor loss (AWR or DDPG+BC)."""
         if self.config['actor_loss'] == 'awr':
 
-            alpha = self.config["alpha"] / aux["lam"]
+            alpha = self.config["alpha"] 
             adjusted_actions , adjustment, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
             # AWR loss.
             v = jax.lax.stop_gradient(aux["v"])
@@ -79,7 +79,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='diql',  # Agent name.
-            solver="linear",
+            solver="diag_hess",
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.  , 512, 512
@@ -94,7 +94,7 @@ def get_config():
             actor_update_start=0.,
             alpha=10.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             alpha_actor = 10.0,
-            delta=1.0,
+            delta=0.1,
             const_std=True,  # Whether to use constant standard deviation for the actor.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
