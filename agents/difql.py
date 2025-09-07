@@ -51,7 +51,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='difql',  # Agent name.
-            solver="linear",
+            solver="diag_hess",
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.

@@ -11,7 +11,6 @@ import jax.numpy as jnp
 import optax
 
 nonpytree_field = functools.partial(flax.struct.field, pytree_node=False)
-
 from jaxopt import linear_solve
 
 from functools import partial
@@ -60,7 +59,9 @@ class DOALAgent(flax.struct.PyTreeNode):
             basis = jnp.eye(q_action.shape[0], dtype=q_action.dtype)
             h_diagonal = jax.vmap(hvp_dot_basis_vector)(basis)
             q, g = v_grad_q(q_action)
-            b =  g / (2 * alpha - h_diagonal)
+
+            gap = jnp.clip( 1  / (2 * alpha - h_diagonal ), min= 0,max= 1e3)
+            b =  g * gap
 
             normb = jnp.linalg.norm(b)
             dx = jnp.where(normb > delta,  b / normb,   b)

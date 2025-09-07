@@ -29,7 +29,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
         x_1 = batch['actions']
         
-        alpha = self.config['alpha'] / aux["lam"]
+        alpha = self.config['alpha'] 
         adjusted_actions , adjustment, q = self.get_guided_action(  x_1, x_1,batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
         q1, q2 = self.network.select('critic')(batch['observations'], actions=adjusted_actions)
         aq = jnp.minimum(q1, q2)
@@ -38,7 +38,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         vel = x_1 - x_0
 
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
-        actor_loss = jnp.mean((pred - vel) ** 2)
+        actor_loss = self.config['alpha_actor'] *  jnp.mean((pred - vel) ** 2)
 
         return actor_loss, {
             'actor_loss': actor_loss,
@@ -51,7 +51,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='difql',  # Agent name.
-            solver="linear",
+            solver="diag_hess",
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
@@ -60,6 +60,7 @@ def get_config():
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
+            alpha_actor=10,
             alpha=1.0,  # BC coefficient (need to be tuned for each environment).
             delta=0.1,
             tau=0.005,  # Target network update rate.
