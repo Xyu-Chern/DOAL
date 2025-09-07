@@ -34,10 +34,11 @@ class IQLAgent(flax.struct.PyTreeNode):
         )
         q = jnp.minimum(q1, q2)
         v = self.network.select("value")(batch["observations"], params=grad_params)        
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() * lam
 
 
-        aux.update({"v": v,"q": q})
+        aux.update({"v": v,"q": q,"lam": lam })
         return value_loss, {
             "value_loss": value_loss,
             "v_mean": v.mean(),
@@ -51,7 +52,7 @@ class IQLAgent(flax.struct.PyTreeNode):
         q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
 
         q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean()
+        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() * aux["lam"]
 
         return critic_loss, {
             "critic_loss": critic_loss,
@@ -241,7 +242,7 @@ class IQLAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-  #          optax.clip_by_global_norm(max_norm=config["gn"]),
+            optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config["lr"]),
         )
         network_params = network_def.init(init_rng, **network_args)["params"]

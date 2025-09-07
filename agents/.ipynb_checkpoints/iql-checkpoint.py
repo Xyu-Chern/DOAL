@@ -12,47 +12,7 @@ from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import Actor, Value
 
 
-def huber_loss(target: float, pred: float, delta: float = 1.0) -> float:
-    """Huber loss.
 
-    Args:
-        target: ground truth
-        pred: predictions
-        delta: radius of quadratic behavior
-    Returns:
-        loss value
-
-    References:
-        https://en.wikipedia.org/wiki/Huber_loss
-    """
-    abs_diff = jnp.abs(target - pred)
-    return jnp.where(
-        abs_diff > delta, delta * (abs_diff - 0.5 * delta), 0.5 * abs_diff**2
-    )
-
-
-def expectile_huber_loss(
-    target: float, pred: float, expectile: float, delta: float = 1.0
-) -> float:
-    """Huber loss.
-
-    Args:
-        target: ground truth
-        pred: predictions
-        delta: radius of quadratic behavior
-    Returns:
-        loss value
-
-    References:
-        https://en.wikipedia.org/wiki/Huber_loss
-    """
-    abs_diff = jnp.abs(target - pred)
-    diff = jnp.where(
-        abs_diff > delta, delta * (abs_diff - 0.5 * delta), 0.5 * abs_diff**2
-    )
-
-    weight = jnp.where(target >= pred, expectile, (1 - expectile))
-    return weight * diff
 
 
 class IQLAgent(flax.struct.PyTreeNode):
@@ -61,6 +21,11 @@ class IQLAgent(flax.struct.PyTreeNode):
     rng: Any
     network: Any
     config: Any = nonpytree_field()
+    @staticmethod
+    def expectile_loss(adv, diff, expectile):
+        """Compute the expectile loss."""
+        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
+        return weight * (diff**2)
 
     def value_loss(self, batch, grad_params, aux={}):
         """Compute the IQL value loss."""
@@ -68,11 +33,12 @@ class IQLAgent(flax.struct.PyTreeNode):
             batch["observations"], actions=batch["actions"]
         )
         q = jnp.minimum(q1, q2)
-        v = self.network.select("value")(batch["observations"], params=grad_params)
-        value_loss = expectile_huber_loss(q, v, self.config["expectile"]).mean()
+        v = self.network.select("value")(batch["observations"], params=grad_params)        
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() * lam
 
-        aux.update({"v": v})
-        aux.update({"q": q})
+
+        aux.update({"v": v,"q": q,"lam": lam })
         return value_loss, {
             "value_loss": value_loss,
             "v_mean": v.mean(),
@@ -85,10 +51,8 @@ class IQLAgent(flax.struct.PyTreeNode):
         next_v = self.network.select("value")(batch["next_observations"])
         q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
 
-        q1, q2 = self.network.select("critic")(
-            batch["observations"], actions=batch["actions"], params=grad_params
-        )
-        critic_loss = (huber_loss(q, q1) + huber_loss(q, q2)).mean() 
+        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
+        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() * aux["lam"]
 
         return critic_loss, {
             "critic_loss": critic_loss,
@@ -278,7 +242,7 @@ class IQLAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-  #          optax.clip_by_global_norm(max_norm=config["gn"]),
+            optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config["lr"]),
         )
         network_params = network_def.init(init_rng, **network_args)["params"]

@@ -12,24 +12,7 @@ from utils.encoders import encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import Actor, Value
 
-def huber_loss(target: float, pred: float, delta: float = 10.0) -> float:
-    """Huber loss.
 
-    Args:
-    target: ground truth
-    pred: predictions
-    delta: radius of quadratic behavior
-    Returns:
-    loss value
-
-    References:
-    https://en.wikipedia.org/wiki/Huber_loss
-    """
-    abs_diff = jnp.abs(target - pred)
-    return 2 * jnp.where(abs_diff > delta,
-                    delta * (abs_diff - .5 * delta),
-                    0.5 * abs_diff ** 2)
-                   
 
 class ReBRACAgent(flax.struct.PyTreeNode):
     """Revisited behavior-regularized actor-critic (ReBRAC) agent.
@@ -40,6 +23,7 @@ class ReBRACAgent(flax.struct.PyTreeNode):
     rng: Any
     network: Any
     config: Any = nonpytree_field()
+
 
     def critic_loss(self, batch, grad_params, rng):
         """Compute the ReBRAC critic loss."""
@@ -62,9 +46,9 @@ class ReBRACAgent(flax.struct.PyTreeNode):
         target_q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_q
 
         q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = huber_loss(target_q,q ).mean()
-
         lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        critic_loss = jnp.square(q - target_q).mean() * lam
+
         
         aux = {"lam":lam}
         return critic_loss, {
@@ -87,8 +71,7 @@ class ReBRACAgent(flax.struct.PyTreeNode):
         mse = jnp.square(actions - batch['actions']).sum(axis=-1)
 
         # Normalize Q values by the absolute mean to make the loss scale invariant.
-        lam = jax.lax.stop_gradient(1 / jnp.abs(q).mean())
-        actor_loss = -(lam * q).mean()
+        actor_loss = -(aux["lam"] * q).mean()
         bc_loss = (self.config['alpha_actor'] * mse).mean()
 
         total_loss = actor_loss + bc_loss
@@ -257,8 +240,9 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             tanh_squash=True,  # Whether to squash actions with tanh.
-            gn=20.0,
+            gn=100.0,
             actor_fc_scale=0.01,  # Final layer initialization scale for actor.
+            alpha=0.0,  # Actor BC coefficient.
             alpha_actor=0.0,  # Actor BC coefficient.
             alpha_critic=0.0,  # Critic BC coefficient.
             actor_freq=2,  # Actor update frequency.

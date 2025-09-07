@@ -12,24 +12,7 @@ from utils.encoders import encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import Actor, Value
 
-def huber_loss(target: float, pred: float, delta: float = 10.0) -> float:
-    """Huber loss.
 
-    Args:
-    target: ground truth
-    pred: predictions
-    delta: radius of quadratic behavior
-    Returns:
-    loss value
-
-    References:
-    https://en.wikipedia.org/wiki/Huber_loss
-    """
-    abs_diff = jnp.abs(target - pred)
-    return 2 * jnp.where(abs_diff > delta,
-                    delta * (abs_diff - .5 * delta),
-                    0.5 * abs_diff ** 2)
-                   
 
 class ReBRACAgent(flax.struct.PyTreeNode):
     """Revisited behavior-regularized actor-critic (ReBRAC) agent.
@@ -63,9 +46,9 @@ class ReBRACAgent(flax.struct.PyTreeNode):
         target_q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_q
 
         q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = jnp.square(q - target_q).mean()
-
         lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        critic_loss = jnp.square(q - target_q).mean() * lam
+
         
         aux = {"lam":lam}
         return critic_loss, {
@@ -230,7 +213,7 @@ class ReBRACAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-    #         optax.clip_by_global_norm(max_norm=config["gn"]),
+             optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']

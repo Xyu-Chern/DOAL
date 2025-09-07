@@ -11,6 +11,24 @@ from utils.encoders import encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import ActorVectorField, Value
 
+def huber_loss(target: float, pred: float, delta: float = 10.0) -> float:
+    """Huber loss.
+
+    Args:
+    target: ground truth
+    pred: predictions
+    delta: radius of quadratic behavior
+    Returns:
+    loss value
+
+    References:
+    https://en.wikipedia.org/wiki/Huber_loss
+    """
+    abs_diff = jnp.abs(target - pred)
+    return 2* jnp.where(abs_diff > delta,
+                    delta * (abs_diff - .5 * delta),
+                    0.5 * abs_diff ** 2)
+                   
 
 class FQLAgent(flax.struct.PyTreeNode):
     """Flow Q-learning (FQL) agent."""
@@ -33,8 +51,8 @@ class FQLAgent(flax.struct.PyTreeNode):
 
         target_q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_q
 
-        q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = jnp.square(q - target_q).mean()
+        q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)        
+        critic_loss = jnp.square(q - target_q).mean() * jax.lax.stop_gradient(1 / jnp.abs(q).mean())
 
         return critic_loss, {
             'critic_loss': critic_loss,
@@ -75,7 +93,7 @@ class FQLAgent(flax.struct.PyTreeNode):
             q_loss = aux["lam"] * q_loss
 
         # Total loss.
-        actor_loss = bc_flow_loss + self.config['alpha'] * distill_loss + q_loss
+        actor_loss = bc_flow_loss +  self.config['alpha_actor'] *  distill_loss  + q_loss
 
         # Additional metrics for logging.
         actions = self.sample_actions(batch['observations'], seed=rng)
@@ -234,7 +252,7 @@ class FQLAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-             optax.clip_by_global_norm(max_norm=config["gn"]),
+    #         optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']
@@ -264,7 +282,7 @@ def get_config():
             tau=0.005,  # Target network update rate.
             gn=100.0,
             q_agg='mean',  # Aggregation method for target Q values.
-            alpha=10.0,  # BC coefficient (need to be tuned for each environment).
+            alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).

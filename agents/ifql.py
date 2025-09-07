@@ -35,7 +35,7 @@ class IFQLAgent(IQLAgent):
         vel = x_1 - x_0
 
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
-        actor_loss = self.config['alpha_actor'] * jnp.mean((pred - vel) ** 2)
+        actor_loss = jnp.mean((pred - vel) ** 2)
 
         return actor_loss, {
             'actor_loss': actor_loss,
@@ -142,7 +142,7 @@ class IFQLAgent(IQLAgent):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-       #      optax.clip_by_global_norm(max_norm=config["gn"]),
+            optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']
