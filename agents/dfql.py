@@ -67,6 +67,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='dfql',  # Agent name.
+            solver="linear",
             ob_dims=ml_collections.config_dict.placeholder(list),  # Observation dimensions (will be set automatically).
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
@@ -78,7 +79,6 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             adjusted_target=True,
-            solver="diag_hess",
             gn=10.0,
             q_agg='min',  # Aggregation method for target Q values.
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).

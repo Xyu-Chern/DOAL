@@ -20,6 +20,32 @@ from agents.trigflow import TrigFQLAgent
 class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
     """Flow Q-learning (FQL) agent."""
 
+    @staticmethod
+    def expectile_loss(adv, diff, expectile):
+        """Compute the expectile loss."""
+        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
+        return weight * (diff**2)
+
+    def value_loss(self, batch, grad_params, aux={}):
+        """Compute the IQL value loss."""
+        q1, q2 = self.network.select("target_critic")(
+            batch["observations"], actions=batch["actions"]
+        )
+        q = jnp.minimum(q1, q2)
+        v = self.network.select("value")(batch["observations"], params=grad_params)        
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  * lam
+
+
+        aux.update({"v": v,"q": q,"lam": lam })
+        return value_loss, {
+            "value_loss": value_loss,
+            "v_mean": v.mean(),
+            "v_max": v.max(),
+            "v_min": v.min(),
+        }, aux
+
+
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the FQL actor loss."""
         batch_size, action_dim = batch['actions'].shape

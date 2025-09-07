@@ -20,6 +20,48 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
     IFQL is the flow variant of implicit diffusion Q-learning (IDQL).
     """
 
+    rng: Any
+    network: Any
+    config: Any = nonpytree_field()
+    @staticmethod
+    def expectile_loss(adv, diff, expectile):
+        """Compute the expectile loss."""
+        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
+        return weight * (diff**2)
+
+    def value_loss(self, batch, grad_params, aux={}):
+        """Compute the IQL value loss."""
+        q1, q2 = self.network.select("target_critic")(
+            batch["observations"], actions=batch["actions"]
+        )
+        q = jnp.minimum(q1, q2)
+        v = self.network.select("value")(batch["observations"], params=grad_params)        
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  * lam
+
+
+        aux.update({"v": v,"q": q,"lam": lam })
+        return value_loss, {
+            "value_loss": value_loss,
+            "v_mean": v.mean(),
+            "v_max": v.max(),
+            "v_min": v.min(),
+        }, aux
+
+    def critic_loss(self, batch, grad_params, aux={}):
+        """Compute the IQL critic loss."""
+        next_v = self.network.select("value")(batch["next_observations"])
+        q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
+
+        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
+        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() * aux["lam"]
+
+        return critic_loss, {
+            "critic_loss": critic_loss,
+            "q_mean": q.mean(),
+            "q_max": q.max(),
+            "q_min": q.min(),
+        }, aux
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the behavioral flow-matching actor loss."""
         batch_size, action_dim = batch['actions'].shape
@@ -50,7 +92,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='difql',  # Agent name.
-            solver="diag_hess",
+            solver="linear",
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
