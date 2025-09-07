@@ -229,6 +229,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='drebrac',  # Agent name.
+            solver="linear",
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
@@ -240,6 +241,7 @@ def get_config():
             tau=0.005,  # Target network update rate.
             tanh_squash=True,  # Whether to squash actions with tanh.
             gn=10.0,
+            delta=1.0,
             actor_fc_scale=0.01,  # Final layer initialization scale for actor.
             alpha=0.0,  # Actor BC coefficient.
             alpha_actor=0.0,  # Actor BC coefficient.
