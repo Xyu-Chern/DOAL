@@ -52,7 +52,7 @@ class FQLAgent(flax.struct.PyTreeNode):
         target_q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_q
 
         q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)        
-        critic_loss = jnp.square(q - target_q).mean() * jax.lax.stop_gradient(1 / jnp.abs(q).mean())
+        critic_loss = jnp.square(q - target_q).mean() #* jax.lax.stop_gradient(1 / jnp.abs(q).mean())
 
         return critic_loss, {
             'critic_loss': critic_loss,

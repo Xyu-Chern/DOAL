@@ -34,7 +34,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         q = jnp.minimum(q1, q2)
         v = self.network.select("value")(batch["observations"], params=grad_params)        
         lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  * lam
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  
 
 
         aux.update({"v": v,"q": q,"lam": lam })
@@ -46,6 +46,20 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         }, aux
 
 
+    def critic_loss(self, batch, grad_params, aux={}):
+        """Compute the IQL critic loss."""
+        next_v = self.network.select("value")(batch["next_observations"])
+        q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
+
+        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
+        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
+
+        return critic_loss, {
+            "critic_loss": critic_loss,
+            "q_mean": q.mean(),
+            "q_max": q.max(),
+            "q_min": q.min(),
+        }, aux
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the FQL actor loss."""
         batch_size, action_dim = batch['actions'].shape

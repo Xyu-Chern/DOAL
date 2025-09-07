@@ -37,7 +37,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         q = jnp.minimum(q1, q2)
         v = self.network.select("value")(batch["observations"], params=grad_params)        
         lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  * lam
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  
 
 
         aux.update({"v": v,"q": q,"lam": lam })
@@ -54,7 +54,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
 
         q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() * aux["lam"]
+        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
 
         return critic_loss, {
             "critic_loss": critic_loss,
