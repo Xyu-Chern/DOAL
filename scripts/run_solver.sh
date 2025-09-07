@@ -13,7 +13,7 @@ fi
 
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
-ENV_NAME=$2
+SOLVER=$2
 
 EXP_NAME=""
 if [ "$#" -eq 3 ]; then
@@ -22,15 +22,16 @@ fi
 
 
 # Define the list of alpha parameters
-solvers=( 'linear' 'full_hess' 'diag_hess' )
+
+env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-task4-v0" "cube-single-play-singletask-task2-v0"   "scene-play-singletask-task2-v0" )
 
 # Loop through all alpha values
-for s in "${solvers[@]}"; do
+for env_name in "${env_names[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Solver: $s, ExpName: $EXP_NAME"
     python main.py \
         --agent_name "$AGENT_NAME" \
-        --env_name "$ENV_NAME" \
-        --solver "$s" \
+        --env_name "$env_name" \
+        --solver "$SOLVER" \
         --exp_name "$EXP_NAME" \
         --seed "$RANDOM"
 done
