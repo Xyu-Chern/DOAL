@@ -89,7 +89,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             "bc_flow_loss":bc_flow_loss,
             'adj': jnp.mean(jnp.abs(adjustment)),
             'q': q.mean(),
-            "hd"; jnp.mean(hd),
+            "hd": jnp.mean(hd),
         }
 
 

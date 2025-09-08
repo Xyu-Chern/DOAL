@@ -90,7 +90,7 @@ class DIQLAgent(DOALAgent,IQLAgent):
                 'q': jnp.mean(q),
                 'aq': jnp.mean(aq),
                 'std': jnp.mean(dist.scale_diag),
-            "hd"; jnp.mean(hd),
+            "hd": jnp.mean(hd),
             }
 
             return actor_loss, actor_info
@@ -112,7 +112,7 @@ class DIQLAgent(DOALAgent,IQLAgent):
                 'bc_log_prob': log_prob.mean(),
                 'mse': jnp.mean((dist.mode() - batch['actions']) ** 2),
                 'std': jnp.mean(dist.scale_diag),
-            "hd"; jnp.mean(hd),
+            "hd": jnp.mean(hd),
             }
         else:
             raise ValueError(f'Unsupported actor loss: {self.config["actor_loss"]}')

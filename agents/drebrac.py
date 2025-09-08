@@ -64,7 +64,7 @@ class DReBRACAgent(DOALAgent):
         actions = dist.mode()
 
         alpha = self.config["alpha"] 
-        adjusted_actions , adjustment, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
+        adjusted_actions , adjustment,hd, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
         # BC loss.
         mse = jnp.square(actions - adjusted_actions).sum(axis=-1)
@@ -86,6 +86,7 @@ class DReBRACAgent(DOALAgent):
             'bc_loss': bc_loss,
             'std': action_std.mean(),
             'mse': mse.mean(),
+            "hd": jnp.mean(hd),
         }
 
     @partial(jax.jit, static_argnames=('full_update',))
