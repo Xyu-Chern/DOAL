@@ -22,7 +22,7 @@ if [ "$#" -eq 3 ]; then
 fi
 
 # Define the list of alpha parameters
-alphas=( 1.0 3.0 10.0 30 100 300 1000.0 3000)
+alphas=(  10.0 30 100 300 1000.0 3000)
 
 # Loop through all alpha values
 for alpha in "${alphas[@]}"; do

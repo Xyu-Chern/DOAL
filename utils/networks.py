@@ -192,6 +192,81 @@ class Value(nn.Module):
 
         return v
 
+class TimeEmbedding(nn.Module):
+    """
+    Embeds scalar timesteps into vector representations.
+    """
+    hidden_size: int
+    frequency_embedding_size: int = 256
+
+    @nn.compact
+    def __call__(self, t):
+        x = self.timestep_embedding(t)
+        x = nn.Dense(self.hidden_size, kernel_init=nn.initializers.normal(0.02))(x)
+        x = nn.silu(x)
+        x = nn.Dense(self.hidden_size, kernel_init=nn.initializers.normal(0.02))(x)
+        return x
+
+    # t is between [0, 1].
+    def timestep_embedding(self, t, max_period=10000):
+        """
+        Create sinusoidal timestep embeddings.
+        :param t: a 1-D Tensor of N indices, one per batch element.
+                          These may be fractional.
+        :param dim: the dimension of the output.
+        :param max_period: controls the minimum frequency of the embeddings.
+        :return: an (N, D) Tensor of positional embeddings.
+        """
+        # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
+        t = t * max_period
+        dim = self.frequency_embedding_size
+        half = dim // 2
+        freqs = jnp.exp( -math.log(max_period) * jnp.arange(start=0, stop=half, dtype=jnp.float32) / half)
+        args = t[:, None] * freqs[None]
+        embedding = jnp.concatenate([jnp.cos(args), jnp.sin(args)], axis=-1)
+        return embedding
+
+class TimeWeight(nn.Module):
+    """Value/critic network.
+
+    This module can be used for both value V(s, g) and critic Q(s, a, g) functions.
+
+    Attributes:
+        hidden_dims: Hidden layer dimensions.
+        layer_norm: Whether to apply layer normalization.
+        num_ensembles: Number of ensemble components.
+        encoder: Optional encoder module to encode the inputs.
+    """
+
+    hidden_dims: Sequence[int]
+    layer_norm: bool = True
+    encoder: nn.Module = None
+
+    def setup(self):
+        mlp_class = MLP
+        value_net = mlp_class((*self.hidden_dims, 1), activate_final=False, layer_norm=self.layer_norm)
+
+        self.value_net = value_net
+
+    def __call__(self, times):
+        """Return values or critic values.
+
+        Args:
+            observations: Observations.
+            actions: Actions (optional).
+        """
+        if self.encoder is not None:
+            inputs = [self.encoder(observations)]
+        else:
+            inputs = [observations]
+        if actions is not None:
+            inputs.append(actions)
+        inputs = jnp.concatenate(inputs, axis=-1)
+
+        v = self.value_net(inputs).squeeze(-1)
+
+        return v
+
 
 class ActorVectorField(nn.Module):
     """Actor vector field network for flow matching.
