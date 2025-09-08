@@ -34,7 +34,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         )
         q = jnp.minimum(q1, q2)
         v = self.network.select("value")(batch["observations"], params=grad_params)        
-        lam = 1 / jax.lax.stop_gradient(jnp.std(q).mean())
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(v).mean())
         value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() 
 
         if self.config['normalize_q_loss']:
@@ -288,7 +288,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         config['ob_dims'] = ob_dims
         config['action_dim'] = action_dim
-        config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
+   #     config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
         return cls(rng, network=network, config=flax.core.FrozenDict(**config))
 
 def get_config():
@@ -302,7 +302,7 @@ def get_config():
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=( 512, 512,512, 512),  # Value network hidden dimensions.
             time_hidden_dims=(32,),
-            sigma=ml_collections.config_dict.placeholder(jax.Array),
+     #       sigma=ml_collections.config_dict.placeholder(jax.Array),
             normalize_action=False,
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.

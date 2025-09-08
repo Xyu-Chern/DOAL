@@ -90,7 +90,6 @@ hyperparameters = {
         }
     },
     "cube-single-play-singletask-v0": {
-        "expectile":0.7,
         "alpha_actor": 300,
         "iql": {
             "alpha_actor": 1

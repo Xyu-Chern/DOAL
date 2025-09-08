@@ -76,7 +76,7 @@ def main(_):
         print ("update",hyperparameters[env_class][config['agent_name']])
 
         
-    exp_name = FLAGS.env_name 
+    exp_name = FLAGS.exp_name + "_seed_" + str(FLAGS.seed) 
     if FLAGS.alpha != -1:
         config["alpha"] = FLAGS.alpha
         exp_name +=  "_alpha _" + str(config["alpha"])
@@ -96,7 +96,6 @@ def main(_):
     if FLAGS.normalize_q_loss:
         config['normalize_q_loss'] = True
         exp_name +=  "_nq_True" 
-    exp_name +=  "_seed_" + str(FLAGS.seed)  
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
 
     os.makedirs(FLAGS.save_dir, exist_ok=True)
@@ -118,9 +117,9 @@ def main(_):
     # Set up datasets.
     train_dataset = Dataset.create(**train_dataset)
 
-    if "normalize_action" in config and config["normalize_action"]:
-        mean,sigma = train_dataset.get_action_stats()
-        config["sigma"] = sigma
+  #  if "normalize_action" in config and config["normalize_action"]:
+  #      mean,sigma = train_dataset.get_action_stats()
+  #      config["sigma"] = sigma
     if FLAGS.balanced_sampling:
         # Create a separate replay buffer so that we can sample from both the training dataset and the replay buffer.
         example_transition = {k: v[0] for k, v in train_dataset.items()}
