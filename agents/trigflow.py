@@ -276,7 +276,7 @@ def get_config():
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
-            value_hidden_dims=( 512, 512),  # Value network hidden dimensions.
+            value_hidden_dims=( 512, 512,512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
@@ -285,7 +285,7 @@ def get_config():
             q_steps=10,
             return_next_actions=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
-            expectile=0.7,  # IQL expectile.
+            expectile=0.0,  # IQL expectile.
             gn=100.0,
             alpha_actor = 100.0,
             alpha_critic=0.0,  # Critic BC coefficient.

@@ -75,7 +75,7 @@ def main(_):
         print ("update",hyperparameters[env_class][config['agent_name']])
 
         
-    exp_name = FLAGS.env_name + FLAGS.agent_name  
+    exp_name = FLAGS.env_name 
     if FLAGS.alpha != -1:
         config["alpha"] = FLAGS.alpha
         exp_name +=  "_alpha _" + str(config["alpha"])
@@ -90,7 +90,7 @@ def main(_):
         config["solver"] = FLAGS.solver
         exp_name +=  "_solver_" + str(config["solver"])
     
-    exp_name +=  "_seed_" + str(FLAGS.seed) + FLAGS.exp_name  #+ get_exp_name(FLAGS.seed) 
+    exp_name +=  "_seed_" + str(FLAGS.seed)  
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
 
     os.makedirs(FLAGS.save_dir, exist_ok=True)
