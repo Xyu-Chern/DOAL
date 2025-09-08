@@ -22,7 +22,7 @@ fi
 
 
 # Define the list of alpha parameters
-alphas=(30 100 300 1000  )
+alphas=(3    )
 
 # Loop through all alpha values
 for alpha in "${alphas[@]}"; do
@@ -32,5 +32,6 @@ for alpha in "${alphas[@]}"; do
         --env_name "$ENV_NAME" \
         --alpha_actor "$alpha" \
         --exp_name "$EXP_NAME" \
-        --seed "$RANDOM"
+        --seed "$RANDOM" \
+        --normalize_q_loss
 done

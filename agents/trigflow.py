@@ -71,7 +71,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
         # BC flow loss.
-        z = jax.random.normal(x_rng, (batch_size, action_dim)) * self.config["sigma"]
+        z = jax.random.normal(x_rng, (batch_size, action_dim))
         t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
         x_t = jnp.cos(t)* batch['actions'] + jnp.sin(t) * z
 
@@ -91,9 +91,9 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
         weight = jnp.exp(time_weight_logits) / action_dim
-        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) * self.config["sigma"]
+        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
-        bc_flow_loss =  ( weight * ( F_theta * self.config["sigma"] - vel ) ** 2 - time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
+        bc_flow_loss =  ( ( F_theta  - vel ) ** 2 ) .mean()  #/ jnp.sin(t).clip(min=0.1)
         qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
         if self.config['q_agg'] == 'min':
             q = jnp.min(qs, axis=0)
@@ -191,7 +191,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
                 self.config['num_samples'],
                 self.config['action_dim'],
             ),
-        ) * self.config["sigma"]
+        ) 
         n_observations = jnp.repeat(jnp.expand_dims(observations, 0), self.config['num_samples'], axis=0)
         n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), self.config['num_samples'], axis=0)
         # Euler method.
@@ -199,7 +199,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             t = jnp.full((*observations.shape[:-1],self.config['num_samples'], 1), (1.0 - i / self.config['flow_steps']) *math.pi / 2)
             s = jnp.full((*observations.shape[:-1], self.config['num_samples'],1), (1.0 - (i+1) / self.config['flow_steps']) *math.pi / 2)
             vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
-            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) * self.config["sigma"]
+            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) #* self.config["sigma"]
         actions = jnp.clip(actions, -1, 1)
         # Pick the action with the highest Q-value.
         q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
@@ -303,7 +303,7 @@ def get_config():
             value_hidden_dims=( 512, 512,512, 512),  # Value network hidden dimensions.
             time_hidden_dims=(32,),
             sigma=ml_collections.config_dict.placeholder(jax.Array),
-            normalize_action=True,
+            normalize_action=False,
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
