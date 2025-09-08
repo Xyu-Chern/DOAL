@@ -34,7 +34,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         )
         q = jnp.minimum(q1, q2)
         v = self.network.select("value")(batch["observations"], params=grad_params)        
-        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        lam = 1 / jax.lax.stop_gradient(jnp.std(q).mean())
         value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() 
 
         if self.config['normalize_q_loss']:
@@ -277,7 +277,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-     #        optax.clip_by_global_norm(max_norm=config["gn"]),
+             optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']

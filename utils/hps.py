@@ -127,7 +127,6 @@ hyperparameters = {
         }
     },
     "scene-play-singletask-v0": {
-        "expectile":0.7,
         "iql": {
             "alpha_actor": 10
         },
