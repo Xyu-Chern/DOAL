@@ -307,7 +307,7 @@ def get_config():
             q_steps=10,
             return_next_actions=True,
             distill_factor=0.0,  # BC coefficient (need to be tuned for each environment).
-            expectile=0.0,  # IQL expectile.
+            expectile=0.9,  # IQL expectile.
             gn=100.0,
             alpha_actor = 100.0,
             alpha_critic=0.0,  # Critic BC coefficient.
