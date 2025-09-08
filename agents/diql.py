@@ -18,52 +18,6 @@ from agents.iql import IQLAgent
 class DIQLAgent(DOALAgent,IQLAgent):
     """Implicit Q-learning (IQL) agent."""
 
-    rng: Any
-    network: Any
-    config: Any = nonpytree_field()
-    @staticmethod
-    def expectile_loss(adv, diff, expectile):
-        """Compute the expectile loss."""
-        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
-        return weight * (diff**2)
-
-    def value_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL value loss."""
-        q1, q2 = self.network.select("target_critic")(
-            batch["observations"], actions=batch["actions"]
-        )
-        q = jnp.minimum(q1, q2)
-        v = self.network.select("value")(batch["observations"], params=grad_params)        
-        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  
-
-
-        if self.config['normalize_q_loss']:
-            value_loss = lam * value_loss
-        aux.update({"v": v,"q": q,"lam": lam })
-        return value_loss, {
-            "value_loss": value_loss,
-            "v_mean": v.mean(),
-            "v_max": v.max(),
-            "v_min": v.min(),
-        }, aux
-
-    def critic_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL critic loss."""
-        next_v = self.network.select("value")(batch["next_observations"])
-        q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
-
-        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
-
-        if self.config['normalize_q_loss']:
-            critic_loss = aux["lam"] * critic_loss
-        return critic_loss, {
-            "critic_loss": critic_loss,
-            "q_mean": q.mean(),
-            "q_max": q.max(),
-            "q_min": q.min(),
-        }, aux
 
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the actor loss (AWR or DDPG+BC)."""
@@ -96,6 +50,8 @@ class DIQLAgent(DOALAgent,IQLAgent):
                 'aq': jnp.mean(aq),
                 'std': jnp.mean(dist.scale_diag),
             "hd": jnp.mean(hd),
+            "hd_max": jnp.max(hd),
+            "hd_min": jnp.min(hd),
             }
 
             return actor_loss, actor_info
@@ -118,6 +74,8 @@ class DIQLAgent(DOALAgent,IQLAgent):
                 'mse': jnp.mean((dist.mode() - batch['actions']) ** 2),
                 'std': jnp.mean(dist.scale_diag),
             "hd": jnp.mean(hd),
+            "hd_max": jnp.max(hd),
+            "hd_min": jnp.min(hd),
             }
         else:
             raise ValueError(f'Unsupported actor loss: {self.config["actor_loss"]}')
@@ -133,7 +91,7 @@ def get_config():
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.  , 512, 512
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.  , 512, 512
-            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            normalize_q_loss=True,  # Whether to normalize the Q loss.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.

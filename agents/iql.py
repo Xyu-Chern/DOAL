@@ -34,12 +34,13 @@ class IQLAgent(flax.struct.PyTreeNode):
         )
         q = jnp.minimum(q1, q2)
         v = self.network.select("value")(batch["observations"], params=grad_params)        
-        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  
-
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(v).mean())
+        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() 
 
         if self.config['normalize_q_loss']:
             value_loss = lam * value_loss
+
+
         aux.update({"v": v,"q": q,"lam": lam })
         return value_loss, {
             "value_loss": value_loss,
@@ -267,7 +268,7 @@ def get_config():
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
-            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            normalize_q_loss=True,  # Whether to normalize the Q loss.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.

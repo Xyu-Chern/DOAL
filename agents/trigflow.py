@@ -93,6 +93,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         weight = jnp.exp(time_weight_logits) / action_dim
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
+        raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean() #/ jnp.sin(t).clip(min=0.1)
         bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
         qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
         if self.config['q_agg'] == 'min':
@@ -107,12 +108,12 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         total_loss = self.config['alpha_actor'] * bc_flow_loss +  actor_loss
         if self.config["distill_factor"] > 0:
             zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
-            total_loss = total_loss  + self.config['alpha_actor'] *  self.config["distill_factor"]  *    zero_shot_loss 
+            total_loss = total_loss  +  self.config["distill_factor"]  *    zero_shot_loss 
             
             return total_loss, {
                 'actor_loss': actor_loss,
                 'total_loss': total_loss,
-                "bc_flow_loss":bc_flow_loss,
+                "bc_flow_loss":raw_bc_flow_loss,
                 "zero_shot_loss":zero_shot_loss,
                 'q': q.mean(),
                 "weight":weight.mean(),
@@ -121,7 +122,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             return total_loss, {
                 'actor_loss': actor_loss,
                 'total_loss': total_loss,
-                "bc_flow_loss":bc_flow_loss,
+                "bc_flow_loss":raw_bc_flow_loss,
                 'q': q.mean(),
                 "weight":weight.mean(),
             }
@@ -318,7 +319,7 @@ def get_config():
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
-            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            normalize_q_loss=True,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )

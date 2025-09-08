@@ -20,43 +20,6 @@ from agents.trigflow import TrigFQLAgent
 class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
     """Flow Q-learning (FQL) agent."""
 
-    def value_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL value loss."""
-        q1, q2 = self.network.select("target_critic")(
-            batch["observations"], actions=batch["actions"]
-        )
-        q = jnp.minimum(q1, q2)
-        v = self.network.select("value")(batch["observations"], params=grad_params)        
-        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  
-
-
-        if self.config['normalize_q_loss']:
-            value_loss = lam * value_loss
-        aux.update({"v": v,"q": q,"lam": lam })
-        return value_loss, {
-            "value_loss": value_loss,
-            "v_mean": v.mean(),
-            "v_max": v.max(),
-            "v_min": v.min(),
-        }, aux
-
-    def critic_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL critic loss."""
-        next_v = self.network.select("value")(batch["next_observations"])
-        q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
-
-        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
-
-        if self.config['normalize_q_loss']:
-            critic_loss = aux["lam"] * critic_loss
-        return critic_loss, {
-            "critic_loss": critic_loss,
-            "q_mean": q.mean(),
-            "q_max": q.max(),
-            "q_min": q.min(),
-        }, aux
 
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the FQL actor loss."""
@@ -73,22 +36,40 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
 
         vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
 
+        time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
 
-        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t)
+        weight = jnp.exp(time_weight_logits) / action_dim
+        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
-        bc_flow_loss = (( pred_actions - adjusted_actions ) ** 2).mean()  +  (( F_theta - vel ) ** 2).mean()  #/ jnp.sin(t).clip(min=0.1)
+        raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean()  #/ jnp.sin(t).clip(min=0.1)
+        bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
+
 
         # Total loss.
+
         total_loss = self.config['alpha_actor'] * bc_flow_loss 
-        return total_loss, {
-            'total_loss': total_loss,
-            "bc_flow_loss":bc_flow_loss,
-            'adj': jnp.mean(jnp.abs(adjustment)),
-            'q': q.mean(),
-            "hd": jnp.mean(hd),
-        }
+        if self.config["distill_factor"] > 0:
+            zero_shot_loss = ( ( pred_actions- adjusted_actions ) ** 2).mean()   
+            total_loss = total_loss  + self.config['alpha_actor'] *  self.config["distill_factor"]  *    zero_shot_loss 
+            
+            return total_loss, {
+                'total_loss': total_loss,
+                "bc_flow_loss":raw_bc_flow_loss,
+                "zero_shot_loss":zero_shot_loss,
+                'q': q.mean(),
+                "weight":weight.mean(),
+                "hess_diag":hd,
+            }
+        else:
+            return total_loss, {
+                'total_loss': total_loss,
+                "bc_flow_loss":raw_bc_flow_loss,
+                'q': q.mean(),
+                "weight":weight.mean(),
+                "hess_diag":hd,
+            }
 
 
 
@@ -102,21 +83,23 @@ def get_config():
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
-            value_hidden_dims=(512, 512),  # Value network hidden dimensions.
+            value_hidden_dims=(512, 512,512, 512),  # Value network hidden dimensions.
+            time_hidden_dims=(32,),
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
+            distill_factor=0,
             q_agg='min',  # Aggregation method for target Q values.
             expectile=0.9,  # IQL expectile.
             gn=100.0,
             return_next_actions=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
-            delta=1.0,
+            delta=0.2,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
-            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            normalize_q_loss=True,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )
