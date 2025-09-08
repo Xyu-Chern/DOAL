@@ -47,7 +47,7 @@ flags.DEFINE_float('alpha',-1, 'coffeient for conservative')
 flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative') 
 flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative') 
 flags.DEFINE_string('solver',None, 'coffeient for conservative')
-flags.DEFINE_boolean('normalize_q_loss',default=False, 'coffeient for conservative')
+flags.DEFINE_boolean('normalize_q_loss', False, 'coffeient for conservative')
 
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
