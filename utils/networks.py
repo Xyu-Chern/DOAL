@@ -192,39 +192,26 @@ class Value(nn.Module):
 
         return v
 
-class TimeEmbedding(nn.Module):
-    """
-    Embeds scalar timesteps into vector representations.
-    """
-    hidden_size: int
-    frequency_embedding_size: int = 256
 
-    @nn.compact
-    def __call__(self, t):
-        x = self.timestep_embedding(t)
-        x = nn.Dense(self.hidden_size, kernel_init=nn.initializers.normal(0.02))(x)
-        x = nn.silu(x)
-        x = nn.Dense(self.hidden_size, kernel_init=nn.initializers.normal(0.02))(x)
-        return x
+# t is between [0, 1].
+def timestep_embedding( t,dim=32, max_period=10000):
+    """
+    Create sinusoidal timestep embeddings.
+    :param t: a 1-D Tensor of N indices, one per batch element.
+                        These may be fractional.
+    :param dim: the dimension of the output.
+    :param max_period: controls the minimum frequency of the embeddings.
+    :return: an (N, D) Tensor of positional embeddings.
+    """
+    # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
+    t = t * max_period
+    dim = dim
+    half = dim // 2
+    freqs = jnp.exp( -math.log(max_period) * jnp.arange(start=0, stop=half, dtype=jnp.float32) / half)
+    args = t[:, None] * freqs[None]
+    embedding = jnp.concatenate([jnp.cos(args), jnp.sin(args)], axis=-1)
+    return embedding
 
-    # t is between [0, 1].
-    def timestep_embedding(self, t, max_period=10000):
-        """
-        Create sinusoidal timestep embeddings.
-        :param t: a 1-D Tensor of N indices, one per batch element.
-                          These may be fractional.
-        :param dim: the dimension of the output.
-        :param max_period: controls the minimum frequency of the embeddings.
-        :return: an (N, D) Tensor of positional embeddings.
-        """
-        # https://github.com/openai/glide-text2im/blob/main/glide_text2im/nn.py
-        t = t * max_period
-        dim = self.frequency_embedding_size
-        half = dim // 2
-        freqs = jnp.exp( -math.log(max_period) * jnp.arange(start=0, stop=half, dtype=jnp.float32) / half)
-        args = t[:, None] * freqs[None]
-        embedding = jnp.concatenate([jnp.cos(args), jnp.sin(args)], axis=-1)
-        return embedding
 
 class TimeWeight(nn.Module):
     """Value/critic network.
@@ -239,8 +226,7 @@ class TimeWeight(nn.Module):
     """
 
     hidden_dims: Sequence[int]
-    layer_norm: bool = True
-    encoder: nn.Module = None
+    layer_norm: bool = False
 
     def setup(self):
         mlp_class = MLP
@@ -255,15 +241,9 @@ class TimeWeight(nn.Module):
             observations: Observations.
             actions: Actions (optional).
         """
-        if self.encoder is not None:
-            inputs = [self.encoder(observations)]
-        else:
-            inputs = [observations]
-        if actions is not None:
-            inputs.append(actions)
-        inputs = jnp.concatenate(inputs, axis=-1)
+        inputs = timestep_embedding(times,self.hidden_dims[0])
 
-        v = self.value_net(inputs).squeeze(-1)
+        v = self.value_net(inputs)
 
         return v
 

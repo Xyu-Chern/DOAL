@@ -104,6 +104,8 @@ class Dataset(FrozenDict):
             result['next_actions'] = self._dict['actions'][np.minimum(idxs + 1, self.size - 1)]
         return result
 
+    def get_action_stats(self):
+        return jnp.mean(self._dict['actions'],axis =0,keepdims=True), jnp.std(self._dict['actions'],axis =0,keepdims=True)
     def augment(self, batch, keys):
         """Apply image augmentation to the given keys."""
         padding = 3

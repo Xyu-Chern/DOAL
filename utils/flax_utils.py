@@ -18,6 +18,8 @@ from jax import jvp
 def hvp(grad_f, primals, tangents):
     return jvp(grad_f, primals, tangents)[1]
 
+def clip(x):
+    return x.clip(-1+1e-5,1-1e-5)
 class DOALAgent(flax.struct.PyTreeNode):
     """Implicit Q-learning (IQL) agent."""
 
@@ -70,8 +72,6 @@ class DOALAgent(flax.struct.PyTreeNode):
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
             return  adjusted_actions, dx, q
-        def clip(x):
-            return x.clip(-1,1)
 
         return _get_guided_action(q_action, action,observation,alpha,params)
     @jax.jit
@@ -99,9 +99,6 @@ class DOALAgent(flax.struct.PyTreeNode):
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
             return  adjusted_actions, dx, q
-        def clip(x):
-            return x.clip(-1,1)
-
         return _get_guided_action(q_action, action,observation,alpha,params)
     @jax.jit
     def get_full_hess_action(self,q_action, action,observation,alpha,delta,params):
@@ -143,8 +140,6 @@ class DOALAgent(flax.struct.PyTreeNode):
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
             return  adjusted_actions, dx, q
-        def clip(x):
-            return x.clip(-1,1)
 
         return _get_guided_action(q_action, action,observation,alpha,params)
 class ModuleDict(nn.Module):

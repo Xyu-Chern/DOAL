@@ -44,7 +44,8 @@ flags.DEFINE_integer('eval_episodes', 50, 'Number of evaluation episodes.')
 flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_float('alpha',-1, 'coffeient for conservative')
-flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative')
+flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative') 
+flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative') 
 flags.DEFINE_string('solver',None, 'coffeient for conservative')
 flags.DEFINE_string('normalize_alpha',None, 'coffeient for conservative')
 
@@ -89,6 +90,9 @@ def main(_):
     if FLAGS.solver is not None:
         config["solver"] = FLAGS.solver
         exp_name +=  "_solver_" + str(config["solver"])
+    if FLAGS.distill_factor != -1:
+        config["distill_factor"] = FLAGS.distill_factor
+        exp_name +=  "_distill_factor_" + str(config["distill_factor"])
     
     exp_name +=  "_seed_" + str(FLAGS.seed)  
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
@@ -111,6 +115,11 @@ def main(_):
 
     # Set up datasets.
     train_dataset = Dataset.create(**train_dataset)
+
+    if "normalize_action" in config and config["normalize_action"]:
+        mean,sigma = train_dataset.get_action_stats()
+        config["mean"] = mean
+        config["sigma"] = sigma
     if FLAGS.balanced_sampling:
         # Create a separate replay buffer so that we can sample from both the training dataset and the replay buffer.
         example_transition = {k: v[0] for k, v in train_dataset.items()}

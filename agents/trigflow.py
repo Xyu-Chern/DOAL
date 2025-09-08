@@ -10,7 +10,7 @@ import optax
 
 from utils.encoders import encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
-from utils.networks import ActorVectorField, Value
+from utils.networks import ActorVectorField, Value,TimeWeight
 from functools import partial
 import math
 
@@ -66,7 +66,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
         # BC flow loss.
-        z = jax.random.normal(x_rng, (batch_size, action_dim))
+        z = jax.random.normal(x_rng, (batch_size, action_dim)) * self.config["sigma"]
         t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
         x_t = jnp.cos(t)* batch['actions'] + jnp.sin(t) * z
 
@@ -83,9 +83,12 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
      #   exp_a = jnp.exp(adv * self.config['alpha_actor'])
       #  exp_a = jnp.minimum(exp_a, 100.0)
 
-        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t)
+        time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
-        bc_flow_loss =   (( F_theta - vel ) ** 2).mean()  #/ jnp.sin(t).clip(min=0.1)
+        weight = jnp.exp(time_weight_logits) / action_dim
+        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) * self.config["sigma"]
+
+        bc_flow_loss =  ( weight * ( F_theta * self.config["sigma"] - vel ) ** 2 - time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
         qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
         if self.config['q_agg'] == 'min':
             q = jnp.min(qs, axis=0)
@@ -97,15 +100,26 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         # Total loss.
 
         total_loss = self.config['alpha_actor'] * bc_flow_loss +  actor_loss
-        return total_loss, {
-            'actor_loss': actor_loss,
-            'total_loss': total_loss,
-            "bc_flow_loss":bc_flow_loss,
-    #     'adj': jnp.mean(jnp.abs(adjustment)),
-    #     'aq': aq.mean(),
-    #      "weights":weights.mean(),
-            'q': q.mean(),
-        }
+        if self.config["distill_factor"] > 0:
+            zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
+            total_loss = total_loss  + self.config['alpha_actor'] *  self.config["distill_factor"]  *    zero_shot_loss 
+            
+            return total_loss, {
+                'actor_loss': actor_loss,
+                'total_loss': total_loss,
+                "bc_flow_loss":bc_flow_loss,
+                "zero_shot_loss":zero_shot_loss,
+                'q': q.mean(),
+                "weight":weight.mean(),
+            }
+        else:
+            return total_loss, {
+                'actor_loss': actor_loss,
+                'total_loss': total_loss,
+                "bc_flow_loss":bc_flow_loss,
+                'q': q.mean(),
+                "weight":weight.mean(),
+            }
 
     @jax.jit
     def total_loss(self, batch, grad_params, rng=None):
@@ -172,7 +186,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
                 self.config['num_samples'],
                 self.config['action_dim'],
             ),
-        )
+        ) * self.config["sigma"]
         n_observations = jnp.repeat(jnp.expand_dims(observations, 0), self.config['num_samples'], axis=0)
         n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), self.config['num_samples'], axis=0)
         # Euler method.
@@ -180,7 +194,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             t = jnp.full((*observations.shape[:-1],self.config['num_samples'], 1), (1.0 - i / self.config['flow_steps']) *math.pi / 2)
             s = jnp.full((*observations.shape[:-1], self.config['num_samples'],1), (1.0 - (i+1) / self.config['flow_steps']) *math.pi / 2)
             vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
-            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s)
+            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) * self.config["sigma"]
         actions = jnp.clip(actions, -1, 1)
         # Pick the action with the highest Q-value.
         q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
@@ -239,11 +253,16 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             encoder=encoders.get('actor_bc_flow'),
         )
 
+        time_weight_def = TimeWeight(
+            hidden_dims=config['time_hidden_dims'],
+            layer_norm=config['layer_norm'],
+        )
         network_info = dict(
             value=(value_def, (ex_observations,)),
             critic=(critic_def, (ex_observations, ex_actions)),
             target_critic=(copy.deepcopy(critic_def), (ex_observations, ex_actions)),
             actor_bc_flow=(actor_bc_flow_def, (ex_observations, ex_actions, ex_times)),
+            time_weight = (time_weight_def, (ex_times)),
         )
         if encoders.get('actor_bc_flow') is not None:
             # Add actor_bc_flow_encoder to ModuleDict to make it separately callable.
@@ -266,7 +285,6 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         config['action_dim'] = action_dim
         return cls(rng, network=network, config=flax.core.FrozenDict(**config))
 
-
 def get_config():
     config = ml_collections.ConfigDict(
         dict(
@@ -277,6 +295,10 @@ def get_config():
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=( 512, 512,512, 512),  # Value network hidden dimensions.
+            time_hidden_dims=(32),
+            sigma=1.0,
+            mean=0,
+            normalize_action=True,
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
@@ -284,7 +306,7 @@ def get_config():
             q_agg='min',  # Aggregation method for target Q values.
             q_steps=10,
             return_next_actions=True,
-            alpha=10.0,  # BC coefficient (need to be tuned for each environment).
+            distill_factor=0.0,  # BC coefficient (need to be tuned for each environment).
             expectile=0.0,  # IQL expectile.
             gn=100.0,
             alpha_actor = 100.0,
