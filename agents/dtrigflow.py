@@ -20,12 +20,6 @@ from agents.trigflow import TrigFQLAgent
 class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
     """Flow Q-learning (FQL) agent."""
 
-    @staticmethod
-    def expectile_loss(adv, diff, expectile):
-        """Compute the expectile loss."""
-        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
-        return weight * (diff**2)
-
     def value_loss(self, batch, grad_params, aux={}):
         """Compute the IQL value loss."""
         q1, q2 = self.network.select("target_critic")(
@@ -37,6 +31,8 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  
 
 
+        if self.config['normalize_q_loss']:
+            value_loss = lam * value_loss
         aux.update({"v": v,"q": q,"lam": lam })
         return value_loss, {
             "value_loss": value_loss,
@@ -44,7 +40,6 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             "v_max": v.max(),
             "v_min": v.min(),
         }, aux
-
 
     def critic_loss(self, batch, grad_params, aux={}):
         """Compute the IQL critic loss."""
@@ -54,12 +49,15 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
         critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
 
+        if self.config['normalize_q_loss']:
+            critic_loss = aux["lam"] * critic_loss
         return critic_loss, {
             "critic_loss": critic_loss,
             "q_mean": q.mean(),
             "q_max": q.max(),
             "q_min": q.min(),
         }, aux
+
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the FQL actor loss."""
         batch_size, action_dim = batch['actions'].shape

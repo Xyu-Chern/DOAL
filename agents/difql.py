@@ -40,6 +40,8 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean()  
 
 
+        if self.config['normalize_q_loss']:
+            value_loss = lam * value_loss
         aux.update({"v": v,"q": q,"lam": lam })
         return value_loss, {
             "value_loss": value_loss,
@@ -56,12 +58,15 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
         critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
 
+        if self.config['normalize_q_loss']:
+            critic_loss = aux["lam"] * critic_loss
         return critic_loss, {
             "critic_loss": critic_loss,
             "q_mean": q.mean(),
             "q_max": q.max(),
             "q_min": q.min(),
         }, aux
+
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the behavioral flow-matching actor loss."""
         batch_size, action_dim = batch['actions'].shape
@@ -99,6 +104,7 @@ def get_config():
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.

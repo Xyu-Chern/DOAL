@@ -51,6 +51,8 @@ class DReBRACAgent(DOALAgent):
  
         
         aux = {"lam":lam}
+        if self.config['normalize_q_loss']:
+            critic_loss = aux["lam"] * critic_loss
         return critic_loss, {
             'critic_loss': critic_loss,
             'q_mean': q.mean(),
