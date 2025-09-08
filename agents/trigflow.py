@@ -93,7 +93,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         weight = jnp.exp(time_weight_logits) / action_dim
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
-        bc_flow_loss =  ( ( F_theta  - vel ) ** 2 ) .mean()  #/ jnp.sin(t).clip(min=0.1)
+        bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
         qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
         if self.config['q_agg'] == 'min':
             q = jnp.min(qs, axis=0)
