@@ -66,7 +66,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
         alpha = self.config["alpha"] 
-        adjusted_actions , adjustment, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
+        adjusted_actions , adjustment,hd, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
         # BC flow loss.
         z = jax.random.normal(x_rng, (batch_size, action_dim))
@@ -89,6 +89,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             "bc_flow_loss":bc_flow_loss,
             'adj': jnp.mean(jnp.abs(adjustment)),
             'q': q.mean(),
+            "hd"; jnp.mean(hd),
         }
 
 
