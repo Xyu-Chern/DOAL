@@ -107,14 +107,15 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         total_loss = self.config['alpha_actor'] * bc_flow_loss +  actor_loss
         if self.config["distill_factor"] > 0:
-            zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
+            raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
+            zero_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
             total_loss = total_loss  +  self.config["distill_factor"]  *    zero_shot_loss 
             
             return total_loss, {
                 'actor_loss': actor_loss,
                 'total_loss': total_loss,
                 "bc_flow_loss":raw_bc_flow_loss,
-                "zero_shot_loss":zero_shot_loss,
+                "zero_shot_loss":raw_zero_shot_loss,
                 'q': q.mean(),
                 "weight":weight.mean(),
             }
