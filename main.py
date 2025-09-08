@@ -118,7 +118,6 @@ def main(_):
 
     if "normalize_action" in config and config["normalize_action"]:
         mean,sigma = train_dataset.get_action_stats()
-        config["mean"] = mean
         config["sigma"] = sigma
     if FLAGS.balanced_sampling:
         # Create a separate replay buffer so that we can sample from both the training dataset and the replay buffer.

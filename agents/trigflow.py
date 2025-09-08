@@ -283,6 +283,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         config['ob_dims'] = ob_dims
         config['action_dim'] = action_dim
+        config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
         return cls(rng, network=network, config=flax.core.FrozenDict(**config))
 
 def get_config():
@@ -295,9 +296,8 @@ def get_config():
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=( 512, 512,512, 512),  # Value network hidden dimensions.
-            time_hidden_dims=(32),
-            sigma=1.0,
-            mean=0,
+            time_hidden_dims=(32,),
+            sigma=ml_collections.config_dict.placeholder(jax.Array),
             normalize_action=True,
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.

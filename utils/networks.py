@@ -3,7 +3,7 @@ from typing import Any, Optional, Sequence
 import distrax
 import flax.linen as nn
 import jax.numpy as jnp
-
+import math
 
 def default_init(scale=1.0):
     """Default kernel initializer."""
