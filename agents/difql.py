@@ -64,7 +64,7 @@ def get_config():
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
-            alpha_actor=10,
+            alpha_actor=10.0,
             alpha=1.0,  # BC coefficient (need to be tuned for each environment).
             delta=1.0,
             tau=0.005,  # Target network update rate.
