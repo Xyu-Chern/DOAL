@@ -11,7 +11,7 @@ hyperparameters = {
             "alpha_actor": 0.003,
         },
         "alpha_critic": 0.01,
-        "alpha": 3,
+        "alpha": 1,
         "drebrac": {
             "alpha_actor": 0.003,
             "alpha_critic": 0.01,
@@ -29,7 +29,7 @@ hyperparameters = {
             "alpha_actor": 0.003,
         },
             "alpha_critic": 0.01,
-        "alpha": 3,
+        "alpha": 1,
         "drebrac": {
             "alpha_actor": 0.003,
             "alpha_critic": 0.01,
@@ -47,7 +47,7 @@ hyperparameters = {
             "alpha_actor": 0.01,
         },
             "alpha_critic": 0.01,
-        "alpha": 3,
+        "alpha": 1,
         "drebrac": {
             "alpha_actor": 0.01,
             "alpha_critic": 0.01,
@@ -64,8 +64,8 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.01,
         },
-            "alpha_critic": 0.01
-        "alpha": 3,
+            "alpha_critic": 0.01,
+        "alpha": 1,
         "drebrac": {
             "alpha_actor": 0.01,
             "alpha_critic": 0.01
@@ -82,7 +82,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.01,
         },
-            "alpha_critic": 0.01
+            "alpha_critic": 0.01,
         "alpha": 1,
         "drebrac": {
             "alpha_actor": 0.01,
@@ -100,8 +100,8 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 1,
         },
-            "alpha_critic": 1
-        "alpha": 300,
+            "alpha_critic": 1,
+        "alpha": 100,
         "drebrac": {
             "alpha_actor": 1,
             "alpha_critic": 1
@@ -118,8 +118,8 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 1,
         },
-            "alpha_critic": 1
-        "alpha": 100,
+            "alpha_critic": 1,
+        "alpha": 30,
         "drebrac": {
             "alpha_actor": 1,
             "alpha_critic": 1
@@ -136,8 +136,8 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.1,
         },
-            "alpha_critic": 0.01
-        "alpha": 100,
+            "alpha_critic": 0.01,
+        "alpha": 300,
         "drebrac": {
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
@@ -154,8 +154,8 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.3,
         },
-            "alpha_critic": 0.01
-        "alpha": 300,
+            "alpha_critic": 0.01,
+        "alpha": 1000,
         "drebrac": {
             "alpha_actor": 0.3,
             "alpha_critic": 0.01
@@ -172,8 +172,8 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.3,
         },
-            "alpha_critic": 0.01
-        "alpha": 1000,
+            "alpha_critic": 0.01,
+        "alpha": 100,
         "drebrac": {
             "alpha_actor": 0.3,
             "alpha_critic": 0.01
@@ -189,7 +189,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.003,
         },
-            "alpha_critic": 0.002
+            "alpha_critic": 0.002,
         "alpha": 0.003,
         "drebrac": {
             "alpha_actor": 0.003,
@@ -206,7 +206,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.003,
         },
-            "alpha_critic": 0.001
+            "alpha_critic": 0.001,
         "alpha": 0.003,
         "drebrac": {
             "alpha_actor": 0.003,
@@ -223,7 +223,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.001,
         },
-            "alpha_critic": 0.0005
+            "alpha_critic": 0.0005,
         "alpha": 0.001,
         "drebrac": {
             "alpha_actor": 0.001,
@@ -240,7 +240,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.001,
         },
-            "alpha_critic": 0.0
+            "alpha_critic": 0.0,
         "alpha": 0.001,
         "drebrac": {
             "alpha_actor": 0.001,
@@ -257,7 +257,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.1,
         },
-            "alpha_critic": 0.5
+            "alpha_critic": 0.5,
         "alpha": 0.1,
         "drebrac": {
             "alpha_actor": 0.1,
@@ -274,7 +274,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.05,
         },
-            "alpha_critic": 0.5
+            "alpha_critic": 0.5,
         "alpha": 0.05,
         "drebrac": {
             "alpha_actor": 0.05,
@@ -286,7 +286,7 @@ hyperparameters = {
         "rebrac": {
             "alpha_actor": 0.01,
         },
-            "alpha_critic": 0.02
+            "alpha_critic": 0.02,
         "alpha": 0.01,
         "drebrac": {
             "alpha_actor": 0.01,
@@ -302,7 +302,7 @@ hyperparameters = {
         },
         "rebrac": {
             "alpha_actor": 0.1,
-            "alpha_critic": 0.1
+            "alpha_critic": 0.1,
         },
         "alpha": 0.1,
         "drebrac": {
@@ -319,7 +319,7 @@ hyperparameters = {
         },
         "rebrac": {
             "alpha_actor": 0.01,
-            "alpha_critic": 0.1
+            "alpha_critic": 0.1,
         },
         "alpha": 0.01,
         "drebrac": {
