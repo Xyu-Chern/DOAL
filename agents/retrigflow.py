@@ -15,56 +15,48 @@ from functools import partial
 import math
 
 
-class TrigFQLAgent(flax.struct.PyTreeNode):
+class ReTrigFQLAgent(flax.struct.PyTreeNode):
     """Flow Q-learning (FQL) agent."""
 
     rng: Any
     network: Any
     config: Any = nonpytree_field()
-    @staticmethod
-    def expectile_loss(adv, diff, expectile):
-        """Compute the expectile loss."""
-        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
-        return weight * (diff**2)
-
-    def value_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL value loss."""
-        q1, q2 = self.network.select("target_critic")(
-            batch["observations"], actions=batch["actions"]
-        )
-        q = jnp.minimum(q1, q2)
-        v = self.network.select("value")(batch["observations"], params=grad_params)        
-        lam = 1 / jax.lax.stop_gradient(jnp.abs(v).mean())
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() 
-
-        if self.config['normalize_q_loss']:
-            value_loss = lam * value_loss
 
 
-        aux.update({"v": v,"q": q,"lam": lam })
-        return value_loss, {
-            "value_loss": value_loss,
-            "v_mean": v.mean(),
-            "v_max": v.max(),
-            "v_min": v.min(),
-        }, aux
+    def critic_loss(self, batch, grad_params, rng):
+        """Compute the ReBRAC critic loss."""
+        batch_size, action_dim = batch['actions'].shape
+        rng, sample_rng,t_rng = jax.random.split(rng,3)
 
-    def critic_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL critic loss."""
-        next_v = self.network.select("value")(batch["next_observations"])
-        q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
+        z = jax.random.normal(sample_rng, (batch_size, action_dim))
+        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 4
+        next_actions = jnp.cos(t)* batch['next_actions'] + jnp.sin(t) * z
 
-        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
+        F_theta = self.network.select('actor_bc_flow')(batch['next_observations'], next_actions, t)
+        next_actions = next_actions * jnp.cos(t) - F_theta * jnp.sin(t) 
 
+        next_qs = self.network.select('target_critic')(batch['next_observations'], actions=next_actions)
+        next_q = next_qs.min(axis=0)
+
+        mse = jnp.square(next_actions - batch['next_actions']).sum(axis=-1)
+        next_q = next_q - self.config['alpha_critic'] * mse
+
+        target_q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_q
+
+        q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
+        lam = 1 / jax.lax.stop_gradient(jnp.abs(q).mean())
+        critic_loss = jnp.square(q - target_q).mean() 
+ 
+        aux = {"lam":lam}
         if self.config['normalize_q_loss']:
             critic_loss = aux["lam"] * critic_loss
+        
         return critic_loss, {
-            "critic_loss": critic_loss,
-            "q_mean": q.mean(),
-            "q_max": q.max(),
-            "q_min": q.min(),
-        }, aux
+            'critic_loss': critic_loss,
+            'q_mean': q.mean(),
+            'q_max': q.max(),
+            'q_min': q.min(),
+        },aux
 
         
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
@@ -81,7 +73,6 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
-        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
 
       #  v = jax.lax.stop_gradient(aux["v"])
@@ -98,10 +89,9 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         else:
             weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
-        if self.config["distill_from_target"]:
-            qs = self.network.select('target_critic')(batch['observations'], actions=pred_actions)
-        else:
-            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
+
+        qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
         if self.config['q_agg'] == 'min':
             q = jnp.min(qs, axis=0)
         else:
@@ -139,11 +129,8 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         info = {}
         rng = rng if rng is not None else self.rng
 
-        value_loss, value_info, aux = self.value_loss(batch, grad_params)
-        for k, v in value_info.items():
-            info[f"value/{k}"] = v
 
-        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params, aux)
+        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params)
         for k, v in critic_info.items():
             info[f"critic/{k}"] = v
 
@@ -152,7 +139,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         for k, v in actor_info.items():
             info[f"actor/{k}"] = v
 
-        loss = value_loss + critic_loss + actor_loss
+        loss =  critic_loss + actor_loss
         return loss, info
 
     def target_update(self, network, module_name):
@@ -302,7 +289,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 def get_config():
     config = ml_collections.ConfigDict(
         dict(
-            agent_name='trigflow',  # Agent name.
+            agent_name='retrigflow',  # Agent name.
             ob_dims=ml_collections.config_dict.placeholder(list),  # Observation dimensions (will be set automatically).
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
