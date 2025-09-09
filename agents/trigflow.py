@@ -121,10 +121,10 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
             total_loss = total_loss + self.config['vel_actor'] * bc_flow_loss
             out["bc_flow_loss"]  = raw_bc_flow_loss
-        if self.config["alpha_factor"] > 0:
+        if self.config["alpha_actor"] > 0:
             raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
             zero_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
-            total_loss = total_loss  +  self.config["alpha_factor"]  *    zero_shot_loss 
+            total_loss = total_loss  +  self.config["alpha_actor"]  *    zero_shot_loss 
             out["zero_shot_loss"]  = zero_shot_loss
         
         out['total_loss'] = total_loss
@@ -321,7 +321,7 @@ def get_config():
             q_steps=10,
             return_next_actions=True,
             decode_type="ddim",
-            alpha_factor=10.0,  # BC coefficient (need to be tuned for each environment).
+            alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
             time_weight=False,
             expectile=0.9,  # IQL expectile.
