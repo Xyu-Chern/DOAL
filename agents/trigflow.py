@@ -85,7 +85,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
       #  q = jax.lax.stop_gradient(aux["q"])
       #  adv = q - v
 
-     #   exp_a = jnp.exp(adv * self.config['alpha_actor'])
+     #   exp_a = jnp.exp(adv * self.config['vel_actor'])
       #  exp_a = jnp.minimum(exp_a, 100.0)
 
         if self.config["time_weight"]:
@@ -115,16 +115,16 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
                 "weight":weight.mean(),
                 'actor_loss': actor_loss,
             }
-        if self.config["alpha_actor"] > 0:
+        if self.config["vel_actor"] > 0:
 
             raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean() #/ jnp.sin(t).clip(min=0.1)
             bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
-            total_loss = total_loss + self.config['alpha_actor'] * bc_flow_loss
+            total_loss = total_loss + self.config['vel_actor'] * bc_flow_loss
             out["bc_flow_loss"]  = raw_bc_flow_loss
-        if self.config["distill_factor"] > 0:
+        if self.config["alpha_factor"] > 0:
             raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
             zero_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
-            total_loss = total_loss  +  self.config["distill_factor"]  *    zero_shot_loss 
+            total_loss = total_loss  +  self.config["alpha_factor"]  *    zero_shot_loss 
             out["zero_shot_loss"]  = zero_shot_loss
         
         out['total_loss'] = total_loss
@@ -321,12 +321,12 @@ def get_config():
             q_steps=10,
             return_next_actions=True,
             decode_type="ddim",
-            distill_factor=0.0,  # BC coefficient (need to be tuned for each environment).
+            alpha_factor=10.0,  # BC coefficient (need to be tuned for each environment).
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
             time_weight=False,
             expectile=0.9,  # IQL expectile.
             gn=100.0,
-            alpha_actor = 100.0,
+            vel_actor = 100.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
