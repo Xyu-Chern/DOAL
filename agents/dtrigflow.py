@@ -29,6 +29,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         alpha = self.config["alpha"] 
         adjusted_actions , adjustment,hd, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
+
         # BC flow loss.
         z = jax.random.normal(x_rng, (batch_size, action_dim))
         t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
@@ -36,41 +37,54 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
 
         vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
 
-        time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
-
-        weight = jnp.exp(time_weight_logits) / action_dim
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
-        raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean()  #/ jnp.sin(t).clip(min=0.1)
-        bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
 
+      #  v = jax.lax.stop_gradient(aux["v"])
+      #  q = jax.lax.stop_gradient(aux["q"])
+      #  adv = q - v
 
-        # Total loss.
+     #   exp_a = jnp.exp(adv * self.config['vel_actor'])
+      #  exp_a = jnp.minimum(exp_a, 100.0)
 
-        total_loss = self.config['alpha_actor'] * bc_flow_loss 
-        if self.config["distill_factor"] > 0:
-            zero_shot_loss = ( ( pred_actions- adjusted_actions ) ** 2).mean()   
-            total_loss = total_loss  + self.config['alpha_actor'] *  self.config["distill_factor"]  *    zero_shot_loss 
-            
-            return total_loss, {
-                'total_loss': total_loss,
-                "bc_flow_loss":raw_bc_flow_loss,
-                "zero_shot_loss":zero_shot_loss,
-                'q': q.mean(),
-                "weight":weight.mean(),
-                "hess_diag":hd,
-            }
+        if self.config["time_weight"]:
+            time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
+            weight = jnp.exp(time_weight_logits) / action_dim
+            time_weight_logits = time_weight_logits - jax.lax.stop_gradient(time_weight_logits)
         else:
-            return total_loss, {
-                'total_loss': total_loss,
-                "bc_flow_loss":raw_bc_flow_loss,
+            weight = jnp.ones_like(t) 
+            time_weight_logits = jnp.zeros_like(t) 
+
+
+        actor_loss = -q.mean()
+        # Total loss.
+        total_loss = actor_loss
+
+        out = {
                 'q': q.mean(),
                 "weight":weight.mean(),
-                "hess_diag":hd,
+                'actor_loss': actor_loss,
+                'adj': jnp.mean(jnp.abs(adjustment)),
+            "hd": jnp.mean(hd),
+            "hd_max": jnp.max(hd),
+            "hd_min": jnp.min(hd),
             }
+        if self.config["vel_actor"] > 0:
 
+            raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean() #/ jnp.sin(t).clip(min=0.1)
+            bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
+            total_loss = total_loss + self.config['vel_actor'] * bc_flow_loss
+            out["bc_flow_loss"]  = raw_bc_flow_loss
+        if self.config["alpha_actor"] > 0:
+            raw_zero_shot_loss = ( ( pred_actions-adjusted_actions] ) ** 2).mean()   
+            zero_shot_loss = ( weight*  ( pred_actions-adjusted_actions ) ** 2 -time_weight_logits).mean()   
+            total_loss = total_loss  +  self.config["alpha_actor"]  *    zero_shot_loss 
+            out["zero_shot_loss"]  = raw_zero_shot_loss
+        
+        out['total_loss'] = total_loss
+        return total_loss, out 
 
 
 def get_config():
@@ -94,6 +108,7 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             gn=100.0,
             return_next_actions=True,
+            time_weight=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             delta=0.2,
