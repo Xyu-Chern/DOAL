@@ -6,7 +6,7 @@
 
 # Check for the correct number of arguments
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
-    echo "Usage: $0 <agent_name> <env_name> [solver]"
+    echo "Usage: $0 <agent_name> <env_name> [exp_name]"
     echo "Example: $0 my_new_agent my_new_environment-v1 my_experiment"
     exit 1
 fi
@@ -16,20 +16,23 @@ AGENT_NAME=$1
 ENV_NAME=$2
 
 # Check if the third argument exists and assign it
-SOLVER="diag_hess"
+Alpha=-1
 if [ "$#" -eq 3 ]; then
-    SOLVER=$3
+    Alpha=$3
 fi
 
+
 # Define the list of alpha parameters
-alphas=(  3 30 300 )
+
+env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-task4-v0" "cube-single-play-singletask-task2-v0"   "scene-play-singletask-task2-v0" )
 
 # Loop through all alpha values
-for alpha in "${alphas[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, SOLVER: $SOLVER"
+for env_name in "${env_names[@]}"; do
+    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Alpha: $Alpha, ExpName: $EXP_NAME"
     python main.py \
         --agent_name "$AGENT_NAME" \
-        --env_name "$ENV_NAME" \
-        --alpha "$alpha" \
-        --solver "$SOLVER"
+        --env_name "$env_name" \
+        --alpha "$Alpha" \
+        --exp_name "$EXP_NAME" \
+        --seed "$RANDOM"
 done

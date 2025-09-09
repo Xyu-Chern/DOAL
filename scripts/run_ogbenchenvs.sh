@@ -30,5 +30,6 @@ for env_name in "${env_names[@]}"; do
         --agent_name "$AGENT_NAME" \
         --env_name "$env_name" \
         --exp_name "$EXP_NAME" \
+        --alpha 300 \
         --seed "$RANDOM"
 done

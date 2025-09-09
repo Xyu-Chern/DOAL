@@ -13,11 +13,12 @@ fi
 
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
-SOLVER=$2
+ENV_NAME=$2
 
-EXP_NAME=""
+# Check if the third argument exists and assign it
+Alpha="diag_hess"
 if [ "$#" -eq 3 ]; then
-    EXP_NAME=$3
+    Alpha=$3
 fi
 
 
@@ -27,11 +28,11 @@ env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigat
 
 # Loop through all alpha values
 for env_name in "${env_names[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Solver: $Solvers, ExpName: $EXP_NAME"
+    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Alpha: $Solvers, ExpName: $EXP_NAME"
     python main.py \
         --agent_name "$AGENT_NAME" \
         --env_name "$env_name" \
-        --solver "$SOLVER" \
+        --alpha "$Alpha" \
         --exp_name "$EXP_NAME" \
         --seed "$RANDOM"
 done
