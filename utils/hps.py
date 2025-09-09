@@ -1,4 +1,4 @@
-{
+hyperparameters ={
     "antmaze-large-navigate-singletask-v0": {
         "alpha_actor": 10.0,
         "iql": {
