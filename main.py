@@ -94,9 +94,9 @@ def main(_):
     if FLAGS.distill_factor != -1:
         config["distill_factor"] = FLAGS.distill_factor
         exp_name +=  "_distill_factor_" + str(config["distill_factor"])
-    if FLAGS.decode_type:
-        config['decode_type'] = FLAGS.decode_type
-        exp_name +=  FLAGS.decode_type
+    if FLAGS.normalize_q_loss:
+        config['normalize_q_loss'] = FLAGS.normalize_q_loss
+        exp_name +=  FLAGS.normalize_q_loss
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
 
     os.makedirs(FLAGS.save_dir, exist_ok=True)
