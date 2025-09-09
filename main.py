@@ -48,7 +48,7 @@ flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative')
 flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative') 
 flags.DEFINE_string('solver',None, 'coffeient for conservative') 
 flags.DEFINE_boolean('normalize_q_loss', False, 'coffeient for conservative')
-flags.DEFINE_boolean('distill_from_target', False, 'coffeient for conservative')
+flags.DEFINE_string('decode_type', None, 'coffeient for conservative')
 
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
@@ -94,12 +94,9 @@ def main(_):
     if FLAGS.distill_factor != -1:
         config["distill_factor"] = FLAGS.distill_factor
         exp_name +=  "_distill_factor_" + str(config["distill_factor"])
-    if FLAGS.normalize_q_loss:
-        config['normalize_q_loss'] = True
-        exp_name +=  "_nq" 
-    if FLAGS.distill_from_target:
-        config['distill_from_target'] = True
-        exp_name +=  "_dt" 
+    if FLAGS.decode_type:
+        config['decode_type'] = FLAGS.decode_type
+        exp_name +=  FLAGS.decode_type
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
 
     os.makedirs(FLAGS.save_dir, exist_ok=True)

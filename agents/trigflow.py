@@ -202,9 +202,13 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         # Euler method.
         for i in range(self.config['flow_steps']):
             t = jnp.full((*observations.shape[:-1],self.config['num_samples'], 1), (1.0 - i / self.config['flow_steps']) *math.pi / 2)
-            s = jnp.full((*observations.shape[:-1], self.config['num_samples'],1), (1.0 - (i+1) / self.config['flow_steps']) *math.pi / 2)
             vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
-            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) #* self.config["sigma"]
+            if self.config["decode_type"] == "ddim":
+                s = jnp.full((*observations.shape[:-1], self.config['num_samples'],1), (1.0 - (i+1) / self.config['flow_steps']) *math.pi / 2)
+                actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) #* self.config["sigma"]
+            elif self.config["decode_type"] == "tw":
+                actions = actions * jnp.cos(t) - vels * jnp.sin(t) #* self.config["sigma"]
+                actions = jnp.clip(actions, -1, 1)
         actions = jnp.clip(actions, -1, 1)
         # Pick the action with the highest Q-value.
         q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
@@ -316,6 +320,7 @@ def get_config():
             q_agg='min',  # Aggregation method for target Q values.
             q_steps=10,
             return_next_actions=True,
+            decode_type="ddim",
             distill_factor=0.0,  # BC coefficient (need to be tuned for each environment).
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
             expectile=0.9,  # IQL expectile.
