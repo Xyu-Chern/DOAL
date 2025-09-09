@@ -111,6 +111,7 @@ def get_config():
             time_weight=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
+            vel_actor=0.0,  # BC coefficient (need to be tuned for each environment).
             delta=0.2,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
