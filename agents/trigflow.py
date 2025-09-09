@@ -88,13 +88,14 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
      #   exp_a = jnp.exp(adv * self.config['alpha_actor'])
       #  exp_a = jnp.minimum(exp_a, 100.0)
 
-        time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
+        if self.config["time_weight"]:
+            time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
-        weight = jnp.exp(time_weight_logits) / action_dim
+            weight = jnp.exp(time_weight_logits) / action_dim
+        else:
+            weight = jnp.ones_like(t) 
+            time_weight_logits = jnp.zeros_like(t) 
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
-
-        raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean() #/ jnp.sin(t).clip(min=0.1)
-        bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
         if self.config["distill_from_target"]:
             qs = self.network.select('target_critic')(batch['observations'], actions=pred_actions)
         else:
@@ -107,29 +108,28 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         actor_loss = -q.mean()
         # Total loss.
+        total_loss = actor_loss
 
-        total_loss = self.config['alpha_actor'] * bc_flow_loss +  actor_loss
+        out = {
+                'q': q.mean(),
+                "weight":weight.mean(),
+                'actor_loss': actor_loss,
+            }
+        if self.config["alpha_actor"] > 0:
+
+            raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean() #/ jnp.sin(t).clip(min=0.1)
+            bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
+            total_loss = total_loss + self.config['alpha_actor'] * bc_flow_loss
+            out["bc_flow_loss"]  = raw_bc_flow_loss
         if self.config["distill_factor"] > 0:
             raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
             zero_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
             total_loss = total_loss  +  self.config["distill_factor"]  *    zero_shot_loss 
-            
-            return total_loss, {
-                'actor_loss': actor_loss,
-                'total_loss': total_loss,
-                "bc_flow_loss":raw_bc_flow_loss,
-                "zero_shot_loss":raw_zero_shot_loss,
-                'q': q.mean(),
-                "weight":weight.mean(),
-            }
-        else:
-            return total_loss, {
-                'actor_loss': actor_loss,
-                'total_loss': total_loss,
-                "bc_flow_loss":raw_bc_flow_loss,
-                'q': q.mean(),
-                "weight":weight.mean(),
-            }
+            out["zero_shot_loss"]  = zero_shot_loss
+        
+        out['total_loss'] = total_loss
+        return total_loss, out 
+
 
     @jax.jit
     def total_loss(self, batch, grad_params, rng=None):
@@ -323,6 +323,7 @@ def get_config():
             decode_type="ddim",
             distill_factor=0.0,  # BC coefficient (need to be tuned for each environment).
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
+            time_weight=False,
             expectile=0.9,  # IQL expectile.
             gn=100.0,
             alpha_actor = 100.0,
