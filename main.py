@@ -77,7 +77,7 @@ def main(_):
         print ("update",hyperparameters[env_class][config['agent_name']])
 
         
-    exp_name = FLAGS.exp_name + "_seed_" + str(FLAGS.seed) 
+    exp_name = FLAGS.exp_name 
     if FLAGS.alpha != -1:
         config["alpha"] = FLAGS.alpha
         exp_name +=  "_alpha _" + str(config["alpha"])
