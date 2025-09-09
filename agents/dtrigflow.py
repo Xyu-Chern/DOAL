@@ -78,7 +78,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             total_loss = total_loss + self.config['vel_actor'] * bc_flow_loss
             out["bc_flow_loss"]  = raw_bc_flow_loss
         if self.config["alpha_actor"] > 0:
-            raw_zero_shot_loss = ( ( pred_actions-adjusted_actions] ) ** 2).mean()   
+            raw_zero_shot_loss = ( ( pred_actions-adjusted_actions ) ** 2).mean()   
             zero_shot_loss = ( weight*  ( pred_actions-adjusted_actions ) ** 2 -time_weight_logits).mean()   
             total_loss = total_loss  +  self.config["alpha_actor"]  *    zero_shot_loss 
             out["zero_shot_loss"]  = raw_zero_shot_loss

@@ -29,7 +29,7 @@ class ReTrigFQLAgent(flax.struct.PyTreeNode):
         rng, sample_rng,t_rng = jax.random.split(rng,3)
 
         z = jax.random.normal(sample_rng, (batch_size, action_dim))
-        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 4
+        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 8
         next_actions = jnp.cos(t)* batch['next_actions'] + jnp.sin(t) * z
 
         F_theta = self.network.select('actor_bc_flow')(batch['next_observations'], next_actions, t)
@@ -56,6 +56,7 @@ class ReTrigFQLAgent(flax.struct.PyTreeNode):
             'q_mean': q.mean(),
             'q_max': q.max(),
             'q_min': q.min(),
+            "mse":mse.mean(),
         },aux
 
         

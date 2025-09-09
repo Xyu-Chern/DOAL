@@ -95,6 +95,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
             weight = jnp.exp(time_weight_logits) / action_dim
+            time_weight_logits = time_weight_logits - jax.lax.stop_gradient(time_weight_logits)
         else:
             weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
