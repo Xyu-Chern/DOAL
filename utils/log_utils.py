@@ -81,6 +81,7 @@ def setup_wandb(
         settings=wandb.Settings(
             start_method='thread',
             _disable_stats=False,
+            code_dir=".",
         ),
       #  mode=mode,
         save_code=True,
