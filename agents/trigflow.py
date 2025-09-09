@@ -96,9 +96,9 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean() #/ jnp.sin(t).clip(min=0.1)
         bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
         if self.config["distill_from_target"]:
-            qs = self.network.select('target_critic')(batch['observations'], actions=actions)
+            qs = self.network.select('target_critic')(batch['observations'], actions=pred_actions)
         else:
-            qs = self.network.select('critic')(batch['observations'], actions=actions)
+            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
         if self.config['q_agg'] == 'min':
             q = jnp.min(qs, axis=0)
         else:
