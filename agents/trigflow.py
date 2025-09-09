@@ -125,7 +125,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
             zero_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
             total_loss = total_loss  +  self.config["alpha_actor"]  *    zero_shot_loss 
-            out["zero_shot_loss"]  = zero_shot_loss
+            out["zero_shot_loss"]  = raw_zero_shot_loss
         
         out['total_loss'] = total_loss
         return total_loss, out 
@@ -326,7 +326,7 @@ def get_config():
             time_weight=False,
             expectile=0.9,  # IQL expectile.
             gn=100.0,
-            vel_actor = 100.0,
+            vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
