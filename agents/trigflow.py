@@ -282,7 +282,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-             optax.clip_by_global_norm(max_norm=config["gn"]),
+         #    optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']
@@ -324,7 +324,7 @@ def get_config():
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
-            normalize_q_loss=True,  # Whether to normalize the Q loss.
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )

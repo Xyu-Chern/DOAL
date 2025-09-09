@@ -60,7 +60,7 @@ def get_config():
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
-            normalize_q_loss=True,  # Whether to normalize the Q loss.
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.

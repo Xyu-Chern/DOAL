@@ -226,7 +226,7 @@ class IFQLAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-            optax.clip_by_global_norm(max_norm=config["gn"]),
+      #      optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']
@@ -250,7 +250,7 @@ def get_config():
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
-            normalize_q_loss=True,  # Whether to normalize the Q loss.
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
             discount=0.99,  # Discount factor.
             alpha_actor=10,
             tau=0.005,  # Target network update rate.

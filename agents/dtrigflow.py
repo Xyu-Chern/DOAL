@@ -99,7 +99,7 @@ def get_config():
             delta=0.2,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
-            normalize_q_loss=True,  # Whether to normalize the Q loss.
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )
