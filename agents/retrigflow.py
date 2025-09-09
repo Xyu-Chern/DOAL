@@ -130,7 +130,7 @@ class ReTrigFQLAgent(flax.struct.PyTreeNode):
         rng = rng if rng is not None else self.rng
 
 
-        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params)
+        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params,rng)
         for k, v in critic_info.items():
             info[f"critic/{k}"] = v
 

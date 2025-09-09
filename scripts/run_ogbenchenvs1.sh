@@ -21,7 +21,7 @@ if [ "$#" -eq 2 ]; then
 fi
 
 # Define the list of alpha parameters
-env_names=('antmaze-giant-navigate-singletask-v0' 'humanoidmaze-large-navigate-singletask-v0'  "cube-double-play-singletask-v0"  "puzzle-3x3-play-singletask-v0" "puzzle-4x4-play-singletask-v0")
+env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0"   "scene-play-singletask-v0" 'antmaze-giant-navigate-singletask-v0' 'humanoidmaze-large-navigate-singletask-v0'  "cube-double-play-singletask-v0"  "puzzle-3x3-play-singletask-v0" "puzzle-4x4-play-singletask-v0")
 
 # Loop through all alpha values
 for env_name in "${env_names[@]}"; do
@@ -30,5 +30,6 @@ for env_name in "${env_names[@]}"; do
         --agent_name "$AGENT_NAME" \
         --env_name "$env_name" \
         --exp_name "$EXP_NAME" \
+        --alpha 300 \
         --seed "$RANDOM"
 done

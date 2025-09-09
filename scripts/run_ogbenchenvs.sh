@@ -21,7 +21,7 @@ if [ "$#" -eq 2 ]; then
 fi
 
 # Define the list of alpha parameters
-env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-task4-v0" "cube-single-play-singletask-task2-v0"   "scene-play-singletask-task2-v0" )
+env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0"   "scene-play-singletask-v0" )
 
 # Loop through all alpha values
 for env_name in "${env_names[@]}"; do
