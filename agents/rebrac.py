@@ -66,7 +66,10 @@ class ReBRACAgent(flax.struct.PyTreeNode):
         actions = dist.mode()
 
         # Q loss.
-        qs = self.network.select('critic')(batch['observations'], actions=actions)
+        if self.config["distill_from_target"]:
+            qs = self.network.select('target_critic')(batch['observations'], actions=actions)
+        else:
+            qs = self.network.select('critic')(batch['observations'], actions=actions)
         q = jnp.min(qs, axis=0)
 
         # BC loss.
@@ -239,6 +242,7 @@ def get_config():
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
+            distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             tanh_squash=True,  # Whether to squash actions with tanh.
