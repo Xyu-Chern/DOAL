@@ -22,15 +22,15 @@ fi
 
 
 # Define the list of alpha parameters
-alphas=(3    )
+gns=( 3  )
 
 # Loop through all alpha values
-for alpha in "${alphas[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: $EXP_NAME"
+for gn in "${gns[@]}"; do
+    echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, gn: $gn, ExpName: $EXP_NAME"
     python main.py \
         --agent_name "$AGENT_NAME" \
         --env_name "$ENV_NAME" \
-        --alpha_actor "$alpha" \
+        --gn "$gn" \
         --exp_name "$EXP_NAME" \
         --seed "$RANDOM" 
 done
