@@ -14,7 +14,7 @@ fi
 
 
 # Assign command-line arguments to variables for clarity
-AGENT_NAME=$1
+ENV_NAME=$1
 Alpha=$2
 
 # Check if the third argument exists and assign it
@@ -24,16 +24,14 @@ if [ "$#" -eq 3 ]; then
 fi
 
 # Define the list of alpha parameters
-
-env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-task4-v0" "cube-single-play-singletask-task2-v0"   "scene-play-singletask-task2-v0" )
-
+)
+agent_names = ( "dtrigflow" "diql" "difql")
 # Loop through all alpha values
-for env_name in "${env_names[@]}"; do
-    for env_name in "${env_names[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Alpha: $Alpha, ExpName: $EXP_NAME"
+for AGENT_NAME in "${agent_names[@]}"; do
+    echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $Alpha, ExpName: $EXP_NAME"
     python main.py \
         --agent_name "$AGENT_NAME" \
-        --env_name "$env_name" \
+        --env_name "$ENV_NAME" \
         --alpha "$Alpha" \
         --exp_name "$EXP_NAME" \
         --seed "$RANDOM"
