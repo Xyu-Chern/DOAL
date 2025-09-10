@@ -283,11 +283,11 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             network_info['actor_bc_flow_encoder'] = (encoders.get('actor_bc_flow'), (ex_observations,))
         networks = {k: v[0] for k, v in network_info.items()}
         network_args = {k: v[1] for k, v in network_info.items()}
-
+        
         network_def = ModuleDict(networks)
         if config["gn"] > 0:
             network_tx = optax.chain(
-                optax.clip_by_block_rms (max_norm=config["gn"]),
+                optax.clip_by_block_rms(config["gn"]),
                 optax.adam(learning_rate=config['lr'])
             )
         else:
