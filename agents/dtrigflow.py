@@ -73,7 +73,6 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
             "g": jnp.mean(g),
-            "g_std": jnp.std(g),
             "g_abs": jnp.mean(jnp.abs(g)),
             "g_std": jnp.std(g),
             "g_max": jnp.max(g),
@@ -120,7 +119,7 @@ def get_config():
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             vel_actor=0.0,  # BC coefficient (need to be tuned for each environment).
-            delta=0.2,
+            delta=1.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
