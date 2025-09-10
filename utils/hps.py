@@ -86,7 +86,10 @@ hyperparameters ={
         "alpha": 30.0,
         "trigflow": {
             "alpha_actor": 30,
-        }
+        },
+        "dtrigflow": {
+            "alpha_actor": 30,
+        },
     },
     "cube-single-play-singletask-v0": {
         "alpha_actor": 300.0,
@@ -137,7 +140,10 @@ hyperparameters ={
         },
         "trigflow": {
             "alpha_actor": 1000,
-        }
+        },
+        "dtrigflow": {
+            "alpha_actor": 1000,
+        },
         "alpha_critic": 0.01,
         "alpha": 300.0,
         "drebrac": {
