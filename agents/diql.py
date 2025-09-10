@@ -24,7 +24,7 @@ class DIQLAgent(DOALAgent,IQLAgent):
         if self.config['actor_loss'] == 'awr':
 
             alpha = self.config["alpha"] 
-            adjusted_actions , adjustment,hd, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
+            adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
             # AWR loss.
             v = jax.lax.stop_gradient(aux["v"])
             q1, q2 = self.network.select('critic')(batch['observations'], actions=adjusted_actions)
@@ -52,11 +52,14 @@ class DIQLAgent(DOALAgent,IQLAgent):
             "hd": jnp.mean(hd),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
+            "g": jnp.mean(g),
+            "g_max": jnp.max(g),
+            "g_min": jnp.min(g),
             }
 
             return actor_loss, actor_info
         elif self.config['actor_loss'] == 'ddpgbc':
-            adjusted_actions , adjustment,hd, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=self.config["alpha"],delta=self.config["delta"],params=self.network.params)
+            adjusted_actions , adjustment,hd, g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=self.config["alpha"],delta=self.config["delta"],params=self.network.params)
             # DDPG+BC loss.
             dist = self.network.select('actor')(batch['observations'], params=grad_params)
 
@@ -76,6 +79,9 @@ class DIQLAgent(DOALAgent,IQLAgent):
             "hd": jnp.mean(hd),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
+            "g": jnp.mean(g),
+            "g_max": jnp.max(g),
+            "g_min": jnp.min(g),
             }
         else:
             raise ValueError(f'Unsupported actor loss: {self.config["actor_loss"]}')

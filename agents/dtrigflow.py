@@ -27,7 +27,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
         alpha = self.config["alpha"] 
-        adjusted_actions , adjustment,hd, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
+        adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
 
         # BC flow loss.
@@ -70,6 +70,9 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             "hd": jnp.mean(hd),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
+            "g": jnp.mean(g),
+            "g_max": jnp.max(g),
+            "g_min": jnp.min(g),
             }
         if self.config["vel_actor"] > 0:
 

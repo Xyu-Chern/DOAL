@@ -30,7 +30,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         x_1 = batch['actions']
         
         alpha = self.config['alpha'] 
-        adjusted_actions , adjustment,hd, q = self.get_guided_action(  x_1, x_1,batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
+        adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  x_1, x_1,batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
         q1, q2 = self.network.select('critic')(batch['observations'], actions=adjusted_actions)
         aq = jnp.minimum(q1, q2)
         t = jax.random.uniform(t_rng, (batch_size, 1))
@@ -47,6 +47,9 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
             "hd": jnp.mean(hd),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
+            "g": jnp.mean(g),
+            "g_max": jnp.max(g),
+            "g_min": jnp.min(g),
         }
 
 

@@ -62,8 +62,8 @@ class DOALAgent(flax.struct.PyTreeNode):
             h_diagonal = jax.vmap(hvp_dot_basis_vector)(basis)
             q, g = v_grad_q(q_action)
 
-            #gap = jnp.clip( 1  / (2 * alpha - h_diagonal ), min= 0)
-            b =  g / (2 * alpha - h_diagonal )
+            gap = jnp.clip( 1  / (2 * alpha - h_diagonal ), min= 0)
+            b =  g * gap
             normb = jnp.linalg.norm(b)
             dx = jnp.where(normb > delta,  b / normb,   b)
          #   dx = linear_solve.solve_normal_cg(A,b)
@@ -71,7 +71,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
-            return  adjusted_actions, dx, h_diagonal, q
+            return  adjusted_actions, dx, h_diagonal, jnp.abs(g), q
 
         return _get_guided_action(q_action, action,observation,alpha,params)
     @jax.jit
@@ -98,7 +98,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
-            return  adjusted_actions, dx, 0*q, q
+            return  adjusted_actions, dx, 0*q, jnp.abs(g), q
         return _get_guided_action(q_action, action,observation,alpha,params)
     @jax.jit
     def get_full_hess_action(self,q_action, action,observation,alpha,delta,params):
@@ -139,7 +139,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
-            return  adjusted_actions, dx, 0*q, q
+            return  adjusted_actions, dx, 0*q, jnp.abs(g),q
 
         return _get_guided_action(q_action, action,observation,alpha,params)
 class ModuleDict(nn.Module):
