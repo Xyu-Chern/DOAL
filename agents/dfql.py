@@ -81,7 +81,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             adjusted_target=True,
-            gn=100.0,
+            gn=00.0,
             q_agg='min',  # Aggregation method for target Q values.
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # this is the alpha in fql, we need to use hps to configure

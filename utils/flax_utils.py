@@ -19,7 +19,7 @@ def hvp(grad_f, primals, tangents):
     return jvp(grad_f, primals, tangents)[1]
 
 def clip(x):
-    return x.clip(-1+1e-5,1.0-1e-5)
+    return x
 class DOALAgent(flax.struct.PyTreeNode):
     """Implicit Q-learning (IQL) agent."""
 

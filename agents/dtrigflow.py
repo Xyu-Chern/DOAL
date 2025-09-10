@@ -95,7 +95,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='dtrigflow',  # Agent name.
-            solver="diag_hess",
+            solver="linear",
             ob_dims=ml_collections.config_dict.placeholder(list),  # Observation dimensions (will be set automatically).
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
@@ -110,7 +110,7 @@ def get_config():
             distill_factor=0,
             q_agg='min',  # Aggregation method for target Q values.
             expectile=0.9,  # IQL expectile.
-            gn=100.0,
+            gn=0.0,
             return_next_actions=True,
             time_weight=True,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).

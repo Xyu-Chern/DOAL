@@ -155,9 +155,9 @@ def main(_):
 
     setup_wandb(project='doal', group=FLAGS.env_name, name=exp_name,config=flag_dict)
 
-    artifact = wandb.Artifact(name="agent", type="code")
-    artifact.add_file(f'agents/{FLAGS.agent_name}.py')
-    wandb.log_artifact(artifact)
+   # artifact = wandb.Artifact(name="agent", type="code")
+   # artifact.add_file(f'agents/{FLAGS.agent_name}.py')
+   # wandb.log_artifact(artifact)
     agent = agent_class.create(
         FLAGS.seed,
         example_batch['observations'],
