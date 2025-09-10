@@ -20,7 +20,7 @@ EXP_NAME=$3
 
 # Define the list of agent names to loop through
 # Corrected array declaration: no spaces around the '=' sign
-agent_names=("dtrigflow" "diql")
+agent_names=("dtrigflow" "diql" "difql")
 
 # Loop through all agent names
 for AGENT_NAME in "${agent_names[@]}"; do
