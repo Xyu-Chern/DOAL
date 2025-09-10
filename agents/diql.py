@@ -77,6 +77,7 @@ class DIQLAgent(DOALAgent,IQLAgent):
                 'mse': jnp.mean((dist.mode() - batch['actions']) ** 2),
                 'std': jnp.mean(dist.scale_diag),
             "hd": jnp.mean(hd),
+            "hd_abs": jnp.mean(jnp.abs(hd)),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
             "g": jnp.mean(g),

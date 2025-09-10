@@ -20,7 +20,6 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
     IFQL is the flow variant of implicit diffusion Q-learning (IDQL).
     """
 
-
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the behavioral flow-matching actor loss."""
         batch_size, action_dim = batch['actions'].shape
@@ -45,6 +44,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
             'adj': jnp.mean(jnp.abs(adjustment)),
             'aq': jnp.mean(aq),
             "hd": jnp.mean(hd),
+            "hd_abs": jnp.mean(jnp.abs(hd)),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
             "g": jnp.mean(g),

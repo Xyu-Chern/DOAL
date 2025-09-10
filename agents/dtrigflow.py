@@ -68,6 +68,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
                 'actor_loss': actor_loss,
                 'adj': jnp.mean(jnp.abs(adjustment)),
             "hd": jnp.mean(hd),
+            "hd_abs": jnp.mean(jnp.abs(hd)),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
             "g": jnp.mean(g),
