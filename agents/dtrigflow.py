@@ -116,7 +116,7 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             gn=0.0,
             return_next_actions=True,
-            time_weight=True,
+            time_weight=False,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             vel_actor=0.0,  # BC coefficient (need to be tuned for each environment).
