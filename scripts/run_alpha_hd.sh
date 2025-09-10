@@ -3,7 +3,7 @@
 # This script runs a Python script with different 'alpha' values
 # while allowing the environment, a specific alpha value, and an optional experiment name
 # to be passed as arguments.
-# ./run_alpha.sh antmaze-large-navigate-singletask-v0      
+# ./run_alpha_hd.sh antmaze-large-navigate-singletask-v0 100     
 # Check for the correct number of arguments
 if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
     echo "Usage: $0 <env_name> <alpha_value> [exp_name]"
@@ -30,5 +30,6 @@ for AGENT_NAME in "${agent_names[@]}"; do
         --env_name "$ENV_NAME" \
         --alpha "$Alpha" \
         --exp_name "$EXP_NAME" \
-        --seed "$RANDOM"
+        --seed "$RANDOM" \
+        --solver diag_hess
 done
