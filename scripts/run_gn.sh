@@ -22,7 +22,7 @@ fi
 
 
 # Define the list of alpha parameters
-gns=( 3  )
+gns=( 0.1 1.0 10.0  )
 
 # Loop through all alpha values
 for gn in "${gns[@]}"; do
