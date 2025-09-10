@@ -41,6 +41,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
 
         return actor_loss, {
             'actor_loss': actor_loss,
+            'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
             'adj': jnp.mean(jnp.abs(adjustment)),
             'aq': jnp.mean(aq),
             "hd": jnp.mean(hd),
