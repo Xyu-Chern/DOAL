@@ -29,6 +29,7 @@ env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigat
 
 # Loop through all alpha values
 for env_name in "${env_names[@]}"; do
+    for env_name in "${env_names[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $env_name, Alpha: $Alpha, ExpName: $EXP_NAME"
     python main.py \
         --agent_name "$AGENT_NAME" \
