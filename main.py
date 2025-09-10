@@ -45,6 +45,7 @@ flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_float('alpha',-1, 'coffeient for conservative')
 flags.DEFINE_float('gn',-1, 'coffeient for conservative')
+flags.DEFINE_float('expectile',-1, 'coffeient for conservative')
 flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative') 
 flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative') 
 flags.DEFINE_string('solver',None, 'coffeient for conservative') 
@@ -83,6 +84,9 @@ def main(_):
     if FLAGS.alpha != -1:
         config["alpha"] = FLAGS.alpha
         exp_name +=  "_alpha _" + str(config["alpha"])
+    if FLAGS.expectile != -1:
+        config["expectile"] = FLAGS.expectile
+        exp_name +=  "_expectile _" + str(config["expectile"])
     if FLAGS.gn != -1:
         config["gn"] = FLAGS.gn
         exp_name +=  "_gn _" + str(config["gn"])
