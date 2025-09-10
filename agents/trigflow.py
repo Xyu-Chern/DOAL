@@ -328,7 +328,7 @@ def get_config():
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
             time_weight=False,
             expectile=0.9,  # IQL expectile.
-            gn=10.0,
+            gn=0.0,
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.

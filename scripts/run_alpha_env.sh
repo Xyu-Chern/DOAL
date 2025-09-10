@@ -12,15 +12,15 @@ if [ "$#" -lt 2 ] || [ "$#" -gt 3 ]; then
 fi
 
 # Assign command-line arguments to variables for clarity
-ENV_NAME=$1
-Alpha=$2
+Alpha=$1
+ENV_NAME=$2
 
 # Assign the third argument if it exists, otherwise it will be empty
 EXP_NAME=$3
 
 # Define the list of agent names to loop through
 # Corrected array declaration: no spaces around the '=' sign
-agent_names=("dtrigflow" "diql" "difql")
+agent_names=( "diql" "difql" "dtrigflow")
 
 # Loop through all agent names
 for AGENT_NAME in "${agent_names[@]}"; do

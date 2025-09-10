@@ -50,6 +50,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
             "hd_min": jnp.min(hd),
             "g": jnp.mean(g),
             "g_std": jnp.std(g),
+            "g_abs": jnp.mean(jnp.abs(g)),
             "g_max": jnp.max(g),
             "g_min": jnp.min(g),
         }
