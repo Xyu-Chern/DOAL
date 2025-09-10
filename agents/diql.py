@@ -50,9 +50,12 @@ class DIQLAgent(DOALAgent,IQLAgent):
                 'std': jnp.mean(dist.scale_diag),
                 'adj': jnp.mean(jnp.abs(adjustment)),
             "hd": jnp.mean(hd),
+            "hd_abs": jnp.mean(jnp.abs(hd)),
+            "hd_std": jnp.std(hd),
             "hd_max": jnp.max(hd),
             "hd_min": jnp.min(hd),
             "g": jnp.mean(g),
+            "g_std": jnp.std(g),
             "g_max": jnp.max(g),
             "g_min": jnp.min(g),
             }
