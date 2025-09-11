@@ -57,6 +57,12 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
 
+        qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+        if self.config['q_agg'] == 'min':
+            q = jnp.min(qs, axis=0)
+        else:
+            q = jnp.mean(qs, axis=0)
+
 
         actor_loss = -q.mean()
         # Total loss.

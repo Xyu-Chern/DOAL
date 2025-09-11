@@ -26,7 +26,7 @@ class DOALAgent(flax.struct.PyTreeNode):
     rng: Any
     network: Any
     config: Any = nonpytree_field()
-    delta = 0.1
+    delta = 1.0
     def get_guided_action(self,q_action, action,observation,alpha,delta,params):
         if "solver" not in self.config or self.config["solver"] == "linear":
             return self.get_linear_action(q_action, action,observation,alpha,self.delta,params)
