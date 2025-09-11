@@ -34,17 +34,12 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         x_t = (1 - t) * x_0 + t * adjusted_actions
         vel = x_1 - x_0
 
-        v = jax.lax.stop_gradient(aux["v"])
-        q = jax.lax.stop_gradient(aux["q"])
-        adv = q - v
 
-        exp_a = jnp.exp(adv * self.config["alpha_actor"])
-        exp_a = jnp.expand_dims( jnp.minimum(exp_a, 100.0),1)
 
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
 
         raw_actor_loss = (pred - vel) ** 2
-        actor_loss = jnp.mean(exp_a* raw_actor_loss)
+        actor_loss = self.config["alpha_actor"] * jnp.mean( raw_actor_loss)
 
         return actor_loss, {
             "raw_actor_loss":jnp.mean(raw_actor_loss),
@@ -69,7 +64,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='difql',  # Agent name.
-            solver="linear",
+            solver="bfgs",
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
