@@ -181,9 +181,8 @@ class DOALAgent(flax.struct.PyTreeNode):
 
             # 2. Define the function for a single step of gradient descent.
             #    This is the core function that `lax.scan` will loop over.
-            def gradient_descent_step(carry, _):
+            def gradient_descent_step(current_action, _):
                 # --- 1. Standard Gradient Step ---
-                current_action , step_size = carry
                 value, grad = q_objective(current_action, q_action, observation, params)
                 # Take a step, creating a potentially unconstrained action
                 unconstrained_action = current_action - step_size * grad
@@ -206,15 +205,15 @@ class DOALAgent(flax.struct.PyTreeNode):
                 # Enforce the absolute range limits on the action.
                 final_step_action = jnp.clip(projected_action, -1.0, 1.0)
                 
-                return (final_step_action, step_size / 2) ,value
+                return final_step_action ,value
 
             # 3. Run the scan loop.
             #    - `gradient_descent_step`: The function to execute.
             #    - `init=q_action`: The starting point for the optimization.
             #    - `xs=None, length=num_steps`: Tells scan to run the function `num_steps` times.
-            (final_action,step_size), values_over_time = jax.lax.scan(
+            final_action, values_over_time = jax.lax.scan(
                 f=gradient_descent_step,
-                init=(q_action, step_size),
+                init=q_action,
                 xs=None,
                 length=num_steps
             )
