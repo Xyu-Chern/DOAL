@@ -67,7 +67,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             q, g = v_grad_q(q_action)
 
             gap = 1  / (2 * alpha - h_diagonal )
-            b =  g * gap
+            b =  g * jnp.clip (gap,min=0)
             normb = jnp.linalg.norm(b)
             dx = jnp.where(normb > delta,  b / normb,   b)
          #   dx = linear_solve.solve_normal_cg(A,b)

@@ -57,11 +57,12 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
 
-        qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
-        if self.config['q_agg'] == 'min':
-            q = jnp.min(qs, axis=0)
-        else:
-            q = jnp.mean(qs, axis=0)
+        if self.config["use_q_loss"] > 0:
+            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+            if self.config['q_agg'] == 'min':
+                q = jnp.min(qs, axis=0)
+            else:
+                q = jnp.mean(qs, axis=0)
 
 
         actor_loss = -q.mean()
@@ -123,7 +124,7 @@ def get_config():
             delta=1.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
-            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            use_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )

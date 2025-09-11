@@ -50,7 +50,7 @@ flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative')
 flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative') 
 flags.DEFINE_string('solver',None, 'coffeient for conservative') 
 flags.DEFINE_boolean('time_weight', None , 'coffeient for conservative')
-flags.DEFINE_boolean('normalize_q_loss', False, 'coffeient for conservative')
+flags.DEFINE_boolean('use_q_loss', False, 'coffeient for conservative')
 flags.DEFINE_string('decode_type', None, 'coffeient for conservative')
 
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
@@ -103,8 +103,9 @@ def main(_):
     if FLAGS.distill_factor != -1:
         config["distill_factor"] = FLAGS.distill_factor
         exp_name +=  "_distill_factor_" + str(config["distill_factor"])  
-    if FLAGS.normalize_q_loss:
-        config['normalize_q_loss'] = FLAGS.normalize_q_loss
+    if FLAGS.use_q_loss:
+        config['use_q_loss'] = FLAGS.use_q_loss
+        FLAGS.agent["use_q_loss"] =  FLAGS.use_q_loss
     if FLAGS.time_weight is not None:
         config['time_weight'] = FLAGS.time_weight
         print ("time_weight", FLAGS.time_weight)
