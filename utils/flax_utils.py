@@ -18,25 +18,26 @@ import jaxopt
 from jax import jvp
 def hvp(grad_f, primals, tangents):
     return jvp(grad_f, primals, tangents)[1]
-
+def clip(x):
+    return jnp.clip(x,-1,1)
 class DOALAgent(flax.struct.PyTreeNode):
     """Implicit Q-learning (IQL) agent."""
 
     rng: Any
     network: Any
     config: Any = nonpytree_field()
-
+    delta = 0.1
     def get_guided_action(self,q_action, action,observation,alpha,delta,params):
         if "solver" not in self.config or self.config["solver"] == "linear":
-            return self.get_linear_action(q_action, action,observation,alpha,delta,params)
+            return self.get_linear_action(q_action, action,observation,alpha,self.delta,params)
         elif self.config["solver"] == "diag_hess":
-            return self.get_diag_hess_action(q_action, action,observation,alpha,delta,params)
+            return self.get_diag_hess_action(q_action, action,observation,alpha,self.delta,params)
         elif self.config["solver"] == "cg":
-            return self.get_cg_action(q_action, action,observation,alpha,delta,params)
+            return self.get_cg_action(q_action, action,observation,alpha,self.delta,params)
         elif self.config["solver"] == "gd":
-            return self.get_gd_action(q_action, action,observation,alpha,delta,params)
+            return self.get_gd_action(q_action, action,observation,alpha,self.delta,params)
         elif self.config["solver"] == "adam":
-            return self.get_adam_action(q_action, action,observation,alpha,delta,params)
+            return self.get_adam_action(q_action, action,observation,alpha,self.delta,params)
         
 
     @jax.jit
@@ -71,7 +72,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             dx = jnp.where(normb > delta,  b / normb,   b)
          #   dx = linear_solve.solve_normal_cg(A,b)
             
-            adjusted_actions = jax.lax.stop_gradient(q_action + dx)
+            adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
             return  adjusted_actions, dx, h_diagonal, g, q
@@ -98,7 +99,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             dx = jnp.where(normb > delta,  b / normb,   b)
          #   dx = linear_solve.solve_normal_cg(A,b)
             
-            adjusted_actions = jax.lax.stop_gradient(q_action + dx)
+            adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
             return  adjusted_actions, dx, 0*q,g, q
@@ -140,7 +141,7 @@ class DOALAgent(flax.struct.PyTreeNode):
                                 net_params=params)
 
             # 4. Extract the results.
-            adjusted_actions = jax.lax.stop_gradient(results.params)
+            adjusted_actions = jax.lax.stop_gradient(clip(results.params))
             final_objective_val = results.state.value
 
             # To get the pure Q-value, we can re-evaluate the critic or subtract the
@@ -266,7 +267,7 @@ class DOALAgent(flax.struct.PyTreeNode):
                                 net_params=params)
 
             # 4. Extract the results.
-            adjusted_actions = jax.lax.stop_gradient(results.params)
+            adjusted_actions = jax.lax.stop_gradient(clip(results.params))
             final_objective_val = results.state.value
 
             # To get the pure Q-value, we can re-evaluate the critic or subtract the
