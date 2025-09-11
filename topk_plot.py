@@ -56,7 +56,7 @@ flags.DEFINE_string('decode_type', None, 'coffeient for conservative')
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
 flags.DEFINE_integer('balanced_sampling', 0, 'Whether to use balanced sampling for online fine-tuning.')
-flags.DEFINE_integer('num_neighbors', 10,  'Number of nearest neighbors to consider.')
+flags.DEFINE_integer('num_neighbors', 4,  'Number of nearest neighbors to consider.')
 flags.DEFINE_integer('candidate_size', 10000, 'Number of candidate observations to sample.')
 
 def find_obs_with_most_variable_actions(all_obs, all_actions, num_candidates=1000, num_neighbors=100):
@@ -80,14 +80,14 @@ def find_obs_with_most_variable_actions(all_obs, all_actions, num_candidates=100
         distances = np.linalg.norm(all_obs - candidate_ob, axis=1)
         
         # 找到最近的num_neighbors个邻居
-        neighbor_indices = np.argsort(distances)[:num_neighbors]
+        neighbor_indices = np.argpartition(distances, -num_neighbors)[-num_neighbors:]  
         neighbor_actions = all_actions[neighbor_indices]
         
         # 计算这些邻居actions的方差
         action_variance = np.mean(np.var(neighbor_actions, axis=0))
         
         # 更新最佳候选
-        if action_variance > best_variance:
+        if action_variance > best_variance and np.mean(distances)< 2.0:
             best_variance = action_variance
             best_obs_idx = candidate_indices[i]
             best_neighbor_indices = neighbor_indices
@@ -239,7 +239,7 @@ def main(_):
     agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
 
     # 采样一个大的batch
-    large_batch = train_dataset.sample(10000)  # 采样大量数据
+    large_batch = train_dataset.sample(100000)  # 采样大量数据
     all_obs = large_batch['observations']
     all_actions = large_batch['actions']
     
@@ -268,7 +268,7 @@ def main(_):
         neighbor_obs, neighbor_data_actions, agent, FLAGS.seed
     )
     
-    print ("",np.var(neighbor_obs,axis=0))
+    print ("obs var",np.var(neighbor_obs,axis=0))
     # 转换为numpy数组
     neighbor_data_actions_np = np.array(neighbor_data_actions)
     neighbor_adjusted_actions_np = np.array(neighbor_adjusted_actions)

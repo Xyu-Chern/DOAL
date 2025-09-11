@@ -138,12 +138,6 @@ hyperparameters ={
         "rebrac": {
             "alpha_actor": 0.1
         },
-        "trigflow": {
-            "alpha_actor": 1000,
-        },
-        "dtrigflow": {
-            "alpha_actor": 1000,
-        },
         "alpha_critic": 0.01,
         "alpha": 300.0,
         "drebrac": {
