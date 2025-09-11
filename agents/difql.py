@@ -30,20 +30,28 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         
         alpha = self.config['alpha'] 
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  x_1, x_1,batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
-        q1, q2 = self.network.select('critic')(batch['observations'], actions=adjusted_actions)
-        aq = jnp.minimum(q1, q2)
         t = jax.random.uniform(t_rng, (batch_size, 1))
         x_t = (1 - t) * x_0 + t * adjusted_actions
         vel = x_1 - x_0
 
+        v = jax.lax.stop_gradient(aux["v"])
+        q = jax.lax.stop_gradient(aux["q"])
+        adv = q - v
+
+        exp_a = jnp.exp(adv * self.config["alpha_actor"])
+        exp_a = jnp.expand_dims( jnp.minimum(exp_a, 100.0),1)
+
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
-        actor_loss = self.config['alpha_actor'] *  jnp.mean((pred - vel) ** 2)
+
+        raw_actor_loss = (pred - vel) ** 2
+        actor_loss = jnp.mean(exp_a* raw_actor_loss)
 
         return actor_loss, {
+            "raw_actor_loss":jnp.mean(raw_actor_loss),
             'actor_loss': actor_loss,
             'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
             'adj': jnp.mean(jnp.abs(adjustment)),
-            'aq': jnp.mean(aq),
+            "q":jnp.mean(q),
             "hd": jnp.mean(hd),
             "hd_abs": jnp.mean(jnp.abs(hd)),
             "hd_std": jnp.std(hd),
