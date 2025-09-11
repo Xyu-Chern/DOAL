@@ -51,8 +51,8 @@ class DOALAgent(flax.struct.PyTreeNode):
         def _get_guided_action(q_action, action, observation, alpha, delta, params):
 
             # --- HYPERPARAMETERS FOR MANUAL BFGS ---
-            step_size = 0.15
-            num_steps = 5
+            step_size = 0.5
+            num_steps = 2
             
             @jax.value_and_grad
             def q_objective(optim_action, initial_action, obs, net_params):
