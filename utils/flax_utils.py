@@ -38,7 +38,90 @@ class DOALAgent(flax.struct.PyTreeNode):
             return self.get_gd_action(q_action, action,observation,alpha,self.delta,params)
         elif self.config["solver"] == "adam":
             return self.get_adam_action(q_action, action,observation,alpha,self.delta,params)
-        
+        elif self.config["solver"] == "bfgs":
+            return self.get_bfgs_action(q_action, action,observation,alpha,self.delta,params)
+
+
+    @jax.jit
+    def get_bfgs_action(self, q_action, action, observation, alpha, delta, params):
+
+
+        @jax.jit
+        @partial(jax.vmap, in_axes=(0, 0, 0, None, None, None))
+        def _get_guided_action(q_action, action, observation, alpha, delta, params):
+
+            # --- HYPERPARAMETERS FOR MANUAL BFGS ---
+            step_size = 0.15
+            num_steps = 5
+            
+            @jax.value_and_grad
+            def q_objective(optim_action, initial_action, obs, net_params):
+                qs = self.network.select('critic')(obs, optim_action, params=net_params)
+                q = jnp.mean(qs)
+                regularization = alpha * jnp.sum((optim_action - initial_action)**2)
+                return -q + regularization
+
+            def bfgs_step(carry, _):
+                current_action, H = carry
+                value, grad_action = q_objective(current_action, q_action, observation, params)
+                H_inv = jnp.linalg.inv(H + 1e-6 * jnp.eye(H.shape[0]))
+                dz = -step_size * (H_inv @ grad_action)
+                unconstrained_action = current_action + dz
+                
+                diff = unconstrained_action - q_action
+                distance = jnp.linalg.norm(diff)
+                projected_action = jnp.where(
+                    distance > delta,
+                    q_action + diff * (delta / distance),
+                    unconstrained_action
+                )
+                final_step_action = jnp.clip(projected_action, -1.0, 1.0)
+                
+                _, grad_new_action = q_objective(final_step_action, q_action, observation, params)
+                dg = grad_new_action - grad_action
+                actual_dz = final_step_action - current_action
+                epsilon = 1e-8
+                
+                term1_num = jnp.outer(dg, dg)
+                term1_den = jnp.dot(dg, actual_dz) + epsilon
+                H_dz = H @ actual_dz
+                term2_num = jnp.outer(H_dz, H_dz)
+                term2_den = jnp.dot(actual_dz, H_dz) + epsilon
+                H_new = H + (term1_num / term1_den) - (term2_num / term2_den)
+                
+                new_carry = (final_step_action, H_new)
+                return new_carry, value
+
+            action_dim = q_action.shape[0]
+            initial_carry = (q_action, alpha * jnp.eye(action_dim))
+            
+            # The scan now returns the final action and the final Hessian approximation H
+            (final_action, final_H), values_over_time = jax.lax.scan(
+                f=bfgs_step,
+                init=initial_carry,
+                xs=None,
+                length=num_steps
+            )
+            
+            adjusted_actions = jax.lax.stop_gradient(final_action)
+            
+            # --- KEY CHANGE: Calculate Eigenvalues ---
+            # We compute the eigenvalues of the final Hessian approximation.
+            # `eigvalsh` is used because the Hessian is a symmetric matrix.
+            hessian_eigenvalues = jnp.diagonal(final_H)
+            
+            # Final calculations for other return values
+            final_objective_val, final_grad_unprocessed = q_objective(adjusted_actions, q_action, observation, params)
+            final_reg = alpha * jnp.sum((adjusted_actions - q_action)**2)
+            q_final = -(final_objective_val - final_reg)
+            dx = jax.lax.stop_gradient(adjusted_actions - action)
+            q = jax.lax.stop_gradient(q_final)
+            g = jax.lax.stop_gradient(-final_grad_unprocessed)
+
+            # --- KEY CHANGE: Return Eigenvalues instead of 0*q ---
+            return adjusted_actions, dx, jax.lax.stop_gradient(hessian_eigenvalues), g, q
+
+        return _get_guided_action(q_action, action, observation, alpha, delta, params)
 
     @jax.jit
     def get_diag_hess_action(self,q_action, action,observation,alpha,delta,params):
