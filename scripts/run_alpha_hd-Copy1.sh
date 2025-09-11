@@ -31,5 +31,5 @@ for AGENT_NAME in "${agent_names[@]}"; do
         --alpha "$Alpha" \
         --exp_name "$EXP_NAME" \
         --seed "$RANDOM" \
-        --solver diag_hess
+        --solver linear_advanced
 done
