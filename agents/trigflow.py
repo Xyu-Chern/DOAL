@@ -37,9 +37,6 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         lam = 1 / jax.lax.stop_gradient(jnp.abs(v).mean())
         value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() 
 
-        if self.config['normalize_q_loss']:
-            value_loss = lam * value_loss
-
 
         aux.update({"v": v,"q": q,"lam": lam })
         return value_loss, {
@@ -57,8 +54,6 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
         critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
 
-        if self.config['normalize_q_loss']:
-            critic_loss = aux["lam"] * critic_loss
         return critic_loss, {
             "critic_loss": critic_loss,
             "q_mean": q.mean(),
@@ -99,36 +94,32 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         else:
             weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
-        if self.config["distill_from_target"]:
-            qs = self.network.select('target_critic')(batch['observations'], actions=pred_actions)
-        else:
-            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
-        if self.config['q_agg'] == 'min':
-            q = jnp.min(qs, axis=0)
-        else:
-            q = jnp.mean(qs, axis=0)
+            
 
 
-        actor_loss = -q.mean()
-        # Total loss.
-        total_loss = actor_loss
 
         out = {
-                'q': q.mean(),
                 "weight":weight.mean(),
-                'actor_loss': actor_loss,
             }
-        if self.config["vel_actor"] > 0:
+        if self.config["use_q_loss"] > 0:
+            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+            if self.config['q_agg'] == 'min':
+                q = jnp.min(qs, axis=0)
+            else:
+                q = jnp.mean(qs, axis=0)
 
-            raw_bc_flow_loss = (( F_theta  - vel ) ** 2 ) .mean() #/ jnp.sin(t).clip(min=0.1)
-            bc_flow_loss =  (weight* ( F_theta  - vel ) ** 2 -time_weight_logits) .mean()  #/ jnp.sin(t).clip(min=0.1)
-            total_loss = total_loss + self.config['vel_actor'] * bc_flow_loss
-            out["bc_flow_loss"]  = raw_bc_flow_loss
+            actor_loss = -q.mean()
+            # Total loss.
+            total_loss = actor_loss
+            out["actor_loss"]  = raw_bcactor_loss_flow_loss
+            out["q"] =  q.mean()
+        else:
+            total_loss = 0
         if self.config["alpha_actor"] > 0:
-            raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
-            zero_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
-            total_loss = total_loss  +  self.config["alpha_actor"]  *    zero_shot_loss 
-            out["zero_shot_loss"]  = raw_zero_shot_loss
+            raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
+            one_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
+            total_loss = total_loss  +  self.config["alpha_actor"]  *    one_shot_loss 
+            out["one_shot_loss"]  = raw_one_shot_loss
         
         out['total_loss'] = total_loss
         return total_loss, out 
@@ -333,7 +324,7 @@ def get_config():
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
-            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            use_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )
