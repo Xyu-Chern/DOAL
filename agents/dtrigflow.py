@@ -42,26 +42,26 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
 
-        v = jax.lax.stop_gradient(aux["v"])
-        q = jax.lax.stop_gradient(aux["q"])
-        adv = q - v
+        #、 v = jax.lax.stop_gradient(aux["v"])
+       #  q = jax.lax.stop_gradient(aux["q"])
+       #  adv = q - v
 
-        exp_a = jnp.exp(adv * self.config["alpha_actor"])
-        exp_a = jnp.expand_dims( jnp.minimum(exp_a, 100.0),1)
+       #  exp_a = jnp.exp(adv * self.config["alpha_actor"])
+       # exp_a = jnp.expand_dims( jnp.minimum(exp_a, 100.0),1)
 
         if self.config["time_weight"]:
             time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
-            weight = exp_a *  jnp.exp(time_weight_logits) / action_dim
+            weight =   jnp.exp(time_weight_logits) / action_dim
             time_weight_logits = time_weight_logits - jax.lax.stop_gradient(time_weight_logits)
         else:
-            weight = exp_a * jnp.ones_like(t) 
+            weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
 
-     #   qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
-     #   if self.config['q_agg'] == 'min':
-     #       q = jnp.min(qs, axis=0)
-     #   else:
-      #      q = jnp.mean(qs, axis=0)
+        qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+        if self.config['q_agg'] == 'min':
+            q = jnp.min(qs, axis=0)
+        else:
+            q = jnp.mean(qs, axis=0)
 
 
         actor_loss = -q.mean()
@@ -88,7 +88,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             
         raw_zero_shot_loss = ( ( pred_actions-adjusted_actions ) ** 2).mean()   
         zero_shot_loss = ( weight*  ( pred_actions-adjusted_actions ) ** 2 -time_weight_logits).mean()   
-        total_loss = total_loss  +   zero_shot_loss 
+        total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
         out["zero_shot_loss"]  = raw_zero_shot_loss
         
         out['total_loss'] = total_loss
