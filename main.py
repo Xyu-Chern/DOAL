@@ -156,7 +156,7 @@ def main(_):
 
     agent_class = agents[config['agent_name']]
     flag_dict["agent_config"] = config
-    setup_wandb(project='doal', group=FLAGS.env_name, name=exp_name,config=config)
+    setup_wandb(project='doal', group=FLAGS.env_name, name=exp_name,config=flag_dict)
 
    # artifact = wandb.Artifact(name="agent", type="code")
    # artifact.add_file(f'agents/{FLAGS.agent_name}.py')
