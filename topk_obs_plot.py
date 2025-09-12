@@ -314,55 +314,83 @@ def main(_):
     
     # 绘制散点图
     fig, axes = plt.subplots(1, 3, figsize=(24, 8))
-    
+
     titles = ['Data Actions', 'Adjusted Actions', 'Sampled Actions']
     colors = ['blue', 'orange', 'green']
     action_sets = [neighbor_data_actions_np, neighbor_adjusted_actions_np, neighbor_sampled_actions_np]
     q_sets = [neighbor_data_qs_np, neighbor_adjusted_qs_np, neighbor_sampled_qs_np]
-    
-    for i, (ax, title, color, actions, q_values) in enumerate(zip(axes, titles, colors, action_sets, q_sets)):
+
+    # 为每个观测值分配唯一的颜色
+    unique_obs_indices = {}
+    obs_colors = []
+    for j, obs in enumerate(neighbor_obs):
+        obs_tuple = tuple(obs.round(2))  # 四舍五入到小数点后两位以便比较
+        if obs_tuple not in unique_obs_indices:
+            unique_obs_indices[obs_tuple] = len(unique_obs_indices)
+        obs_colors.append(unique_obs_indices[obs_tuple])
+
+    # 创建颜色映射
+    cmap = plt.cm.get_cmap('tab10', len(unique_obs_indices))
+
+    for i, (ax, title, actions, q_values) in enumerate(zip(axes, titles, action_sets, q_sets)):
+        # 计算圆圈大小（基于Q值，Q值越大圆圈越大）
+        min_q, max_q = np.min(q_values), np.max(q_values)
+        if max_q > min_q:
+            sizes = 50 + 200 * (q_values - min_q) / (max_q - min_q)
+        else:
+            sizes = np.full_like(q_values, 100)
+        
+        # 绘制散点图，颜色表示观测值，大小表示Q值
         scatter = ax.scatter(actions[:, dim_indices[0]], 
-                           actions[:, dim_indices[1]], 
-                           c=q_values, cmap='viridis', alpha=0.7, s=50, label=title)
+                        actions[:, dim_indices[1]], 
+                        c=obs_colors, cmap=cmap, alpha=0.7, s=sizes, label=title)
         
         # 为每个点添加文本标签（观测值方差最大的两个维度和Q值）
-        for j, (x, y, q_val) in enumerate(zip(actions[:, dim_indices[0]], actions[:, dim_indices[1]], q_values)):
+        for j, (x, y, q_val, size) in enumerate(zip(actions[:, dim_indices[0]], 
+                                                actions[:, dim_indices[1]], 
+                                                q_values, sizes)):
             obs_dim1 = neighbor_obs[j, obs_top_indices[0]]
             obs_dim2 = neighbor_obs[j, obs_top_indices[1]]
             ax.annotate(f"O({obs_dim1:.1f},{obs_dim2:.1f})\nQ:{q_val:.2f}", 
-                       (x, y), 
-                       xytext=(5, 5), 
-                       textcoords='offset points', 
-                       fontsize=6, 
-                       alpha=0.7)
+                    (x, y), 
+                    xytext=(5, 5), 
+                    textcoords='offset points', 
+                    fontsize=6, 
+                    alpha=0.7)
         
         ax.set_title(f'{title} (Top {FLAGS.num_neighbors} neighbors)', fontsize=14)
         ax.set_xlabel(f'Action Dimension {dim_indices[0]}', fontsize=12)
         ax.set_ylabel(f'Action Dimension {dim_indices[1]}', fontsize=12)
         ax.grid(True, alpha=0.3)
-        ax.legend()
         
         # 添加颜色条
         cbar = plt.colorbar(scatter, ax=ax)
-        cbar.set_label('Q Value', fontsize=12)
-    
+        cbar.set_label('Observation ID', fontsize=12)
+        cbar.set_ticks(range(len(unique_obs_indices)))
+        
+        # 添加图例说明圆圈大小表示Q值
+        ax.text(0.02, 0.98, f'Circle size = Q value\nMin: {min_q:.2f}, Max: {max_q:.2f}', 
+                transform=ax.transAxes, fontsize=10, verticalalignment='top',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+
     # 设置统一的坐标轴范围
     all_actions_combined = np.concatenate([neighbor_data_actions_np[:, dim_indices],
-                                         neighbor_adjusted_actions_np[:, dim_indices],
-                                         neighbor_sampled_actions_np[:, dim_indices]], axis=0)
-    
+                                        neighbor_adjusted_actions_np[:, dim_indices],
+                                        neighbor_sampled_actions_np[:, dim_indices]], axis=0)
+
     x_min, x_max = all_actions_combined[:, 0].min(), all_actions_combined[:, 0].max()
     y_min, y_max = all_actions_combined[:, 1].min(), all_actions_combined[:, 1].max()
-    
+
     x_margin = (x_max - x_min) * 0.1
     y_margin = (y_max - y_min) * 0.1
-    
+
     for ax in axes:
         ax.set_xlim(x_min - x_margin, x_max + x_margin)
         ax.set_ylim(y_min - y_margin, y_max + y_margin)
-    
+
     plt.suptitle(f'Action Distribution for Obs with Highest Variance (Obs index: {best_obs_idx})\n'
-                f'Top Observation Dimensions: {obs_top_indices[0]} and {obs_top_indices[1]}', 
+                f'Top Observation Dimensions: {obs_top_indices[0]} and {obs_top_indices[1]}\n'
+                f'Color: Same observation, Size: Q value', 
                 fontsize=16)
     plt.tight_layout()
     plt.savefig('out/highest_variance_obs_action_comparison.png', dpi=300, bbox_inches='tight')

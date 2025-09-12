@@ -44,7 +44,8 @@ flags.DEFINE_integer('eval_episodes', 50, 'Number of evaluation episodes.')
 flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 flags.DEFINE_float('alpha',-1, 'coffeient for conservative')
-flags.DEFINE_float('gn',-1, 'coffeient for conservative')
+flags.DEFINE_float('step_size',-1, 'coffeient for conservative')
+flags.DEFINE_integer('num_steps',-1, 'coffeient for conservative')
 flags.DEFINE_float('expectile',-1, 'coffeient for conservative')
 flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative') 
 flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative') 
@@ -87,9 +88,12 @@ def main(_):
     if FLAGS.expectile != -1:
         config["expectile"] = FLAGS.expectile
         exp_name +=  "_expectile _" + str(config["expectile"])
-    if FLAGS.gn != -1:
-        config["gn"] = FLAGS.gn
-        exp_name +=  "_gn _" + str(config["gn"])
+    if FLAGS.num_steps != -1:
+        config["num_steps"] = FLAGS.num_steps
+        exp_name +=  "num_steps _" + str(config["num_steps"])
+    if FLAGS.step_size != -1:
+        config["step_size"] = FLAGS.alpha
+        exp_name +=  "step_size _" + str(config["step_size"])
     elif env_class in hyperparameters and "alpha" in hyperparameters[env_class] :
         alpha = hyperparameters[env_class]["alpha"]
         config.update({"alpha":alpha})

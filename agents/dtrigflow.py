@@ -115,6 +115,8 @@ def get_config():
             distill_factor=0,
             q_agg='min',  # Aggregation method for target Q values.
             expectile=0.9,  # IQL expectile.
+            step_size=1.0,  # IQL expectile.
+            num_steps=1,  # IQL expectile.
             gn=0.0,
             return_next_actions=True,
             time_weight=False,

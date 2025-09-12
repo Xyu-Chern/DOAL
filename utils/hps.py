@@ -10,6 +10,9 @@ hyperparameters ={
         "rebrac": {
             "alpha_actor": 0.003
         },
+        "dtrigflow": {
+            "alpha": 30.0
+        },
         "alpha_critic": 0.01,
         "alpha": 3.0,
         "drebrac": {
@@ -143,7 +146,10 @@ hyperparameters ={
         "drebrac": {
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
-        }
+        },
+        "dtrigflow": {
+            "alpha": 100,
+        },
     },
     "puzzle-3x3-play-singletask-v0": {
         "alpha_actor": 1000.0,
