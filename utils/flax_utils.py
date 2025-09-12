@@ -46,8 +46,8 @@ class DOALAgent(flax.struct.PyTreeNode):
         def _get_guided_action(q_action, action, observation, alpha, delta, params):
 
             # --- HYPERPARAMETERS FOR MANUAL BFGS ---
-            step_size = self.config["step_size"]
             num_steps = self.config["num_steps"]
+            step_size = 1.0 
             
             
             @jax.value_and_grad
@@ -57,22 +57,23 @@ class DOALAgent(flax.struct.PyTreeNode):
                 regularization = alpha * jnp.sum((optim_action - initial_action)**2)
                 return -q + regularization
             
-            def projected_step(H_inv,grad_action):
+            def projected_step(last_action,H_inv,grad_action):
                 dz = -step_size * (H_inv @ grad_action)
-                unconstrained_action = q_action + dz
+                unconstrained_action = last_action + dz
                 
                 distance = jnp.linalg.norm(dz)
                 projected_action = jnp.where(
                     distance > delta,
-                    q_action + dz * (delta / distance),
+                    last_action + dz * (delta / distance),
                     unconstrained_action
                 )
                 return jnp.clip(projected_action, -1.0, 1.0)
 
-            def bfgs_step(H, _):
-                H_inv = jnp.linalg.inv(H + 1e-6 * jnp.eye(H.shape[0]))
+            def bfgs_step(carry, _):
+                H , last_action, grad_action = carry
+                H_inv = jnp.linalg.inv(H)
 
-                final_step_action = projected_step(H_inv,grad_action)
+                final_step_action = projected_step(last_action,H_inv,grad_action)
                 
                 value, grad_new_action = q_objective(final_step_action, action, observation, params)
                 dg = grad_new_action - grad_action
@@ -85,22 +86,22 @@ class DOALAgent(flax.struct.PyTreeNode):
                 term2_num = jnp.outer(H_dz, H_dz)
                 term2_den = jnp.dot(actual_dz, H_dz) + epsilon
                 H_new = H + (term1_num / term1_den) - (term2_num / term2_den)
-                
-                return H_new, value
+                carry = H_new, final_step_action,grad_new_action
+                return carry, value
 
             action_dim = q_action.shape[0]
             H =  2 * alpha * jnp.eye(action_dim)
             value, grad_action = q_objective(q_action, action, observation, params)
             
             # The scan now returns the final action and the final Hessian approximation H
-            H, values_over_time = jax.lax.scan(
+            (H,q_action ,grad_action), values_over_time = jax.lax.scan(
                 f=bfgs_step,
-                init=H,
+                init=(H,q_action ,grad_action),
                 xs=None,
                 length=num_steps
             )
-            H_inv = jnp.linalg.inv(H + 1e-6 * jnp.eye(H.shape[0]))
-            final_action = projected_step(H_inv,grad_action)
+            H_inv = jnp.linalg.inv(H)
+            final_action = projected_step(q_action, H_inv,grad_action)
             adjusted_actions = jax.lax.stop_gradient(final_action)
             
             # --- KEY CHANGE: Calculate Eigenvalues ---
