@@ -111,7 +111,6 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             actor_loss = -q.mean()
             # Total loss.
             total_loss = actor_loss
-            out["actor_loss"]  = raw_bcactor_loss_flow_loss
             out["q"] =  q.mean()
         else:
             total_loss = 0
@@ -119,7 +118,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
             one_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
             total_loss = total_loss  +  self.config["alpha_actor"]  *    one_shot_loss 
-            out["one_shot_loss"]  = raw_one_shot_loss
+            out["bc_flow_loss"]  = raw_one_shot_loss
         
         out['total_loss'] = total_loss
         return total_loss, out 
@@ -304,7 +303,7 @@ def get_config():
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
-            value_hidden_dims=( 512, 512,512, 512),  # Value network hidden dimensions.
+            value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
             time_hidden_dims=(32,),
      #       sigma=ml_collections.config_dict.placeholder(jax.Array),
             normalize_action=False,
