@@ -82,9 +82,6 @@ def main(_):
 
         
     exp_name = FLAGS.exp_name 
-    if FLAGS.alpha != -1:
-        config["alpha"] = FLAGS.alpha
-        exp_name +=  "_alpha _" + str(config["alpha"])
     if FLAGS.expectile != -1:
         config["expectile"] = FLAGS.expectile
         exp_name +=  "_expectile _" + str(config["expectile"])
@@ -113,6 +110,9 @@ def main(_):
     if FLAGS.time_weight is not None:
         config['time_weight'] = FLAGS.time_weight
         print ("time_weight", FLAGS.time_weight)
+    if FLAGS.alpha != -1:
+        config["alpha"] = FLAGS.alpha
+        exp_name +=  "_alpha _" + str(config["alpha"])
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
 
     os.makedirs(FLAGS.save_dir, exist_ok=True)
