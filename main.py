@@ -91,10 +91,10 @@ def main(_):
     if FLAGS.step_size != -1:
         config["step_size"] = FLAGS.alpha
         exp_name +=  "step_size _" + str(config["step_size"])
-    elif env_class in hyperparameters and "alpha" in hyperparameters[env_class] :
-        alpha = hyperparameters[env_class]["alpha"]
-        config.update({"alpha":alpha})
-        print("env alpha is ", alpha)
+  #  if env_class in hyperparameters and "alpha" in hyperparameters[env_class] :
+   #     alpha = hyperparameters[env_class]["alpha"]
+    #    config.update({"alpha":alpha})
+     #   print("env alpha is ", alpha)
     if FLAGS.alpha_actor != -1:
         config["alpha_actor"] = FLAGS.alpha_actor
         exp_name +=  "_alpha_actor_" + str(config["alpha_actor"])
@@ -172,7 +172,7 @@ def main(_):
         example_batch['actions'],
         config,
     )
-    print ("config",config)
+   # print ("config",config)
     # Restore agent.
     if FLAGS.restore_path is not None:
         agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
