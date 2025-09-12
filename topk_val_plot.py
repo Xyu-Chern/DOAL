@@ -214,7 +214,7 @@ def main(_):
 
     # Set up datasets.
     
-    train_dataset = Dataset.create(**train_dataset)
+    train_dataset = Dataset.create(**val_dataset)
 
     if FLAGS.balanced_sampling:
         # Create a separate replay buffer so that we can sample from both the training dataset and the replay buffer.
@@ -398,7 +398,7 @@ def main(_):
                 f'Color: Same observation, Size: Q value', 
                 fontsize=16)
     plt.tight_layout()
-    plt.savefig('out/highest_variance_obs_action_comparison.png', dpi=300, bbox_inches='tight')
+    plt.savefig('out/highest_variance_val_obs_action_comparison.png', dpi=300, bbox_inches='tight')
     plt.show()
     
     # 详细统计分析
@@ -423,7 +423,7 @@ def main(_):
     print(f"  采样动作: {sampled_consistency:.4f}")
     
     # 保存数据以供进一步分析
-    np.savez('out/highest_variance_analysis.npz',
+    np.savez('out/highest_variance_val_analysis.npz',
              best_obs_index=best_obs_idx,
              best_obs=best_obs,
              neighbor_obs=neighbor_obs,
@@ -439,7 +439,7 @@ def main(_):
              obs_top_indices=obs_top_indices,
              obs_variances=obs_variances)
     
-    print("\n分析数据已保存到 highest_variance_analysis.npz")
+    print("\n分析数据已保存到 highest_variance_val_analysis.npz")
     print("包含以下数据:")
     print("- best_obs_index: 最佳obs的索引")
     print("- best_obs: 最佳obs的值")
