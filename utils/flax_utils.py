@@ -32,12 +32,8 @@ class DOALAgent(flax.struct.PyTreeNode):
             return self.get_linear_action(q_action, action,observation,alpha,self.delta,params)
         elif self.config["solver"] == "diag_hess":
             return self.get_diag_hess_action(q_action, action,observation,alpha,self.delta,params)
-        elif self.config["solver"] == "cg":
+        elif self.config["solver"] == "full":
             return self.get_cg_action(q_action, action,observation,alpha,self.delta,params)
-        elif self.config["solver"] == "gd":
-            return self.get_gd_action(q_action, action,observation,alpha,self.delta,params)
-        elif self.config["solver"] == "adam":
-            return self.get_adam_action(q_action, action,observation,alpha,self.delta,params)
         elif self.config["solver"] == "bfgs":
             return self.get_bfgs_action(q_action, action,observation,alpha,self.delta,params)
 
@@ -273,36 +269,24 @@ class DOALAgent(flax.struct.PyTreeNode):
 # Assume self.network is defined elsewhere
 
     @jax.jit
-    def get_adam_action(self, q_action, action, observation, alpha, delta, params):
+    def get_newton_action(self, q_action, action, observation, alpha, delta, params):
 
         @jax.jit
         @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
         def _get_guided_action(q_action, action, observation, alpha, params):
 
             # 1. Define the regularized objective function to be MINIMIZED.
-            def q_maximization_objective_regularized(optim_action, initial_action, obs, net_params):
-                """Returns the negative Q-value plus a regularization penalty."""
-                qs = self.network.select('critic')(obs, optim_action, params=net_params)
+
+            def bc_loss_wrt_q_action(q_action):
+                qs = self.network.select('critic')(observation, q_action, params=params)
                 q = jnp.mean(qs)
-
-                # Penalty for deviating from the initial action. This keeps the
-                # optimized action within a "trust region" of the start.
-                regularization = alpha * jnp.sum((optim_action - initial_action)**2)
-
-                # We minimize (-Q + regularization)
-                return -q + regularization
-
-            # 2. Instantiate the L-BFGS solver.
-            solver = jaxopt.Adam(fun=q_maximization_objective_regularized, stepsize=1e-2, maxiter=5)
+                return - q + alpha * jnp.sum((q_action - action)**2)
 
 
-            # 3. Run the optimization.
-            #    Note: We now pass `initial_action=q_action` as a static argument
-            #    to be used in the regularization term.
-            results = solver.run(init_params=q_action,
-                                initial_action=q_action,
-                                obs=observation,
-                                net_params=params)
+
+            grad_z = jax.grad(bc_loss_wrt_q_action)(q_action)
+            hessian_z = jax.hessian(bc_loss_wrt_q_action)(q_action)
+            new_z = z - 0.8 * (jnp.linalg.inv(hessian_z + jnp.eye(2) * 1) @ grad_z)
 
             # 4. Extract the results.
             adjusted_actions = jax.lax.stop_gradient(clip(results.params))

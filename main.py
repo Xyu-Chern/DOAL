@@ -172,7 +172,7 @@ def main(_):
         example_batch['actions'],
         config,
     )
-
+    print ("config",config)
     # Restore agent.
     if FLAGS.restore_path is not None:
         agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)

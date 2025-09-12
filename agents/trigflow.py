@@ -292,6 +292,7 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
         config['ob_dims'] = ob_dims
         config['action_dim'] = action_dim
    #     config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
+        print ("in side config[alpha]",config["alpha"])
         return cls(rng, network=network, config=flax.core.FrozenDict(**config))
 
 def get_config():
