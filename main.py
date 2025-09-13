@@ -102,6 +102,8 @@ def main(_):
         exp_name +=  "_alpha_actor_" + str(config["alpha_actor"])
     if FLAGS.test_alpha is not None:
         config["test_alpha"] = FLAGS.test_alpha
+    else:
+        config["test_alpha"] = config["alpha"]
     if FLAGS.solver is not None:
         config["solver"] = FLAGS.solver
         exp_name +=  "_solver_" + str(config["solver"])
