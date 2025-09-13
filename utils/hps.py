@@ -13,6 +13,9 @@ hyperparameters ={
         "dtrigflow": {
             "alpha": 30.0
         },
+        "difql": {
+            "alpha_actor": 30,
+        },
         "alpha_critic": 0.01,
         "alpha": 3.0,
         "drebrac": {
@@ -39,7 +42,7 @@ hyperparameters ={
         }
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
-        "alpha_actor": 30.0,
+        "alpha_actor": 303.0,
         "iql": {
             "alpha_actor": 10.0
         },
@@ -86,11 +89,14 @@ hyperparameters ={
             "alpha_actor": 0.01
         },
         "alpha_critic": 0.01,
-        "alpha": 1.0,
+        "alpha": 3.0,
         "trigflow": {
             "alpha_actor": 30,
         },
         "dtrigflow": {
+            "alpha_actor": 30,
+        },
+        "difql": {
             "alpha_actor": 30,
         },
     },
@@ -106,7 +112,7 @@ hyperparameters ={
             "alpha_actor": 1.0
         },
         "alpha_critic": 1.0,
-        "alpha": 100.0,
+        "alpha": 30.0,
         "drebrac": {
             "alpha_actor": 1.0,
             "alpha_critic": 1.0
@@ -124,11 +130,11 @@ hyperparameters ={
             "alpha_actor": 1.0
         },
         "alpha_critic": 1.0,
-        "alpha": 30.0,
+        "alpha": 100.0,
         "drebrac": {
             "alpha_actor": 1.0,
             "alpha_critic": 1.0
-        }
+        },
     },
     "scene-play-singletask-v0": {
         "iql": {
@@ -148,7 +154,10 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "dtrigflow": {
-            "alpha": 100,
+            "alpha_actor": 1000,
+        },
+        "difql": {
+            "alpha_actor": 1000,
         },
     },
     "puzzle-3x3-play-singletask-v0": {
@@ -181,7 +190,7 @@ hyperparameters ={
             "alpha_actor": 0.3
         },
         "alpha_critic": 0.01,
-        "alpha": 100.0,
+        "alpha": 300.0,
         "drebrac": {
             "alpha_actor": 0.3,
             "alpha_critic": 0.01
