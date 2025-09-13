@@ -57,7 +57,7 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
 
-        if self.config["use_q_loss"] > 0:
+        if self.config["use_q_loss"] :
             qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
             if self.config['q_agg'] == 'min':
                 q = jnp.min(qs, axis=0)
