@@ -33,14 +33,15 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
         # BC flow loss.
         z = jax.random.normal(x_rng, (batch_size, action_dim))
         t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
-        x_t = jnp.cos(t)* adjusted_actions + jnp.sin(t) * z
 
-        vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
+    #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
 
+        x_t = jnp.cos(t)*  adjusted_actions + jnp.sin(t) * z
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
+        raw_zero_shot_loss = ( ( pred_actions-adjusted_actions ) ** 2).mean()   
 
         #、 v = jax.lax.stop_gradient(aux["v"])
        #  q = jax.lax.stop_gradient(aux["q"])
@@ -58,6 +59,9 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             time_weight_logits = jnp.zeros_like(t) 
 
         if self.config["use_q_loss"] :
+            x_t = jnp.cos(t)*  batch['actions'] + jnp.sin(t) * z
+            F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
+            pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
             qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
             if self.config['q_agg'] == 'min':
                 q = jnp.min(qs, axis=0)
@@ -87,7 +91,6 @@ class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
             "g_min": jnp.min(g),
             }
             
-        raw_zero_shot_loss = ( ( pred_actions-adjusted_actions ) ** 2).mean()   
         zero_shot_loss = ( weight*  ( pred_actions-adjusted_actions ) ** 2 -time_weight_logits).mean()   
         total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
         out["zero_shot_loss"]  = raw_zero_shot_loss
