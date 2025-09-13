@@ -22,14 +22,14 @@ if [ "$#" -eq 3 ]; then
 fi
 
 # Define the list of alpha parameters
-factors=(  0.1 1.0 10)
+factors=(  0.2 0.5 1.0 2.0 )
 
 # Loop through all alpha values
-for distill_factor in "${factors[@]}"; do
+for d in "${factors[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: $EXP_NAME"
     python main.py \
         --agent_name "$AGENT_NAME" \
         --env_name "$ENV_NAME" \
-        --distill_factor "$distill_factor" \
+        --delta "$d" \
         --exp_name "$EXP_NAME"
 done

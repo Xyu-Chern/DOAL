@@ -96,6 +96,7 @@ def main(_):
     for key, value in flag_dict.items():
         if key in config and value is not None :
             config[key] = value
+            print (key+" is updated to be "+ str(value))
 
     # Make environment and datasets.
     env, envs, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=FLAGS.frame_stack,eval_episodes=FLAGS.eval_episodes + FLAGS.video_episodes)
