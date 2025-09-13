@@ -9,13 +9,13 @@ import ml_collections
 import optax
 
 from utils.encoders import encoder_modules
-from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
+from utils.flax_utils import ModuleDict, TrainState, nonpytree_field,DOALAgent
 from utils.networks import ActorVectorField, Value,TimeWeight
 from functools import partial
 import math
 
 
-class TrigFQLAgent(flax.struct.PyTreeNode):
+class TrigFQLAgent(DOALAgent):
     """Flow Q-learning (FQL) agent."""
 
     rng: Any
@@ -200,6 +200,8 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
             actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) #* self.config["sigma"]
 
         actions = jnp.clip(actions, -1, 1)
+        if self.config["test_guidance"]:
+            adjusted_actions , adjustment,hd,g, q = self.get_guided_action( actions, actions,n_observations,alpha=self.config["test_alpha"],delta=self.config["delta"],params=self.network.params)
         # Pick the action with the highest Q-value.
         q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
         actions = actions[jnp.argmax(q)]
@@ -290,6 +292,8 @@ class TrigFQLAgent(flax.struct.PyTreeNode):
 
         config['ob_dims'] = ob_dims
         config['action_dim'] = action_dim
+        if config["test_alpha"] is None:
+            config["test_alpha"] = config["alpha"]
    #     config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
       #  print ("in side config[alpha]",config["alpha"])
         return cls(rng, network=network, config=flax.core.FrozenDict(**config))
@@ -312,6 +316,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             q_agg='min',  # Aggregation method for target Q values.
+            test_guidance=False,
             q_steps=10,
             return_next_actions=True,
             decode_type="ddim",
@@ -319,6 +324,9 @@ def get_config():
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
             time_weight=False,
             expectile=0.9,  # IQL expectile.
+            delta =1.0,
+            test_alpha=None,
+            alpha=10.0,
             gn=0.0,
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.

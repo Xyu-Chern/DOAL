@@ -9,7 +9,7 @@ import ml_collections
 import optax
 
 from utils.encoders import encoder_modules
-from utils.flax_utils import ModuleDict, TrainState, nonpytree_field,DOALAgent
+from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import ActorVectorField, Value
 from jax.lax import stop_gradient
 from functools import partial
@@ -17,7 +17,7 @@ import math
 
 from agents.trigflow import TrigFQLAgent
 
-class DTrigFQLAgent(DOALAgent,TrigFQLAgent):
+class DTrigFQLAgent(TrigFQLAgent):
     """Flow Q-learning (FQL) agent."""
 
 
@@ -124,12 +124,14 @@ def get_config():
             return_next_actions=True,
             time_weight=False,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
+            test_alpha=None,
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             vel_actor=0.0,  # BC coefficient (need to be tuned for each environment).
             delta=1.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.
+            test_guidance=False,
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )
