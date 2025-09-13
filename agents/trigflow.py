@@ -201,7 +201,7 @@ class TrigFQLAgent(DOALAgent):
 
         actions = jnp.clip(actions, -1, 1)
         if self.config["test_guidance"]:
-            adjusted_actions , adjustment,hd,g, q = self.get_guided_action( actions, actions,n_observations,alpha=self.config["test_alpha"],delta=self.config["delta"],params=self.network.params)
+            actions , adjustment,hd,g, q = self.get_guided_action( actions, actions,n_observations,alpha=self.config["test_alpha"],delta=self.config["delta"],params=self.network.params)
         # Pick the action with the highest Q-value.
         q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
         actions = actions[jnp.argmax(q)]
