@@ -124,7 +124,7 @@ def get_config():
             return_next_actions=True,
             time_weight=False,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
-            test_alpha=None,
+            test_alpha=0.0,
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             vel_actor=0.0,  # BC coefficient (need to be tuned for each environment).
             delta=1.0,

@@ -52,6 +52,7 @@ flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative')
 flags.DEFINE_string('solver',None, 'coffeient for conservative') 
 flags.DEFINE_boolean('time_weight', None , 'coffeient for conservative')
 flags.DEFINE_boolean('test_guidance', None , 'coffeient for conservative')
+flags.DEFINE_float('test_alpha', None , 'coffeient for conservative')
 flags.DEFINE_boolean('use_q_loss', False, 'coffeient for conservative')
 flags.DEFINE_string('decode_type', None, 'coffeient for conservative')
 
@@ -99,6 +100,8 @@ def main(_):
     if FLAGS.alpha_actor != -1:
         config["alpha_actor"] = FLAGS.alpha_actor
         exp_name +=  "_alpha_actor_" + str(config["alpha_actor"])
+    if FLAGS.test_alpha is not None:
+        config["test_alpha"] = FLAGS.test_alpha
     if FLAGS.solver is not None:
         config["solver"] = FLAGS.solver
         exp_name +=  "_solver_" + str(config["solver"])

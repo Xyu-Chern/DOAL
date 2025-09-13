@@ -292,7 +292,7 @@ class TrigFQLAgent(DOALAgent):
 
         config['ob_dims'] = ob_dims
         config['action_dim'] = action_dim
-        if config["test_alpha"] is None:
+        if config["test_alpha"] == 0.0:
             config["test_alpha"] = config["alpha"]
    #     config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
       #  print ("in side config[alpha]",config["alpha"])
@@ -325,7 +325,7 @@ def get_config():
             time_weight=False,
             expectile=0.9,  # IQL expectile.
             delta =1.0,
-            test_alpha=None,
+            test_alpha=0.0,
             alpha=10.0,
             gn=0.0,
             vel_actor = 0.0,
