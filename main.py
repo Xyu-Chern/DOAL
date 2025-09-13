@@ -43,18 +43,20 @@ flags.DEFINE_integer('save_interval', 1000000, 'Saving interval.')
 flags.DEFINE_integer('eval_episodes', 50, 'Number of evaluation episodes.')
 flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
-flags.DEFINE_float('alpha',-1, 'coffeient for conservative')
-flags.DEFINE_float('step_size',-1, 'coffeient for conservative')
-flags.DEFINE_integer('num_steps',-1, 'coffeient for conservative')
-flags.DEFINE_float('expectile',-1, 'coffeient for conservative')
-flags.DEFINE_float('alpha_actor',-1, 'coffeient for conservative') 
-flags.DEFINE_float('distill_factor',-1, 'coffeient for conservative') 
+
+
+flags.DEFINE_float('alpha',None, 'coffeient for conservative')
+flags.DEFINE_float('step_size',None, 'coffeient for conservative')
+flags.DEFINE_integer('num_steps',None, 'coffeient for conservative')
+flags.DEFINE_float('expectile',None, 'coffeient for conservative')
+flags.DEFINE_float('alpha_actor',None, 'coffeient for conservative') 
+flags.DEFINE_float('distill_factor',None, 'coffeient for conservative') 
 flags.DEFINE_string('solver',None, 'coffeient for conservative') 
 flags.DEFINE_boolean('time_weight', None , 'coffeient for conservative')
 flags.DEFINE_boolean('test_guidance', None , 'coffeient for conservative')
 flags.DEFINE_float('test_alpha', None , 'coffeient for conservative')
-flags.DEFINE_boolean('use_q_loss', False, 'coffeient for conservative')
-flags.DEFINE_string('decode_type', None, 'coffeient for conservative')
+flags.DEFINE_boolean('use_q_loss', None,  'coffeient for conservative')
+flags.DEFINE_float('delta', None, 'coffeient for conservative')
 
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
@@ -83,49 +85,17 @@ def main(_):
         print ("update",hyperparameters[env_class][config['agent_name']])
 
         
-    exp_name = FLAGS.exp_name 
-    if FLAGS.expectile != -1:
-        config["expectile"] = FLAGS.expectile
-        exp_name +=  "_expectile _" + str(config["expectile"])
-    if FLAGS.num_steps != -1:
-        config["num_steps"] = FLAGS.num_steps
-        exp_name +=  "num_steps _" + str(config["num_steps"])
-    if FLAGS.step_size != -1:
-        config["step_size"] = FLAGS.alpha
-        exp_name +=  "step_size _" + str(config["step_size"])
-  #  if env_class in hyperparameters and "alpha" in hyperparameters[env_class] :
-   #     alpha = hyperparameters[env_class]["alpha"]
-    #    config.update({"alpha":alpha})
-     #   print("env alpha is ", alpha)  test_guidance
-    if FLAGS.alpha_actor != -1:
-        config["alpha_actor"] = FLAGS.alpha_actor
-        exp_name +=  "_alpha_actor_" + str(config["alpha_actor"])
-    if FLAGS.test_alpha is not None:
-        config["test_alpha"] = FLAGS.test_alpha
-    else:
-        config["test_alpha"] = config["alpha"]
-    if FLAGS.solver is not None:
-        config["solver"] = FLAGS.solver
-        exp_name +=  "_solver_" + str(config["solver"])
-    if FLAGS.distill_factor != -1:
-        config["distill_factor"] = FLAGS.distill_factor
-        exp_name +=  "_distill_factor_" + str(config["distill_factor"])  
-    if FLAGS.use_q_loss:
-        config['use_q_loss'] = FLAGS.use_q_loss
-    if FLAGS.test_guidance:
-        config['test_guidance'] = FLAGS.test_guidance
-    if FLAGS.time_weight is not None:
-        config['time_weight'] = FLAGS.time_weight
-        print ("time_weight", FLAGS.time_weight)
-    if FLAGS.alpha != -1:
-        config["alpha"] = FLAGS.alpha
-        exp_name +=  "_alpha _" + str(config["alpha"])
+    exp_name = FLAGS.exp_name     
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
 
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
         json.dump(flag_dict, f)
+
+    for key, value in flag_dict.items():
+        if key in config and value is not None :
+            config[key] = value
 
     # Make environment and datasets.
     env, envs, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=FLAGS.frame_stack,eval_episodes=FLAGS.eval_episodes + FLAGS.video_episodes)
