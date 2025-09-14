@@ -26,7 +26,7 @@ class DTrigFQLAgent(TrigFQLAgent):
         batch_size, action_dim = batch['actions'].shape
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
-        alpha = self.config["alpha_actor"] / aux["lam"] 
+        alpha = self.config["alpha_actor"] 
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
 
@@ -57,15 +57,6 @@ class DTrigFQLAgent(TrigFQLAgent):
             weight = jnp.ones_like(t) 
             time_weight_logits = jnp.zeros_like(t) 
 
-        if self.config["use_q_loss"] :
-            x_t = jnp.cos(t)*  batch['actions'] + jnp.sin(t) * z
-            F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
-            pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
-            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
-            if self.config['q_agg'] == 'min':
-                q = jnp.min(qs, axis=0)
-            else:
-                q = jnp.mean(qs, axis=0)
 
 
         actor_loss = -q.mean()
@@ -89,17 +80,11 @@ class DTrigFQLAgent(TrigFQLAgent):
             "g_max": jnp.max(g),
             "g_min": jnp.min(g),
             }
-        if self.config["use_vel_loss"]:
-            vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
-            raw_bc_flow_loss = ( ( F_theta - vel ) ** 2)
-            bc_flow_loss = ( weight*  raw_bc_flow_loss -time_weight_logits).mean()   
-            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
-            out["bc_flow_loss"]  = raw_bc_flow_loss.mean()   
-        else:
-            raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
-            zero_shot_loss = ( weight*  raw_one_shot_loss -time_weight_logits).mean()   
-            total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
-            out["zero_shot_loss"]  = raw_zero_shot_loss.mean()   
+
+        raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
+        zero_shot_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
+        total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
+        out["zero_shot_loss"]  = raw_zero_shot_loss.mean()   
 
         out['total_loss'] = total_loss
         return total_loss, out 
