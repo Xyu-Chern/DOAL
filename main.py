@@ -78,7 +78,7 @@ def main(_):
     env_class = re.sub(pattern, replacement, FLAGS.env_name )
     if env_class in hyperparameters:
         for k, v in hyperparameters[env_class].items():
-            if not isinstance(v,dict):
+            if not isinstance(v,dict):  
                 config[k] = v
                 print ("update",k,v)
     if env_class in hyperparameters and config['agent_name'] in hyperparameters[env_class]:
@@ -87,7 +87,7 @@ def main(_):
     FLAGS.agent_name = config['agent_name']
         
     exp_name = FLAGS.exp_name     
-    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
+    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name)
 
     os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
@@ -140,7 +140,7 @@ def main(_):
 
     agent_class = agents[config['agent_name']]
     flag_dict["agent_config"] = config
-    setup_wandb(project='doal', group=FLAGS.env_name, name=exp_name,config=flag_dict)
+    setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
 
    # artifact = wandb.Artifact(name="agent", type="code")
    # artifact.add_file(f'agents/{FLAGS.agent_name}.py')

@@ -15,6 +15,9 @@ hyperparameters ={
         "drebrac": {
             "alpha_actor": 0.003,
             "alpha_critic": 0.01
+        },
+        "trigflow":{
+            "alpha_actor":3,
         }
     },
     "antmaze-giant-navigate-singletask-v0": {

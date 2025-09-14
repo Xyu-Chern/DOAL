@@ -22,7 +22,7 @@ fi
 
 
 # Define the list of alpha parameters
-alphas=(100 300 1000    )
+alphas=(1 3 10    )
 
 # Loop through all alpha values
 for alpha in "${alphas[@]}"; do
