@@ -42,7 +42,7 @@ def convert_to_bfloat16(batch: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 def clip(x):
-    return jnp.clip(x,-1,1)
+    return x
 class DOALAgent(flax.struct.PyTreeNode):
     """Implicit Q-learning (IQL) agent."""
 
@@ -91,7 +91,7 @@ class DOALAgent(flax.struct.PyTreeNode):
                     last_action + dz * (delta / distance),
                     unconstrained_action
                 )
-                return jnp.clip(projected_action, -1.0, 1.0)
+                return projected_action
 
             def step(H , last_action, grad_action):
 
@@ -197,7 +197,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
-            return  adjusted_actions, dx, 0*q,g, q
+            return  adjusted_actions, dx, 2*  alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype) ,g, q
         return _get_guided_action(q_action, action,observation,alpha,params)
 
 
