@@ -13,13 +13,7 @@ fi
 
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
-ENV_NAME=$2
 
-# Check if the third argument exists and assign it
-EXP_NAME=""
-if [ "$#" -eq 3 ]; then
-    EXP_NAME=$3
-fi
 
 # Define the list of alpha parameters
 factors=(0.003 0.01 0.03 0.1 0.3 )
@@ -30,7 +24,5 @@ for d in "${factors[@]}"; do
     python main.py \
         --agent_name "$AGENT_NAME" \
         --env_name "$ENV_NAME" \
-        --alpha 1.0 \
-        --delta "$d" \
-        --exp_name "$EXP_NAME"
+        --delta "$d" $2
 done
