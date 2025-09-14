@@ -32,7 +32,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  x_1, x_1,batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
         t = jax.random.uniform(t_rng, (batch_size, 1))
         x_t = (1 - t) * x_0 + t * adjusted_actions
-        vel = x_1 - x_0
+        vel = adjusted_actions - x_0
 
 
 

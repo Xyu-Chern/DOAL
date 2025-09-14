@@ -42,7 +42,7 @@ hyperparameters ={
         }
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
-        "alpha_actor": 303.0,
+        "alpha_actor": 30.0,
         "iql": {
             "alpha_actor": 10.0
         },
@@ -51,6 +51,9 @@ hyperparameters ={
         },
         "rebrac": {
             "alpha_actor": 0.01
+        },
+        "dtrigflow": {
+            "alpha_actor": 300,
         },
         "alpha_critic": 0.01,
         "alpha": 1.0,
@@ -61,6 +64,9 @@ hyperparameters ={
     },
     "humanoidmaze-large-navigate-singletask-v0": {
         "alpha_actor": 30.0,
+        "dtrigflow": {
+            "alpha_actor": 300,
+        },
         "iql": {
             "alpha_actor": 10.0
         },

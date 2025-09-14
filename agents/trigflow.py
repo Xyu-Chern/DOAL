@@ -292,6 +292,7 @@ class TrigFQLAgent(DOALAgent):
 
         config['ob_dims'] = ob_dims
         config['action_dim'] = action_dim
+        print ("delta is" , config["delta"])
    #     config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
       #  print ("in side config[alpha]",config["alpha"])
         return cls(rng, network=network, config=flax.core.FrozenDict(**config))

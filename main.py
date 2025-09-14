@@ -17,7 +17,7 @@ from envs.env_utils import make_env_and_datasets
 from utils.hps import hyperparameters
 from utils.datasets import Dataset, ReplayBuffer
 from utils.evaluation import evaluate, evaluate_parallel, flatten
-from utils.flax_utils import restore_agent, save_agent
+from utils.flax_utils import restore_agent, save_agent, convert_to_bfloat16
 from utils.log_utils import CsvLogger, get_exp_name, get_flag_dict, get_wandb_video, setup_wandb
 import re
 
@@ -96,7 +96,7 @@ def main(_):
     for key, value in flag_dict.items():
         if key in config and value is not None :
             config[key] = value
-            print (key+" is updated to be "+ str(value))
+            print (key+" is updated to be "+ str(config[key]))
 
     # Make environment and datasets.
     env, envs, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=FLAGS.frame_stack,eval_episodes=FLAGS.eval_episodes + FLAGS.video_episodes)

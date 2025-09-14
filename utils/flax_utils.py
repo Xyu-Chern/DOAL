@@ -9,7 +9,7 @@ import flax.linen as nn
 import jax
 import jax.numpy as jnp
 import optax
-
+import numpy as np
 nonpytree_field = functools.partial(flax.struct.field, pytree_node=False)
 from jaxopt import linear_solve
 
@@ -18,6 +18,29 @@ import jaxopt
 from jax import jvp
 def hvp(grad_f, primals, tangents):
     return jvp(grad_f, primals, tangents)[1]
+
+def convert_to_bfloat16(batch: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Converts all jnp.float32 arrays in a dictionary to jnp.bfloat16.
+
+    Args:
+        batch: A dictionary that may contain JAX arrays of various dtypes.
+
+    Returns:
+        A new dictionary with jnp.float32 arrays converted to bfloat16.
+    """
+
+    out = {}
+
+    for key, value in batch.items():
+        if isinstance(value, jnp.ndarray) and value.dtype == jnp.float32:
+            out[key] = value.astype(jnp.bfloat16)
+        elif isinstance(value, np.ndarray) and value.dtype == np.float32:
+            out[key] = jnp.array(value,dtype=jnp.bfloat16)
+        else:
+            out[key] = value
+    return out
+
 def clip(x):
     return jnp.clip(x,-1,1)
 class DOALAgent(flax.struct.PyTreeNode):
