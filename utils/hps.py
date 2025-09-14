@@ -86,8 +86,11 @@ hyperparameters ={
             "alpha_actor": 0.01
         },
         "alpha_critic": 0.01,
-        "alpha": 30.0,
+        "alpha": 3.0,
         "difql": {
+            "alpha_actor": 30,
+        },
+        "dtrigflow": {
             "alpha_actor": 30,
         },
     },

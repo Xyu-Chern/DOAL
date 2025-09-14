@@ -64,7 +64,9 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='difql',  # Agent name.
-            solver="bfgs",
+            solver="linear",
+            step_size=1.0,  # IQL expectile.
+            num_steps=1,  # IQL expectile.
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.

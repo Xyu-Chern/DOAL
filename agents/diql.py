@@ -100,7 +100,9 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='diql',  # Agent name.
-            solver="bfgs",
+            solver="linear",
+            step_size=1.0,  # IQL expectile.
+            num_steps=1,  # IQL expectile.
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.  , 512, 512
