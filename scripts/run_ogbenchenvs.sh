@@ -14,11 +14,6 @@ fi
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
 
-# Check if the third argument exists and assign it
-EXP_NAME=""
-if [ "$#" -eq 2 ]; then
-    EXP_NAME=$2
-fi
 
 # Define the list of alpha parameters
 
@@ -29,6 +24,6 @@ for env_name in "${env_names[@]}"; do
     python main.py \
         --agent_name "$AGENT_NAME" \
         --env_name "$env_name" \
-        --exp_name "$EXP_NAME" \
+        --exp_name $2 \
         --seed "$RANDOM"
 done

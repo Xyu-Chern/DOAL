@@ -101,7 +101,7 @@ class TrigFQLAgent(DOALAgent):
         out = {
                 "weight":weight.mean(),
             }
-        if self.config["use_q_loss"] > 0:
+        if self.config["use_q_loss"] :
             qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
             if self.config['q_agg'] == 'min':
                 q = jnp.min(qs, axis=0)
@@ -114,12 +114,12 @@ class TrigFQLAgent(DOALAgent):
             out["q"] =  q.mean()
         else:
             total_loss = 0
-        if self.config["alpha_actor"] > 0:
-            raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
-            one_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
-            total_loss = total_loss  +  self.config["alpha_actor"]  *    one_shot_loss 
-            out["bc_flow_loss"]  = raw_one_shot_loss
-        
+            
+        raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
+        one_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
+        total_loss = total_loss  +  self.config["alpha_actor"]  *    one_shot_loss 
+        out["bc_flow_loss"]  = raw_one_shot_loss
+    
         out['total_loss'] = total_loss
         return total_loss, out 
 

@@ -10,12 +10,6 @@ hyperparameters ={
         "rebrac": {
             "alpha_actor": 0.003
         },
-        "dtrigflow": {
-            "alpha": 30.0
-        },
-        "difql": {
-            "alpha_actor": 30,
-        },
         "alpha_critic": 0.01,
         "alpha": 3.0,
         "drebrac": {
@@ -51,9 +45,6 @@ hyperparameters ={
         },
         "rebrac": {
             "alpha_actor": 0.01
-        },
-        "dtrigflow": {
-            "alpha_actor": 300,
         },
         "alpha_critic": 0.01,
         "alpha": 1.0,
@@ -95,13 +86,7 @@ hyperparameters ={
             "alpha_actor": 0.01
         },
         "alpha_critic": 0.01,
-        "alpha": 3.0,
-        "trigflow": {
-            "alpha_actor": 30,
-        },
-        "dtrigflow": {
-            "alpha_actor": 30,
-        },
+        "alpha": 30.0,
         "difql": {
             "alpha_actor": 30,
         },
@@ -118,7 +103,7 @@ hyperparameters ={
             "alpha_actor": 1.0
         },
         "alpha_critic": 1.0,
-        "alpha": 100.0,
+        "alpha": 10.0,
         "drebrac": {
             "alpha_actor": 1.0,
             "alpha_critic": 1.0

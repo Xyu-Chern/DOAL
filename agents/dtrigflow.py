@@ -90,11 +90,17 @@ class DTrigFQLAgent(TrigFQLAgent):
             "g_max": jnp.max(g),
             "g_min": jnp.min(g),
             }
-            
-        zero_shot_loss = ( weight*  ( pred_actions-adjusted_actions ) ** 2 -time_weight_logits).mean()   
-        total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
-        out["zero_shot_loss"]  = raw_zero_shot_loss
-        
+        if self.config["use_vel_loss"]:
+            raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
+            zero_shot_loss = ( weight*  raw_one_shot_loss -time_weight_logits).mean()   
+            total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
+            out["zero_shot_loss"]  = raw_zero_shot_loss.mean()   
+        else:
+            raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
+            zero_shot_loss = ( weight*  raw_one_shot_loss -time_weight_logits).mean()   
+            total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
+            out["zero_shot_loss"]  = raw_zero_shot_loss.mean()   
+
         out['total_loss'] = total_loss
         return total_loss, out 
 
@@ -126,7 +132,7 @@ def get_config():
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             test_alpha=0.0,
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
-            vel_actor=0.0,  # BC coefficient (need to be tuned for each environment).
+            use_vel_loss=False,  # BC coefficient (need to be tuned for each environment).
             delta=1.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
