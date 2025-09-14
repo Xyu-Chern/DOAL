@@ -22,7 +22,7 @@ if [ "$#" -eq 3 ]; then
 fi
 
 # Define the list of alpha parameters
-factors=(  0.2 0.5 1.0 2.0 )
+factors=(0.003 0.01 0.03 0.1 0.3 )
 
 # Loop through all alpha values
 for d in "${factors[@]}"; do
@@ -30,6 +30,7 @@ for d in "${factors[@]}"; do
     python main.py \
         --agent_name "$AGENT_NAME" \
         --env_name "$ENV_NAME" \
+        --alpha 1.0 \
         --delta "$d" \
         --exp_name "$EXP_NAME"
 done

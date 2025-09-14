@@ -192,7 +192,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             b =  g / (2 * alpha )
 
             normb = jnp.linalg.norm(b)
-            dx = jnp.where(normb > delta,  b / normb,   b)
+            dx = jnp.where(normb > delta,  b * delta/ normb,   b)
          #   dx = linear_solve.solve_normal_cg(A,b)
             
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
