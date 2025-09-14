@@ -37,7 +37,7 @@ class DFQLAgent(DOALAgent,FQLAgent):
         noises = jax.random.normal(noise_rng, (batch_size, action_dim))
         target_flow_actions = self.compute_flow_actions(batch['observations'], noises=noises)
 
-        alpha = self.config["alpha"] 
+        alpha = self.config["alpha_actor"] 
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  target_flow_actions, target_flow_actions,batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
         actor_actions = self.network.select('actor_onestep_flow')(batch['observations'], noises, params=grad_params)
         distill_loss = jnp.mean((actor_actions - adjusted_actions) ** 2)

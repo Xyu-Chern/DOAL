@@ -27,7 +27,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
 flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (dataset) name.')
-flags.DEFINE_string('agent_name', "dtrigflow", 'Agent name.')
+flags.DEFINE_string('agent_name',None, 'Agent name.')
 flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '/home/bml/storage/exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
@@ -62,9 +62,10 @@ flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
 flags.DEFINE_integer('balanced_sampling', 0, 'Whether to use balanced sampling for online fine-tuning.')
 
+config_flags.DEFINE_config_file('agent', f'agents/dtrigflow.py', lock_config=False)
 def main(_):
     # Set up logger.
-    config_flags.DEFINE_config_file('agent', f'agents/{FLAGS.agent_name}.py', lock_config=False)
+
     config = FLAGS.agent
 
      

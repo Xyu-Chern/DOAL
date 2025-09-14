@@ -23,7 +23,7 @@ class DIQLAgent(DOALAgent,IQLAgent):
         """Compute the actor loss (AWR or DDPG+BC)."""
         if self.config['actor_loss'] == 'awr':
 
-            alpha = self.config["alpha"] 
+            alpha = self.config["alpha_actor"] 
             adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
             # AWR loss.
             v = jax.lax.stop_gradient(aux["v"])

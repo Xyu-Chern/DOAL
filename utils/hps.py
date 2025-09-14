@@ -87,12 +87,12 @@ hyperparameters ={
         },
         "alpha_critic": 0.01,
         "alpha": 3.0,
-        "difql": {
-            "alpha_actor": 30,
-        },
-        "dtrigflow": {
-            "alpha_actor": 30,
-        },
+     #   "difql": {
+      #      "alpha_actor": 30,
+       # },
+      #  "dtrigflow": {
+       #     "alpha_actor": 30,
+       # },
     },
     "cube-single-play-singletask-v0": {
         "alpha_actor": 300.0,
@@ -147,12 +147,12 @@ hyperparameters ={
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
         },
-        "dtrigflow": {
-            "alpha_actor": 1000,
-        },
-        "difql": {
-            "alpha_actor": 1000,
-        },
+    #    "dtrigflow": {
+     #       "alpha_actor": 1000,
+     #   },
+    #    "difql": {
+     #       "alpha_actor": 1000,
+      #  },
     },
     "puzzle-3x3-play-singletask-v0": {
         "alpha_actor": 1000.0,

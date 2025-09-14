@@ -52,8 +52,8 @@ class DOALAgent(flax.struct.PyTreeNode):
     def get_guided_action(self,q_action, action,observation,alpha,delta,params):
         if "solver" not in self.config or self.config["solver"] == "linear":
             return self.get_linear_action(q_action, action,observation,alpha,delta,params)
-        elif self.config["solver"] == "diag_hess":
-            return self.get_diag_hess_action(q_action, action,observation,alpha,delta,params)
+        elif self.config["solver"] == "shift":
+            return self.get_trust_action(q_action, action,observation,alpha,delta,params)
         elif self.config["solver"] == "full":
             return self.get_full_action(q_action, action,observation,alpha,delta,params)
         elif self.config["solver"] == "bfgs":
@@ -252,6 +252,94 @@ class DOALAgent(flax.struct.PyTreeNode):
 
         return _get_guided_action(q_action, action, observation, alpha, params)
 
+    @jax.jit
+    def get_trust_action(self, q_action, action, observation, alpha, delta, params):
+
+        def make_hessian_psd_gershgorin(H, epsilon=1e-6):
+            """
+            Makes a Hessian PSD using Gershgorin circle theorem without linalg calls.
+
+            This is a robust method when eigh() or eigvalsh() are unavailable due to
+            environment issues (e.g., CUDA driver problems).
+
+            Args:
+                H: The input Hessian matrix (must be symmetric).
+                epsilon: A small positive value to ensure strict positive definiteness.
+
+            Returns:
+                The modified, positive semi-definite Hessian.
+            """
+            # Get the diagonal elements of the Hessian
+            H_diag = jnp.diag(H)
+            
+            # 1. Calculate Ri: the sum of absolute off-diagonal elements for each row
+            # We can get this by summing the absolute values of the whole matrix per row
+            # and then subtracting the absolute value of the diagonal element.
+            R = jnp.sum(jnp.abs(H), axis=1) - jnp.abs(H_diag)
+            
+            # 2. Find the Gershgorin lower bound for the minimum eigenvalue
+            g_min = jnp.min(H_diag - R)
+            
+            # 3. Determine the required shift (lambda)
+            # If g_min is positive, the matrix might already be PSD. We add a small
+            # epsilon just in case. If g_min is negative, we must shift it to be
+            # positive.
+            lambda_shift = jnp.maximum(0.0, -g_min) + epsilon
+
+            # 4. Add the scaled identity matrix to make the Hessian PSD
+            H_psd = H + lambda_shift * jnp.eye(H.shape[0])
+        
+            return H_psd
+        @jax.jit
+        @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
+        def _get_guided_action(q_action, action, observation, alpha, params):
+
+            # 1. Define the regularized objective function to be MINIMIZED.
+
+            def bc_loss_wrt_q_action(q_action):
+                qs = self.network.select('critic')(observation, q_action, params=params)
+                q = jnp.mean(qs)
+                return - q 
+
+
+            def projected_step(last_action,H,grad_action):
+                def matvec_A(x):
+                    return  jnp.dot(H, x)
+                dz = -  linear_solve.solve_normal_cg(matvec_A, grad_action)
+                unconstrained_action = last_action + dz
+                
+                distance = jnp.linalg.norm(dz)
+                projected_action = jnp.where(
+                    distance > delta,
+                    last_action + dz * (delta / distance),
+                    unconstrained_action
+                )
+                return jnp.clip(projected_action, -1.0, 1.0)
+
+
+
+            q_final,grad_action = jax.value_and_grad(bc_loss_wrt_q_action)(q_action)
+         #   grad_action = grad_action + 2 * (q_action-action)
+            H = jax.hessian(bc_loss_wrt_q_action)(q_action)
+            H = make_hessian_psd_gershgorin(H,alpha)
+         #   eigvals, eigvecs = jnp.linalg.eigh(H)
+          #  eigvals = jnp.abs(eigvals)
+           # H = jnp.dot(eigvecs, jnp.dot(jnp.diag(eigvals), eigvecs.T)).real
+
+            adjusted_actions = projected_step(q_action,H,grad_action)
+
+            # 4. Extract the results.
+            adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
+            
+            dx = jax.lax.stop_gradient(adjusted_actions - action)
+            q = jax.lax.stop_gradient(q_final)
+            
+            g = jax.lax.stop_gradient(grad_action)
+
+            eig =   jnp.diagonal(H)#jax.scipy.linalg.svd(H,full_matrices =False,compute_uv =False)
+            return adjusted_actions, dx,eig, g, q
+
+        return _get_guided_action(q_action, action, observation, alpha, params)
     @jax.jit
     def get_gd_action(self, q_action, action, observation, alpha, delta, params):
 

@@ -15,13 +15,14 @@ fi
 AGENT_NAME=$1
 
 # Define the list of alpha parameters
-factors=(0.003 0.01 0.03 0.1 0.3 )
+factors=( 0.03 0.1 0.3 1.0 100.0)
 
 # Loop through all alpha values
 for d in "${factors[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: $EXP_NAME"
     python main.py \
-        --agent_name "$AGENT_NAME" \
+        --agent "agents/$AGENT_NAME.py" \
         --env_name $2 \
+        --seed "$RANDOM" \
         --delta "$d" $3
 done

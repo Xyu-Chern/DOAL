@@ -27,7 +27,7 @@ env_names=("pen-expert-v1" "door-expert-v1" "hammer-expert-v1" "relocate-expert-
 for env_name in "${env_names[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $env_name, ExpName: $EXP_NAME"
     python main.py \
-        --agent_name "$AGENT_NAME" \
+        --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
         --exp_name "$EXP_NAME" \
         --seed "$RANDOM"

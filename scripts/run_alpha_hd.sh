@@ -26,7 +26,7 @@ agent_names=("diql" "difql" "dtrigflow" )
 for AGENT_NAME in "${agent_names[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $Alpha, ExpName: $EXP_NAME"
     python main.py \
-        --agent_name "$AGENT_NAME" \
+        --agent "agents/$AGENT_NAME.py" \
         --env_name "$ENV_NAME" \
         --alpha "$Alpha" \
         --exp_name "$EXP_NAME" \

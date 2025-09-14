@@ -28,7 +28,7 @@ alphas=( 100  )
 for alpha in "${alphas[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: $EXP_NAME"
     python main.py \
-        --agent_name "$AGENT_NAME" \
+        --agent "agents/$AGENT_NAME.py" \
         --env_name "$ENV_NAME" \
         --alpha "$alpha" \
         --exp_name "$EXP_NAME" \

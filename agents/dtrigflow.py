@@ -26,7 +26,7 @@ class DTrigFQLAgent(TrigFQLAgent):
         batch_size, action_dim = batch['actions'].shape
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
-        alpha = self.config["alpha"] 
+        alpha = self.config["alpha_actor"] / aux["lam"] 
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
 
@@ -41,7 +41,6 @@ class DTrigFQLAgent(TrigFQLAgent):
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
-        raw_zero_shot_loss = ( ( pred_actions-adjusted_actions ) ** 2).mean()   
 
         #、 v = jax.lax.stop_gradient(aux["v"])
        #  q = jax.lax.stop_gradient(aux["q"])

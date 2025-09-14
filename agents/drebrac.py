@@ -65,7 +65,7 @@ class DReBRACAgent(DOALAgent):
         dist = self.network.select('actor')(batch['observations'], params=grad_params)
         actions = dist.mode()
 
-        alpha = self.config["alpha"] 
+        alpha = self.config["alpha_actor"] / aux["lam"] 
         adjusted_actions , adjustment,hd, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
         # BC loss.
