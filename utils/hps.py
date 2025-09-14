@@ -106,7 +106,7 @@ hyperparameters ={
             "alpha_actor": 1.0
         },
         "alpha_critic": 1.0,
-        "alpha": 10.0,
+        "alpha": 100.0,
         "drebrac": {
             "alpha_actor": 1.0,
             "alpha_critic": 1.0
