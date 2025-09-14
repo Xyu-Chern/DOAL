@@ -84,7 +84,7 @@ def main(_):
     if env_class in hyperparameters and config['agent_name'] in hyperparameters[env_class]:
         config.update(hyperparameters[env_class][config['agent_name']])
         print ("update",hyperparameters[env_class][config['agent_name']])
-
+    FLAGS.agent_name = config['agent_name']
         
     exp_name = FLAGS.exp_name     
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
