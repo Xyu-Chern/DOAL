@@ -49,16 +49,15 @@ class DOALAgent(flax.struct.PyTreeNode):
     rng: Any
     network: Any
     config: Any = nonpytree_field()
-    delta = 1.0
     def get_guided_action(self,q_action, action,observation,alpha,delta,params):
         if "solver" not in self.config or self.config["solver"] == "linear":
-            return self.get_linear_action(q_action, action,observation,alpha,self.delta,params)
+            return self.get_linear_action(q_action, action,observation,alpha,delta,params)
         elif self.config["solver"] == "diag_hess":
-            return self.get_diag_hess_action(q_action, action,observation,alpha,self.delta,params)
+            return self.get_diag_hess_action(q_action, action,observation,alpha,delta,params)
         elif self.config["solver"] == "full":
-            return self.get_full_action(q_action, action,observation,alpha,self.delta,params)
+            return self.get_full_action(q_action, action,observation,alpha,delta,params)
         elif self.config["solver"] == "bfgs":
-            return self.get_bfgs_action(q_action, action,observation,alpha,self.delta,params)
+            return self.get_bfgs_action(q_action, action,observation,alpha,delta,params)
 
     @jax.jit
     def get_bfgs_action(self, q_action, action, observation, alpha, delta, params):
