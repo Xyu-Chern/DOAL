@@ -15,7 +15,7 @@ fi
 AGENT_NAME=$1
 
 # Define the list of alpha parameters
-factors=( 0.03 0.1 0.3 1.0 100.0)
+factors=(100.0 0.03 0.1 0.3 1.0 )
 
 # Loop through all alpha values
 for d in "${factors[@]}"; do
