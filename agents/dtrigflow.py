@@ -26,7 +26,7 @@ class DTrigFQLAgent(TrigFQLAgent):
         batch_size, action_dim = batch['actions'].shape
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
-        alpha = self.config["alpha_actor"] 
+        alpha = self.config["alpha"] 
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
 
@@ -35,7 +35,7 @@ class DTrigFQLAgent(TrigFQLAgent):
         t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
 
     #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
-
+    # need ablation study 
         x_t = jnp.cos(t)*  adjusted_actions + jnp.sin(t) * z
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
@@ -83,7 +83,7 @@ class DTrigFQLAgent(TrigFQLAgent):
 
         raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
         zero_shot_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
-        total_loss = total_loss  + self.config["alpha_actor"] *  zero_shot_loss 
+        total_loss = total_loss  + self.config["alpha"] *  zero_shot_loss 
         out["zero_shot_loss"]  = raw_zero_shot_loss.mean()   
 
         out['total_loss'] = total_loss

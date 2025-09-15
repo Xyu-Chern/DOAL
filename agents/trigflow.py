@@ -72,7 +72,7 @@ class TrigFQLAgent(DOALAgent):
         t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
         x_t = jnp.cos(t)* batch['actions'] + jnp.sin(t) * z
 
-        vel =  jnp.cos(t)* z  - jnp.sin(t) * batch['actions']
+     #   vel =  jnp.cos(t)* z  - jnp.sin(t) * batch['actions']
 
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
@@ -117,7 +117,7 @@ class TrigFQLAgent(DOALAgent):
             
         raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
         one_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
-        total_loss = total_loss  +  self.config["alpha_actor"]  *    one_shot_loss 
+        total_loss = total_loss  +  self.config["alpha"]  *    one_shot_loss 
         out["bc_flow_loss"]  = raw_one_shot_loss
     
         out['total_loss'] = total_loss
@@ -324,7 +324,7 @@ def get_config():
             time_weight=False,
             expectile=0.9,  # IQL expectile.
             delta =1.0,
-            test_alpha=0.0,
+            test_alpha=10.0,
             alpha=10.0,
             gn=0.0,
             vel_actor = 0.0,

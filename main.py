@@ -87,8 +87,8 @@ def main(_):
     exp_name = FLAGS.exp_name     
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name)
 
-    os.makedirs(FLAGS.save_dir, exist_ok=True)
     flag_dict = get_flag_dict()
+    os.makedirs(FLAGS.save_dir, exist_ok=True)
     with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
         json.dump(flag_dict, f)
 

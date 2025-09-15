@@ -76,7 +76,7 @@ class IFQLAgent(flax.struct.PyTreeNode):
         vel = x_1 - x_0
 
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
-        actor_loss = self.config['alpha_actor'] *  jnp.mean((pred - vel) ** 2)
+        actor_loss = self.config['alpha'] *  jnp.mean((pred - vel) ** 2)
 
         return actor_loss, {
             'actor_loss': actor_loss,
@@ -252,7 +252,7 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             discount=0.99,  # Discount factor.
-            alpha_actor=10.0,
+            alpha=10.0,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             gn=100.0,

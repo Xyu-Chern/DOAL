@@ -1,5 +1,4 @@
 from agents.fql import FQLAgent
-from agents.dfql import DFQLAgent
 from agents.difql import DIFQLAgent
 from agents.iql import IQLAgent
 from agents.rebrac import ReBRACAgent
@@ -20,6 +19,5 @@ agents = dict(
     fql=FQLAgent,
     rebrac=ReBRACAgent,
     drebrac=DReBRACAgent,
-    dfql=DFQLAgent,
     retrigflow=ReTrigFQLAgent,
 )

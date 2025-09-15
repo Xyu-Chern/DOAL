@@ -3,33 +3,13 @@ hyperparameters ={
         "alpha_actor": 10.0,
         "iql": {
             "alpha_actor": 10.0,
-            "alpha": 1.0,
         },
         "diql": {
             "alpha_actor": 10.0,
-            "alpha": 3.0,
-        },
-        "rebrac": {
-            "alpha_actor": 0.003
         },
         "alpha_critic": 0.01,
-        "alpha": 3.0,
-        "drebrac": {
-            "alpha_actor": 0.003,
-            "alpha_critic": 0.01
-        },
-        "ifql":{
-            "alpha_actor":3,
-        },
-        "difql":{
-            "alpha_actor":3,
-        },
-        "trigflow":{
-            "alpha_actor":3,
-        },
-        "dtrigflow":{
-            "alpha_actor":3,
-        }
+        "delta":1,
+        "alpha":3,
     },
     "antmaze-giant-navigate-singletask-v0": {
         "alpha_actor": 10.0,
