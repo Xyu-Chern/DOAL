@@ -78,7 +78,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             alpha_actor=10.0,
             alpha=1.0,  # BC coefficient (need to be tuned for each environment).
-            delta=100.0,
+            delta=1000.0,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             gn=0.0,
