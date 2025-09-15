@@ -118,6 +118,7 @@ class TrigFQLAgent(DOALAgent):
         raw_one_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2).mean()   
         one_shot_loss = ( weight*  ( pred_actions- batch['actions'] ) ** 2 -time_weight_logits).mean()   
         total_loss = total_loss  +  self.config["alpha"]  *    one_shot_loss 
+        
         out["bc_flow_loss"]  = raw_one_shot_loss
     
         out['total_loss'] = total_loss

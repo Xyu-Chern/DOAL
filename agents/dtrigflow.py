@@ -27,6 +27,7 @@ class DTrigFQLAgent(TrigFQLAgent):
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
         alpha = self.config["alpha"] 
+
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
 
