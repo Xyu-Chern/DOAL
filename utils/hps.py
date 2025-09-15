@@ -32,11 +32,9 @@ hyperparameters ={
     "humanoidmaze-medium-navigate-singletask-v0": {
         "iql": {
             "alpha_actor": 10.0,
-            "alpha": 100.0,
         },
         "diql": {
             "alpha_actor": 10.0,
-            "alpha": 100.0,
         },
         "rebrac": {
             "alpha_actor": 0.01
@@ -55,7 +53,6 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 10.0,
-            "alpha": 30.0,
         },
         "rebrac": {
             "alpha_actor": 0.01
@@ -74,7 +71,6 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 1.0,
-            "alpha": 100.0,
         },
         "rebrac": {
             "alpha_actor": 0.01
@@ -89,7 +85,6 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 1.0,
-            "alpha": 300.0,
         },
         "rebrac": {
             "alpha_actor": 1.0
@@ -104,7 +99,6 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 0.3,
-            "alpha": 300.0,
         },
         "rebrac": {
             "alpha_actor": 1.0
@@ -124,7 +118,6 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 10.0,
-            "alpha": 300.0,
         },
         "rebrac": {
             "alpha_actor": 0.1
@@ -143,7 +136,6 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 10.0,
-            "alpha": 1000.0,
         },
         "rebrac": {
             "alpha_actor": 0.3
@@ -163,7 +155,6 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 3.0,
-            "alpha": 1000.0,
         },
         "rebrac": {
             "alpha_actor": 0.3
