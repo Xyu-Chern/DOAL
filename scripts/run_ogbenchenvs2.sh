@@ -24,6 +24,6 @@ for env_name in "${env_names[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --exp_name $2 \
+        --exp_name $2 $3 \
         --seed "$RANDOM"
 done

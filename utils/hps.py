@@ -2,10 +2,12 @@ hyperparameters ={
     "antmaze-large-navigate-singletask-v0": {
         "alpha_actor": 10.0,
         "iql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 1.0,
         },
         "diql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 3.0,
         },
         "rebrac": {
             "alpha_actor": 0.003
@@ -17,25 +19,26 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "ifql":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         },
         "difql":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         },
         "trigflow":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         },
         "dtrigflow":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         }
     },
     "antmaze-giant-navigate-singletask-v0": {
         "alpha_actor": 10.0,
         "iql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
         },
         "diql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 3.0,
         },
         "rebrac": {
             "alpha_actor": 0.003
@@ -47,25 +50,27 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "trigflow":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         },
         "dtrigflow":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         },
         "ifql":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         },
         "difql":{
-            "alpha_actor":1,
+            "alpha_actor":3,
         },
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
         "alpha_actor": 30.0,
         "iql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 100.0,
         },
         "diql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 100.0,
         },
         "rebrac": {
             "alpha_actor": 0.01
@@ -92,10 +97,11 @@ hyperparameters ={
     "humanoidmaze-large-navigate-singletask-v0": {
         "alpha_actor": 30.0,
         "iql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
         },
         "diql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 30.0,
         },
         "rebrac": {
             "alpha_actor": 0.01
@@ -125,7 +131,8 @@ hyperparameters ={
             "alpha_actor": 1.0
         },
         "diql": {
-            "alpha_actor": 1.0
+            "alpha_actor": 1.0,
+            "alpha": 100.0,
         },
         "rebrac": {
             "alpha_actor": 0.01
@@ -157,7 +164,8 @@ hyperparameters ={
             "alpha_actor": 1.0
         },
         "diql": {
-            "alpha_actor": 1.0
+            "alpha_actor": 1.0,
+            "alpha": 300.0,
         },
         "rebrac": {
             "alpha_actor": 1.0
@@ -187,7 +195,8 @@ hyperparameters ={
             "alpha_actor": 0.3
         },
         "diql": {
-            "alpha_actor": 0.3
+            "alpha_actor": 0.3,
+            "alpha": 300.0,
         },
         "rebrac": {
             "alpha_actor": 1.0
@@ -216,7 +225,8 @@ hyperparameters ={
             "alpha_actor": 10.0
         },
         "diql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 300.0,
         },
         "alpha_actor": 300.0,
         "rebrac": {
@@ -253,7 +263,8 @@ hyperparameters ={
             "alpha_actor": 10.0
         },
         "diql": {
-            "alpha_actor": 10.0
+            "alpha_actor": 10.0,
+            "alpha": 1000.0,
         },
         "rebrac": {
             "alpha_actor": 0.3
@@ -283,7 +294,8 @@ hyperparameters ={
             "alpha_actor": 3.0
         },
         "diql": {
-            "alpha_actor": 3.0
+            "alpha_actor": 3.0,
+            "alpha": 1000.0,
         },
         "rebrac": {
             "alpha_actor": 0.3

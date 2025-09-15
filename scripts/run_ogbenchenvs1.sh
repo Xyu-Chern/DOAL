@@ -5,7 +5,7 @@
 # to be passed as arguments.
 
 # Check for the correct number of arguments
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+if [ "$#" -lt 1 ] || [ "$#" -gt 3 ]; then
     echo "Usage: $0 <agent_name>  [exp_name]"
     echo "Example: $0 my_new_agent my_experiment"
     exit 1
@@ -24,6 +24,6 @@ for env_name in "${env_names[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --exp_name $2 \
+        --exp_name $2 $3\
         --seed "$RANDOM"
 done

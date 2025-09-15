@@ -23,7 +23,7 @@ class DIQLAgent(DOALAgent,IQLAgent):
         """Compute the actor loss (AWR or DDPG+BC)."""
         if self.config['actor_loss'] == 'awr':
 
-            alpha = self.config["alpha_actor"] 
+            alpha = self.config["alpha"] 
             adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
             # AWR loss.
             v = jax.lax.stop_gradient(aux["v"])
@@ -118,7 +118,7 @@ def get_config():
             actor_update_start=0.,
             alpha=10.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             alpha_actor = 10.0,
-            delta=1.0,
+            delta=100.0,
             const_std=True,  # Whether to use constant standard deviation for the actor.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
