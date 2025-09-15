@@ -252,7 +252,7 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             discount=0.99,  # Discount factor.
-            alpha_actor=10,
+            alpha_actor=10.0,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             gn=100.0,

@@ -27,7 +27,6 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 0, 'Random seed.')
 flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (dataset) name.')
-flags.DEFINE_string('agent_name',None, 'Agent name.')
 flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '/home/bml/storage/exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
@@ -84,7 +83,6 @@ def main(_):
     if env_class in hyperparameters and config['agent_name'] in hyperparameters[env_class]:
         config.update(hyperparameters[env_class][config['agent_name']])
         print ("update",hyperparameters[env_class][config['agent_name']])
-    FLAGS.agent_name = config['agent_name']
         
     exp_name = FLAGS.exp_name     
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name)
