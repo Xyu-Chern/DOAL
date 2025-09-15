@@ -20,9 +20,13 @@ if [ "$#" -eq 3 ]; then
     EXP_NAME=$3
 fi
 
+# pen-expert-v1		
+# door-expert-v1		
+# hammer-expert-v1		
+# relocate-expert-v1	
 
 # Define the list of alpha parameters
-alphas=( 100  )
+alphas=(300, 1000, 3000, 10000, 30000)
 
 # Loop through all alpha values
 for alpha in "${alphas[@]}"; do
