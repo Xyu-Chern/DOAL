@@ -242,10 +242,10 @@ hyperparameters ={
         "alpha": 10000.0,
     },
     "hammer-expert-v1": {
-        "alpha": 3000.0,
+        "alpha": 1000.0,
     },
     "relocate-expert-v1": {
-        "alpha": 100000.0,
+        "alpha": 1000.0,
     },
     # "visual-cube-single-play-singletask-v0": {
     #     "iql": {

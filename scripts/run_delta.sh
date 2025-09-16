@@ -15,11 +15,11 @@ fi
 AGENT_NAME=$1
 
 # Define the list of alpha parameters
-deltas=(0.01 0.03 0.1  )
+deltas=( 0.03 0.1  0.3 )
 
 # Loop through all alpha values
 for d in "${deltas[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: $EXP_NAME"
+    echo "Running with Agent: $AGENT_NAME, Env: $2, Delta: $d,  $3"
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name $2 \
