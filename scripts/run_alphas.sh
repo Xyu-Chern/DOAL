@@ -26,7 +26,7 @@ fi
 # relocate-expert-v1	
 
 # Define the list of alpha parameters
-alphas=(1000 3000.0 10000.0 30000.0 100000.0 )
+alphas=(1000 3000.0 10000.0 30000.0  )
 
 # Loop through all alpha values
 for alpha in "${alphas[@]}"; do
