@@ -31,7 +31,11 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         alpha = self.config["alpha"] 
         adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  x_1, x_1,batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
         t = jax.random.uniform(t_rng, (batch_size, 1))
-        x_t = (1 - t) * x_0 + t * adjusted_actions
+        if self.config["use_acton_for_sample"]:
+            x_t = (1 - t) * x_0 + t *  batch['actions']
+        else:
+
+            x_t = (1 - t) * x_0 + t * adjusted_actions
         vel = adjusted_actions - x_0
 
 
@@ -65,6 +69,7 @@ def get_config():
         dict(
             agent_name='difql',  # Agent name.
             solver="linear",
+            use_acton_for_sample=False,
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).

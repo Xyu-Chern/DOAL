@@ -55,6 +55,7 @@ flags.DEFINE_boolean('time_weight', None , 'coffeient for conservative')
 flags.DEFINE_boolean('test_guidance', None , 'coffeient for conservative')
 flags.DEFINE_float('test_alpha', None , 'coffeient for conservative')
 flags.DEFINE_boolean('use_q_loss', None,  'coffeient for conservative')
+flags.DEFINE_boolean('use_acton_for_sample', None,  'coffeient for conservative')
 flags.DEFINE_float('delta', None, 'coffeient for conservative')
 
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')

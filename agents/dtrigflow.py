@@ -37,7 +37,10 @@ class DTrigFQLAgent(TrigFQLAgent):
 
     #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
     # need ablation study 
-        x_t = jnp.cos(t)*  adjusted_actions + jnp.sin(t) * z
+        if self.config["use_acton_for_sample"]:
+            x_t = jnp.cos(t)*   batch['actions'] + jnp.sin(t) * z
+        else:
+            x_t = jnp.cos(t)*  adjusted_actions + jnp.sin(t) * z
 
         F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
         pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
@@ -125,6 +128,7 @@ def get_config():
             test_alpha=0.0,
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             use_vel_loss=False,  # BC coefficient (need to be tuned for each environment).
+            use_acton_for_sample=False,
             delta=1000.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
