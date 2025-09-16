@@ -11,7 +11,7 @@ import jax.numpy as jnp
 import optax
 import numpy as np
 nonpytree_field = functools.partial(flax.struct.field, pytree_node=False)
-from jaxopt import linear_solve
+#from jaxopt import linear_solve
 
 from functools import partial
 import jaxopt
@@ -80,9 +80,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             
 
             def projected_step(last_action,H,grad_action):
-                def matvec_A(x):
-                    return  jnp.dot(H, x)
-                dz = -step_size *  linear_solve.solve_normal_cg(matvec_A, grad_action)
+                dz = -  jnp.linalg.solve(H, grad_action)
                 unconstrained_action = last_action + dz
                 
                 distance = jnp.linalg.norm(dz)
@@ -165,7 +163,6 @@ class DOALAgent(flax.struct.PyTreeNode):
             b =  g * jnp.clip (gap,min=0)
             normb = jnp.linalg.norm(b)
             dx = jnp.where(normb > delta,  b / normb,   b)
-         #   dx = linear_solve.solve_normal_cg(A,b)
             
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
@@ -192,7 +189,6 @@ class DOALAgent(flax.struct.PyTreeNode):
 
             normb = jnp.linalg.norm(b)
             dx = jnp.where(normb > delta,  b * delta/ normb,   b)
-         #   dx = linear_solve.solve_normal_cg(A,b)
             
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
@@ -219,9 +215,7 @@ class DOALAgent(flax.struct.PyTreeNode):
 
 
             def projected_step(last_action,H,grad_action):
-                def matvec_A(x):
-                    return  jnp.dot(H, x)
-                dz = -  linear_solve.solve_normal_cg(matvec_A, grad_action)
+                dz = -  jnp.linalg.solve(H, grad_action)
                 unconstrained_action = last_action + dz
                 
                 distance = jnp.linalg.norm(dz)
@@ -303,9 +297,7 @@ class DOALAgent(flax.struct.PyTreeNode):
 
 
             def projected_step(last_action,H,grad_action):
-                def matvec_A(x):
-                    return  jnp.dot(H, x)
-                dz = -  linear_solve.solve_normal_cg(matvec_A, grad_action)
+                dz = -  jnp.linalg.solve(H, grad_action)
                 unconstrained_action = last_action + dz
                 
                 distance = jnp.linalg.norm(dz)
