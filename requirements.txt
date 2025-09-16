@@ -1,6 +1,11 @@
 git+https://github.com/aravindr93/mjrl@master#egg=mjrl
 ogbench == 1.1.5
-jax >= 0.4.26
+
+-f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+jax[cuda12]==0.4.28
+jaxlib==0.4.28+cuda12.cudnn89
+
+# extra
 flax >= 0.8.4
 distrax >= 0.1.5
 ml_collections
