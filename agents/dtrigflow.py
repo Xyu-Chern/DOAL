@@ -81,11 +81,17 @@ class DTrigFQLAgent(TrigFQLAgent):
             "g_max": jnp.max(g),
             "g_min": jnp.min(g),
             }
-
-        raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
-        zero_shot_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
-        total_loss = total_loss  + self.config["alpha"] *  zero_shot_loss 
-        out["zero_shot_loss"]  = raw_zero_shot_loss.mean()   
+        if not self.config["use_vel_loss"]:
+            raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
+            bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
+            total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
+            out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
+        else: 
+            vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
+            raw_vel_loss = ( ( F_theta- vel ) ** 2)
+            bc_flow_loss = ( weight*  raw_vel_loss -time_weight_logits).mean()   
+            total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
+            out["bc_flow_loss"]  = raw_vel_loss.mean()   
 
         out['total_loss'] = total_loss
         return total_loss, out 
