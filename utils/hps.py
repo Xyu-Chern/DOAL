@@ -261,15 +261,19 @@ hyperparameters ={
     },
     "pen-expert-v1": {
         "alpha": 10000.0,
+        "delta": 0.03,
     },
     "door-expert-v1": {
         "alpha": 10000.0,
+        "delta": 1.0,
     },
     "hammer-expert-v1": {
         "alpha": 1000.0,
+        "delta": 0.1,
     },
     "relocate-expert-v1": {
         "alpha": 1000.0,
+        "delta": 0.3,
     },
     # "visual-cube-single-play-singletask-v0": {
     #     "iql": {
