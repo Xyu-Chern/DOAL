@@ -45,7 +45,7 @@ flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 
 
 flags.DEFINE_float('alpha',None, 'coffeient for conservative')
-flags.DEFINE_float('step_size',None, 'coffeient for conservative')
+flags.DEFINE_float('gn',None, 'coffeient for conservative')
 flags.DEFINE_integer('num_steps',None, 'coffeient for conservative')
 flags.DEFINE_float('expectile',None, 'coffeient for conservative')
 flags.DEFINE_float('alpha_actor',None, 'coffeient for conservative') 
