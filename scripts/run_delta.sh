@@ -24,5 +24,5 @@ for d in "${deltas[@]}"; do
         --agent "agents/$AGENT_NAME.py" \
         --env_name $2 \
         --seed "$RANDOM" \
-        --agent.delta "$d" $3
+        --delta "$d" $3
 done
