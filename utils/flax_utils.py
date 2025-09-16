@@ -42,7 +42,7 @@ def convert_to_bfloat16(batch: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 def clip(x):
-    return x
+    return jnp.clup(x,-1,1)
 class DOALAgent(flax.struct.PyTreeNode):
     """Implicit Q-learning (IQL) agent."""
 
