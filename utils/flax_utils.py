@@ -42,7 +42,7 @@ def convert_to_bfloat16(batch: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 def clip(x):
-    return jnp.clip(x,-1,1)
+    return jnp.clip(x,-1.1,1.1)
 class DOALAgent(flax.struct.PyTreeNode):
     """Implicit Q-learning (IQL) agent."""
 
@@ -52,7 +52,7 @@ class DOALAgent(flax.struct.PyTreeNode):
     def get_guided_action(self,q_action, action,observation,alpha,delta,params):
         if "solver" not in self.config or self.config["solver"] == "linear":
             return self.get_linear_action(q_action, action,observation,alpha,delta,params)
-        elif self.config["solver"] == "shift":
+        elif self.config["solver"] == "diag":
             return self.get_trust_action(q_action, action,observation,alpha,delta,params)
         elif self.config["solver"] == "full":
             return self.get_full_action(q_action, action,observation,alpha,delta,params)
