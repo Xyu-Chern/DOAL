@@ -185,7 +185,9 @@ class DOALAgent(flax.struct.PyTreeNode):
 
             v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
             q, g = v_grad_q(q_action)
-            b =  g / (2 * alpha )
+
+            norm = jnp.linalg.norm(g) if self.config["norm_q_grad"] else 1
+            b =  g / ( norm * 2 * alpha )
 
             normb = jnp.linalg.norm(b)
             dx = jnp.where(normb > delta,  b * delta/ normb,   b)
