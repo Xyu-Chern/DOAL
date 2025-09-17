@@ -5,8 +5,8 @@
 # to be passed as arguments.
 
 # Check for the correct number of arguments
-if [ "$#" -lt 1 ] || [ "$#" -gt 3 ]; then
-    echo "Usage: $0 <agent_name>  [exp_name]"
+if [ "$#" -lt 1 ] ; then
+    echo "Usage: $0 <agent_name> [1] "
     echo "Example: $0 my_new_agent my_experiment"
     exit 1
 fi
