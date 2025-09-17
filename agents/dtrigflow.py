@@ -33,7 +33,7 @@ class DTrigFQLAgent(TrigFQLAgent):
 
         # BC flow loss.
         z = jax.random.normal(x_rng, (batch_size, action_dim))
-        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
+        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi * 0.99 / 2
 
     #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
     # need ablation study 
@@ -72,30 +72,28 @@ class DTrigFQLAgent(TrigFQLAgent):
                 "weight":weight.mean(),
                 'actor_loss': actor_loss,
             'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
-            'adj': jnp.mean(jnp.abs(adjustment)),
-            "hd": jnp.mean(hd),
-            "hd_abs": jnp.mean(jnp.abs(hd)),
-            "hd_std": jnp.std(hd),
-            "hd_max": jnp.max(hd),
-            "hd_min": jnp.min(hd),
-            "g": jnp.mean(g),
-            "g_abs": jnp.mean(jnp.abs(g)),
-            "g_std": jnp.std(g),
-            "g_max": jnp.max(g),
-            "g_min": jnp.min(g),
+            'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
+            "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
+            "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
             }
-        if not self.config["use_vel_loss"]:
+        if  self.config["loss_type"] == "noise":
+            raw_zero_shot_loss = ( ( F_theta /  jnp.cos(t) +  jnp.tan(t) * adjusted_actions - z ) ** 2)
+            bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
+            total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
+            out["bc_flow_loss"]  =  raw_zero_shot_loss.mean()   
+        elif  self.config["loss_type"] == "action":
             raw_zero_shot_loss = ( ( pred_actions- adjusted_actions ) ** 2)
             bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
-        else: 
+        elif  self.config["loss_type"] ==  "vel":
             vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
             raw_vel_loss = ( ( F_theta- vel ) ** 2)
             bc_flow_loss = ( weight*  raw_vel_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_vel_loss.mean()   
-
+        else:
+            assert False, self.config["loss_type"]+" does not exist"
         out['total_loss'] = total_loss
         return total_loss, out 
 
@@ -128,6 +126,7 @@ def get_config():
             test_alpha=0.0,
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             use_vel_loss=False,  # BC coefficient (need to be tuned for each environment).
+            loss_type="action",
             use_acton_for_sample=False,
             delta=1000.0,
             num_samples=32,  # Number of action samples for rejection sampling.
