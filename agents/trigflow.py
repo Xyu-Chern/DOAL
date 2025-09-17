@@ -121,7 +121,7 @@ class TrigFQLAgent(DOALAgent):
             total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
         else: 
-            vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
+            vel =  jnp.cos(t)* z  - jnp.sin(t) *  batch['actions']
             raw_vel_loss = ( ( F_theta- vel ) ** 2)
             bc_flow_loss = ( weight*  raw_vel_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 

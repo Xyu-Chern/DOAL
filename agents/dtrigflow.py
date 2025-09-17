@@ -85,7 +85,7 @@ class DTrigFQLAgent(TrigFQLAgent):
             "g_min": jnp.min(g),
             }
         if not self.config["use_vel_loss"]:
-            raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
+            raw_zero_shot_loss = ( ( pred_actions- adjusted_actions ) ** 2)
             bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
