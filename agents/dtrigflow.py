@@ -97,7 +97,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='dtrigflow',  # Agent name.
-            solver="linear",
+            solver="auto",
             ob_dims=ml_collections.config_dict.placeholder(list),  # Observation dimensions (will be set automatically).
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.

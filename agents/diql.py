@@ -100,7 +100,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='diql',  # Agent name.
-            solver="linear",
+            solver="auto",
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
             lr=3e-4,  # Learning rate.
@@ -113,12 +113,12 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.0,
+            gn=200.0,
+            delta=2.0,
             actor_loss='awr',  # Actor loss type ('awr' or 'ddpgbc').
             actor_update_start=0.,
             alpha=10.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             alpha_actor = 10.0,
-            delta=1000.0,
             const_std=True,  # Whether to use constant standard deviation for the actor.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )

@@ -40,6 +40,7 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
 
 
 
+
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
 
         raw_actor_loss = (pred - vel) ** 2
@@ -68,7 +69,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='difql',  # Agent name.
-            solver="linear",
+            solver="auto",
             use_acton_for_sample=False,
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
@@ -80,12 +81,13 @@ def get_config():
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
+            time_weight=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             alpha=1.0,  # BC coefficient (need to be tuned for each environment).
             delta=1000.0,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.0,
+            gn=200.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
