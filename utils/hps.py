@@ -145,7 +145,7 @@ hyperparameters ={
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
         },
-        "delta":0.3,
+        "delta":0.03,
         "alpha": 1000.0,
     },
     "puzzle-3x3-play-singletask-v0": {

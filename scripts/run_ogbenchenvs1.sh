@@ -20,10 +20,10 @@ AGENT_NAME=$1
 env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0"   "scene-play-singletask-v0" )
 # Loop through all alpha values
 for env_name in "${env_names[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $env_name, ExpName: $EXP_NAME"
+    echo "Running with Agent: $AGENT_NAME, Env: $env_name, ExpName: $2 $3 $4"
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --exp_name $2 $3\
+        --exp_name $2 $3 $4\
         --seed "$RANDOM"
 done
