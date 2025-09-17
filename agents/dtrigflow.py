@@ -33,7 +33,7 @@ class DTrigFQLAgent(TrigFQLAgent):
 
         # BC flow loss.
         z = jax.random.normal(x_rng, (batch_size, action_dim))
-        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi * 0.99 / 2
+        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi  / 2
 
     #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
     # need ablation study 
@@ -79,18 +79,18 @@ class DTrigFQLAgent(TrigFQLAgent):
         if  self.config["loss_type"] == "noise":
             raw_zero_shot_loss = ( ( F_theta /  jnp.cos(t) +  jnp.tan(t) * adjusted_actions - z ) ** 2)
             bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
-            total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
+            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
             out["bc_flow_loss"]  =  raw_zero_shot_loss.mean()   
         elif  self.config["loss_type"] == "action":
             raw_zero_shot_loss = ( ( pred_actions- adjusted_actions ) ** 2)
             bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
-            total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
+            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
         elif  self.config["loss_type"] ==  "vel":
             vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
             raw_vel_loss = ( ( F_theta- vel ) ** 2)
             bc_flow_loss = ( weight*  raw_vel_loss -time_weight_logits).mean()   
-            total_loss = total_loss  + self.config["alpha"] *  bc_flow_loss 
+            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_vel_loss.mean()   
         else:
             assert False, self.config["loss_type"]+" does not exist"
@@ -127,8 +127,9 @@ def get_config():
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             use_vel_loss=False,  # BC coefficient (need to be tuned for each environment).
             loss_type="action",
+            clip=False,
             use_acton_for_sample=False,
-            delta=1000.0,
+            delta=0.3,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.

@@ -190,7 +190,10 @@ class DOALAgent(flax.struct.PyTreeNode):
             normb = jnp.linalg.norm(b)
             dx = jnp.where(normb > delta,  b * delta/ normb,   b)
             
-            adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
+            if self.config["clip"]:
+                adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
+            else:
+                adjusted_actions = jax.lax.stop_gradient(q_action + dx)
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
             return  adjusted_actions, dx, 2*  alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype) ,g, q
