@@ -169,7 +169,7 @@ class DOALAgent(flax.struct.PyTreeNode):
 
         def bc_loss_wrt_q_action(q_action):
             qs = self.network.select('critic')(observation, q_action, params=params)
-            q = jnp.mean(qs)
+            q = jnp.mean(qs,axis=0)
             return jnp.sum(q) 
     
         v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
