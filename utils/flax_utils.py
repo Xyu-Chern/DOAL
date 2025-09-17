@@ -50,14 +50,7 @@ class DOALAgent(flax.struct.PyTreeNode):
     network: Any
     config: Any = nonpytree_field()
     def get_guided_action(self,q_action, action,observation,alpha,delta,params):
-        if "solver" not in self.config or self.config["solver"] == "linear":
-            return self.get_linear_action(q_action, action,observation,alpha,delta,params)
-        elif self.config["solver"] == "diag":
-            return self.get_trust_action(q_action, action,observation,alpha,delta,params)
-        elif self.config["solver"] == "full":
-            return self.get_full_action(q_action, action,observation,alpha,delta,params)
-        elif self.config["solver"] == "bfgs":
-            return self.get_bfgs_action(q_action, action,observation,alpha,delta,params)
+        return getattr(self, self.config["solver"] )(q_action, action,observation,alpha,delta,params)
 
     @jax.jit
     def get_bfgs_action(self, q_action, action, observation, alpha, delta, params):
@@ -134,7 +127,7 @@ class DOALAgent(flax.struct.PyTreeNode):
 
 
     @jax.jit
-    def get_diag_hess_action(self,q_action, action,observation,alpha,delta,params):
+    def diag(self,q_action, action,observation,alpha,delta,params):
 
 
         @jax.jit
@@ -171,7 +164,7 @@ class DOALAgent(flax.struct.PyTreeNode):
 
         return _get_guided_action(q_action, action,observation,alpha,params)
     @jax.jit
-    def get_linear_action(self,q_action, action,observation,alpha,delta,params):
+    def auto(self,q_action, action,observation,alpha,delta,params):
 
 
         @jax.jit
@@ -186,26 +179,47 @@ class DOALAgent(flax.struct.PyTreeNode):
             v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
             q, g = v_grad_q(q_action)
 
-            norm = jnp.linalg.norm(g) if self.config["norm_q_grad"] else 1
-            b =  g / ( norm * 2 * alpha )
+            norm = jnp.clip(jnp.linalg.norm(g), min=delta) 
+            dx =  g / ( norm * alpha )
 
-            normb = jnp.linalg.norm(b)
-            dx = jnp.where(normb > delta,  b * delta/ normb,   b)
             
-            if self.config["clip"]:
-                adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
-            else:
-                adjusted_actions = jax.lax.stop_gradient(q_action + dx)
+            adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
             return  adjusted_actions, dx, 2*  alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype) ,g, q
         return _get_guided_action(q_action, action,observation,alpha,params)
 
 
+    @jax.jit
+    def linear(self,q_action, action,observation,alpha,delta,params):
+
+
+        @jax.jit
+        @partial(jax.vmap, in_axes=(0,0,0,None,None))
+        def _get_guided_action(q_action, action,observation,alpha,params):
+
+            def bc_loss_wrt_q_action(q_action):
+                qs = self.network.select('critic')(observation, q_action, params=params)
+                q = jnp.mean(qs)
+                return q 
+
+            v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
+            q, g = v_grad_q(q_action)
+
+            b =  g / (  2 * alpha )
+
+            normb = jnp.linalg.norm(b)
+            dx = jnp.where(normb > delta,  b * delta/ normb,   b)
+            
+            adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
+            dx = jax.lax.stop_gradient(adjusted_actions - action)
+            q =  jax.lax.stop_gradient(q)
+            return  adjusted_actions, dx, 2*  alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype) ,g, q
+        return _get_guided_action(q_action, action,observation,alpha,params)
 # Assume self.network is defined elsewhere
 
     @jax.jit
-    def get_full_action(self, q_action, action, observation, alpha, delta, params):
+    def full(self, q_action, action, observation, alpha, delta, params):
 
         @jax.jit
         @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
