@@ -177,11 +177,11 @@ class DOALAgent(flax.struct.PyTreeNode):
 
         norm = jnp.linalg.norm(g,axis=-1,keepdims=True)
         norm_mean = jnp.mean(norm)
+        norm_std = jnp.std(norm)
+        norm_up = norm_mean + delta * norm_std
 
-        dx =  g / ( norm_mean * alpha )
-
-        normx = jnp.linalg.norm(dx,axis=-1,keepdims=True)
-        dx = jnp.where(normx > delta,  dx * delta / normx,   dx)
+        clipped_g = jnp.where(norm > norm_up,  g * norm_up / norm,   g)
+        dx =  clipped_g / ( norm_mean * alpha )
 
             
         adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))

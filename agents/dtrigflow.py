@@ -76,12 +76,7 @@ class DTrigFQLAgent(TrigFQLAgent):
             "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
             "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
             }
-        if  self.config["loss_type"] == "noise":
-            raw_zero_shot_loss = ( ( F_theta /  jnp.cos(t) +  jnp.tan(t) * adjusted_actions - z ) ** 2)
-            bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
-            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
-            out["bc_flow_loss"]  =  raw_zero_shot_loss.mean()   
-        elif  self.config["loss_type"] == "action":
+        if  self.config["loss_type"] == "action":
             raw_zero_shot_loss = ( ( pred_actions- adjusted_actions ) ** 2)
             bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
@@ -119,7 +114,7 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
-            gn=0.0,
+            gn=200.0,
             return_next_actions=True,
             time_weight=False,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
@@ -130,7 +125,7 @@ def get_config():
             norm_q_grad=False,
             clip=False,
             use_acton_for_sample=False,
-            delta=0.3,
+            delta=2.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.

@@ -333,7 +333,7 @@ def get_config():
             delta =1.0,
             test_alpha=10.0,
             alpha=10.0,
-            gn=0.0,
+            gn=200.0,
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
