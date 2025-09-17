@@ -259,8 +259,9 @@ hyperparameters ={
             "alpha_critic": 0.0
         }
     },
-    "pen-cloned-v1": {
-        "alpha": 30000,
+    "pen-expert-v1": {
+        "alpha": 10000,
+        "delta": 1,
     },
     "pen-human-v1": {
         "alpha": 30000.0,
@@ -275,13 +276,28 @@ hyperparameters ={
     "door-cloned-v1": {
         "alpha": 10000.0,
     },
+    "door-human-v1": {
+        "alpha": 10000.0,
+    },
     "hammer-expert-v1": {
         "alpha": 1000.0,
         "delta": 0.1,
     },
+    "hammer-cloned-v1": {
+        "alpha": 1000.0,
+    },
+    "hammer-human-v1": {
+        "alpha": 1000.0,
+    },
     "relocate-expert-v1": {
         "alpha": 1000.0,
         "delta": 0.3,
+    },
+    "relocate-cloned-v1": {
+        "alpha": 1000.0,
+    },
+    "relocate-cloned-v1": {
+        "alpha": 1000.0,
     },
     # "visual-cube-single-play-singletask-v0": {
     #     "iql": {
