@@ -167,27 +167,27 @@ class DOALAgent(flax.struct.PyTreeNode):
     def auto(self,q_action, action,observation,alpha,delta,params):
 
 
-        @jax.jit
-        @partial(jax.vmap, in_axes=(0,0,0,None,None))
-        def _get_guided_action(q_action, action,observation,alpha,params):
+        def bc_loss_wrt_q_action(q_action):
+            qs = self.network.select('critic')(observation, q_action, params=params)
+            q = jnp.mean(qs)
+            return jnp.sum(q) 
+    
+        v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
+        q, g = v_grad_q(q_action)
 
-            def bc_loss_wrt_q_action(q_action):
-                qs = self.network.select('critic')(observation, q_action, params=params)
-                q = jnp.mean(qs)
-                return q 
+        norm = jnp.linalg.norm(g,axis=-1,keepdims=True)
+        norm_mean = jnp.mean(norm)
 
-            v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
-            q, g = v_grad_q(q_action)
+        dx =  g / ( norm_mean * alpha )
 
-            norm = jnp.clip(jnp.linalg.norm(g), min=delta) 
-            dx =  g / ( norm * alpha )
+        normx = jnp.linalg.norm(dx,axis=-1,keepdims=True)
+        dx = jnp.where(normx > delta,  dx / normx,   dx)
 
             
-            adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
-            dx = jax.lax.stop_gradient(adjusted_actions - action)
-            q =  jax.lax.stop_gradient(q)
-            return  adjusted_actions, dx, 2*  alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype) ,g, q
-        return _get_guided_action(q_action, action,observation,alpha,params)
+        adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
+        dx = jax.lax.stop_gradient(adjusted_actions - action)
+        q =  jax.lax.stop_gradient(q)
+        return adjusted_actions,dx,norm * alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype),g,q
 
 
     @jax.jit
