@@ -263,6 +263,9 @@ hyperparameters ={
         "alpha": 10000.0,
         "delta": 0.03,
     },
+    "pen-human-v1": {
+        "alpha": 30000.0,
+    },
     "door-expert-v1": {
         "alpha": 10000.0,
         "delta": 1.0,
