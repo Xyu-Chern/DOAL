@@ -246,10 +246,14 @@ class IQLAgent(flax.struct.PyTreeNode):
         network_args = {k: v[1] for k, v in network_info.items()}
 
         network_def = ModuleDict(networks)
-        network_tx = optax.chain(
-           optax.clip_by_global_norm(max_norm=config["gn"]),
-            optax.adam(learning_rate=config["lr"]),
-        )
+        if config["gn"] > 0:
+            network_tx = optax.chain(
+            optax.clip_by_global_norm(max_norm=config["gn"]),
+                optax.adam(learning_rate=config["lr"]),
+            )
+        else:
+            network_tx = optax.adam(learning_rate=config["lr"])
+
         network_params = network_def.init(init_rng, **network_args)["params"]
         network = TrainState.create(network_def, network_params, tx=network_tx)
 

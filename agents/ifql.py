@@ -225,10 +225,13 @@ class IFQLAgent(flax.struct.PyTreeNode):
         network_args = {k: v[1] for k, v in network_info.items()}
 
         network_def = ModuleDict(networks)
-        network_tx = optax.chain(
+        if config["gn"] > 0:
+            network_tx = optax.chain(
             optax.clip_by_global_norm(max_norm=config["gn"]),
-            optax.adam(learning_rate=config['lr'])
-        )
+                optax.adam(learning_rate=config["lr"]),
+            )
+        else:
+            network_tx = optax.adam(learning_rate=config["lr"])
         network_params = network_def.init(init_rng, **network_args)['params']
         network = TrainState.create(network_def, network_params, tx=network_tx)
 
@@ -255,7 +258,7 @@ def get_config():
             alpha=10.0,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.0,
+            gn=200.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
