@@ -330,6 +330,7 @@ def get_config():
             decode_type="ddim",
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
+            loss_type="action",
             time_weight=False,
             expectile=0.9,  # IQL expectile.
             delta =1.0,
