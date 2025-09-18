@@ -17,7 +17,7 @@ from envs.env_utils import make_env_and_datasets
 from utils.hps import hyperparameters
 from utils.datasets import Dataset, ReplayBuffer
 from utils.evaluation import evaluate, evaluate_parallel, flatten
-from utils.flax_utils import restore_agent, save_agent, convert_to_bfloat16
+from utils.flax_utils import restore_agent, save_agent
 from utils.log_utils import CsvLogger, get_exp_name, get_flag_dict, get_wandb_video, setup_wandb
 import re
 
