@@ -227,7 +227,7 @@ class IFQLAgent(flax.struct.PyTreeNode):
         network_def = ModuleDict(networks)
         if config["gn"] > 0:
             network_tx = optax.chain(
-            optax.adaptive_grad_clip(max_norm=config["gn"]),
+            optax.adaptive_grad_clip(config["gn"]),
                 optax.adam(learning_rate=config["lr"]),
             )
         else:
