@@ -114,7 +114,7 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
-            gn=100,
+            gn=100.0,
             return_next_actions=True,
             time_weight=False,
             alpha=50.0,  # BC coefficient (need to be tuned for each environment).
