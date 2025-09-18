@@ -288,7 +288,8 @@ class TrigFQLAgent(DOALAgent):
         network_def = ModuleDict(networks)
         if config["gn"] > 0:
             network_tx = optax.chain(
-                optax.adaptive_grad_clip(config["gn"]),
+                optax.add_decayed_weights(1e-5),
+                optax.clip(config["gn"]),
                 optax.adam(learning_rate=config['lr'])
             )
         else:
