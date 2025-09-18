@@ -288,8 +288,8 @@ class TrigFQLAgent(DOALAgent):
         network_def = ModuleDict(networks)
         if config['gn'] > 0:
             network_tx = optax.chain(
-                optax.add_decayed_weights(1e-5),
-                optax.clip_by_global_norm(config['gn']),
+                optax.add_decayed_weights(1e-4),
+                optax.clip(config['gn']),
                 optax.adam(learning_rate=config['lr'])
             )
         else:
@@ -334,10 +334,10 @@ def get_config():
             loss_type="action",
             time_weight=False,
             expectile=0.9,  # IQL expectile.
-            delta =1.0,
+            delta =2.0,
             test_alpha=10.0,
             alpha=10.0,
-            gn=100,
+            gn=5.0,
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
