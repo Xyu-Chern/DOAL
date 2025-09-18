@@ -260,8 +260,7 @@ class FQLAgent(flax.struct.PyTreeNode):
                 optax.adaptive_grad_clip(config["gn"]),
                 optax.adam(learning_rate=config['lr'])
             )
-        else:
-            network_tx =     optax.adam(learning_rate=config['lr'])
+        network_tx = optax.adam(learning_rate=config['lr'])
         network_params = network_def.init(init_rng, **network_args)['params']
         network = TrainState.create(network_def, network_params, tx=network_tx)
 

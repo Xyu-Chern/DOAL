@@ -26,7 +26,7 @@ fi
 # relocate-expert-v1	
 
 # Define the list of alpha parameters
-alphas=(1000 3000.0 10000.0 30000.0  )
+alphas=(10 30.0 100.0 3000.0  )
 
 # Loop through all alpha values
 for alpha in "${alphas[@]}"; do
@@ -34,7 +34,7 @@ for alpha in "${alphas[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$ENV_NAME" \
-        --alpha "$alpha" \
-        --exp_name "$EXP_NAME" \
+        --alpha_actor "$alpha" \
+        --exp_name alpha_actor \
         --seed "$RANDOM" 
 done
