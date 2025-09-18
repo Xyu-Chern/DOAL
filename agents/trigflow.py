@@ -115,17 +115,19 @@ class TrigFQLAgent(DOALAgent):
         else:
             total_loss = 0
             
-        if not self.config["use_vel_loss"]:
+        if  self.config["loss_type"] == "action":
             raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
             bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
-        else: 
-            vel =  jnp.cos(t)* z  - jnp.sin(t) *  batch['actions']
+        elif  self.config["loss_type"] ==  "vel":
+            vel =  jnp.cos(t)* z  - jnp.sin(t) * batch['actions']
             raw_vel_loss = ( ( F_theta- vel ) ** 2)
             bc_flow_loss = ( weight*  raw_vel_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_vel_loss.mean()   
+        else:
+            assert False, self.config["loss_type"]+" does not exist"
     
         out['total_loss'] = total_loss
         return total_loss, out 
