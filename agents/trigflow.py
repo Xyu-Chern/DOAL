@@ -287,7 +287,7 @@ class TrigFQLAgent(DOALAgent):
         
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
-            optax.add_decayed_weights(1e-5),
+            optax.clip_by_global_norm(5.0),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']
