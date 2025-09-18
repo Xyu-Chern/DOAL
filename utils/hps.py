@@ -33,9 +33,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 10.0,
         },
-        "fql": {
-            "alpha_actor": 30.0,
-        },
+        "alpha_actor": 30.0,
         "diql": {
             "alpha_actor": 10.0,
         },
@@ -54,9 +52,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 10.0,
         },
-        "fql": {
             "alpha_actor": 10.0,
-        },
         "diql": {
             "alpha_actor": 10.0,
         },
@@ -75,9 +71,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 1.0
         },
-        "fql": {
             "alpha_actor": 10.0,
-        },
         "diql": {
             "alpha_actor": 1.0,
         },
@@ -92,9 +86,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 1.0
         },
-        "fql": {
-            "alpha_actor": 300.0,
-        },
+        "alpha_actor": 300.0,
         "diql": {
             "alpha_actor": 1.0,
         },
@@ -109,9 +101,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.3
         },
-        "fql": {
-            "alpha_actor": 300.0,
-        },
+        "alpha_actor": 300.0,
         "diql": {
             "alpha_actor": 0.3,
         },
@@ -152,9 +142,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 10.0
         },
-        "fql": {
             "alpha_actor": 1000.0,
-        },
         "diql": {
             "alpha_actor": 10.0,
         },
@@ -177,9 +165,7 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 3.0,
         },
-        "fql": {
-            "alpha_actor": 1000.0,
-        },
+        "alpha_actor": 1000.0,
         "rebrac": {
             "alpha_actor": 0.3
         },

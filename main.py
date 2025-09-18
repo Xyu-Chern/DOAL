@@ -44,6 +44,9 @@ flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each tas
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 
 
+config_flags.DEFINE_config_file('agent', f'agents/dtrigflow.py', lock_config=False)
+
+flags.DEFINE_integer('num_samples',None, 'coffeient for conservative')
 flags.DEFINE_float('alpha',None, 'coffeient for conservative')
 flags.DEFINE_float('gn',None, 'coffeient for conservative')
 flags.DEFINE_integer('num_steps',None, 'coffeient for conservative')
@@ -63,8 +66,7 @@ flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
 flags.DEFINE_integer('balanced_sampling', 0, 'Whether to use balanced sampling for online fine-tuning.')
 
-config_flags.DEFINE_config_file('agent', f'agents/dtrigflow.py', lock_config=False)
-def main(_):
+def main(_):   #num_samples
     # Set up logger.
 
     config = FLAGS.agent

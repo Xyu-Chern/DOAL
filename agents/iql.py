@@ -248,7 +248,7 @@ class IQLAgent(flax.struct.PyTreeNode):
         network_def = ModuleDict(networks)
         if config["gn"] > 0:
             network_tx = optax.chain(
-            optax.clip_by_global_norm(max_norm=config["gn"]),
+            optax.adaptive_grad_clip(max_norm=config["gn"]),
                 optax.adam(learning_rate=config["lr"]),
             )
         else:
@@ -277,7 +277,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.0,
+            gn=0.01,
             actor_loss="awr",  # Actor loss type ('awr' or 'ddpgbc').
             alpha_actor=10.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             const_std=True,  # Whether to use constant standard deviation for the actor.

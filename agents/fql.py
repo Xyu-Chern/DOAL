@@ -257,7 +257,7 @@ class FQLAgent(flax.struct.PyTreeNode):
 
         if config["gn"] > 0:
             network_tx = optax.chain(
-                optax.clip_by_block_rms(config["gn"]),
+                optax.adaptive_grad_clip(config["gn"]),
                 optax.adam(learning_rate=config['lr'])
             )
         else:
@@ -287,7 +287,7 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
-            gn=0.0,
+            gn=0.01,
             q_agg='mean',  # Aggregation method for target Q values.
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
