@@ -286,14 +286,10 @@ class TrigFQLAgent(DOALAgent):
         network_args = {k: v[1] for k, v in network_info.items()}
         
         network_def = ModuleDict(networks)
-        if config["gn"] > 0:
-            network_tx = optax.chain(
-                optax.add_decayed_weights(1e-5),
-                optax.clip(config["gn"]),
-                optax.adam(learning_rate=config['lr'])
-            )
-        else:
-            network_tx =     optax.adam(learning_rate=config['lr'])
+        network_tx = optax.chain(
+            optax.add_decayed_weights(1e-5),
+            optax.adam(learning_rate=config['lr'])
+        )
         network_params = network_def.init(init_rng, **network_args)['params']
         network = TrainState.create(network_def, network_params, tx=network_tx)
 
