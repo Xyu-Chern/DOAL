@@ -22,7 +22,7 @@ ENV_NAME=$2
 # relocate-expert-v1	
 
 # Define the list of alpha parameters
-alphas=(1 3  10 )
+alphas=(100 300 1000 )
 
 # Loop through all alpha values
 for alpha in "${alphas[@]}"; do
