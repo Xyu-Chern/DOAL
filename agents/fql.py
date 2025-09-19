@@ -8,7 +8,7 @@ import ml_collections
 import optax
 
 from utils.encoders import encoder_modules
-from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
+from utils.flax_utils import ModuleDict, TrainState, nonpytree_field,DOALAgent
 from utils.networks import ActorVectorField, Value
 
 def huber_loss(target: float, pred: float, delta: float = 10.0) -> float:
@@ -30,7 +30,7 @@ def huber_loss(target: float, pred: float, delta: float = 10.0) -> float:
                     0.5 * abs_diff ** 2)
                    
 
-class FQLAgent(flax.struct.PyTreeNode):
+class FQLAgent(DOALAgent):
     """Flow Q-learning (FQL) agent."""
 
     rng: Any
@@ -102,7 +102,12 @@ class FQLAgent(flax.struct.PyTreeNode):
         actions = self.sample_actions(batch['observations'], seed=rng)
         mse = jnp.mean((actions - batch['actions']) ** 2)
 
+        adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  actions, actions,batch['observations'],alpha=2*self.config["alpha_actor"],delta=self.config["delta"],params=self.network.params)
         return actor_loss, {
+            'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
+            'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
+            "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
+            "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
             'actor_loss': actor_loss,
             'bc_flow_loss': bc_flow_loss,
             'distill_loss': distill_loss,
@@ -286,7 +291,10 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
-            gn=0.01,
+            gn=200,
+            alpha=50.0,
+            delta=2.0,
+            solver="linear",
             q_agg='mean',  # Aggregation method for target Q values.
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
