@@ -24,6 +24,17 @@ for env_name in "${env_names[@]}"; do
     echo "Running with Env: $env_name, Alpha: $ALPHA_ACTOR, Seed: $seed"
     echo "================================================================="
     
+    echo "Running trigflow agent with q loss..."
+    python main.py \
+        --agent "agents/trigflow.py" \
+        --env_name "$env_name" \
+        --alpha_actor "$ALPHA_ACTOR" \
+        --exp_name "alpha_actor_${ALPHA_ACTOR}" \
+        --seed "$seed" --use_q_loss
+    
+    echo "Completed environment: $env_name"
+    echo ""
+    
     echo "Running trigflow agent..."
     python main.py \
         --agent "agents/trigflow.py" \
@@ -42,6 +53,7 @@ for env_name in "${env_names[@]}"; do
     
     echo "Completed environment: $env_name"
     echo ""
+
 done
 
 echo "All environments have been processed with alpha_actor: $ALPHA_ACTOR!"
