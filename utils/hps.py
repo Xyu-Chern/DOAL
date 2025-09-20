@@ -234,8 +234,6 @@ hyperparameters ={
         }
     },
     "pen-expert-v1": {
-        "alpha": 10000,
-        "delta": 1,
     },
     "pen-human-v1": {
         
