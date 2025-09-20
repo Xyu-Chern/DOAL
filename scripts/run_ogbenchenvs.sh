@@ -24,6 +24,6 @@ for env_name in "${env_names[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --exp_name $2 $3 $4 $5 $6\
+        --run_group final $2 $3 $4 $5 $6\
         --seed "$seed"
 done

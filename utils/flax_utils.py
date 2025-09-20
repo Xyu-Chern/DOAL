@@ -32,7 +32,7 @@ class DOALAgent(flax.struct.PyTreeNode):
         return getattr(self, self.config["solver"] )(q_action, action,observation,alpha,delta,params)
 
     @jax.jit
-    def get_bfgs_action(self, q_action, action, observation, alpha, delta, params):
+    def bfgs(self, q_action, action, observation, alpha, delta, params):
 
 
         @jax.jit
