@@ -14,7 +14,7 @@ fi
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
 
-
+seed=$RANDOM
 # Define the list of alpha parameters
 
 env_names=("antmaze-large-navigate-singletask-v0"   'humanoidmaze-medium-navigate-singletask-v0'  "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0"   "scene-play-singletask-v0" 'antmaze-giant-navigate-singletask-v0' 'humanoidmaze-large-navigate-singletask-v0'  "cube-double-play-singletask-v0"  "puzzle-3x3-play-singletask-v0" "puzzle-4x4-play-singletask-v0")
@@ -25,5 +25,5 @@ for env_name in "${env_names[@]}"; do
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
         --exp_name $2 $3 $4 $5 $6\
-        --seed "$RANDOM"
+        --seed "$seed"
 done

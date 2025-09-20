@@ -13,7 +13,7 @@ fi
 
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
-
+seed=$RANDOM
 
 # Define the list of alpha parameters
 
@@ -25,5 +25,5 @@ for env_name in "${env_names[@]}"; do
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
         --exp_name $2 $3 $4 $5 $6\
-        --seed "$RANDOM"
+        --seed "$seed"
 done
