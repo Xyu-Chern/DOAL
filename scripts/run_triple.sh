@@ -9,12 +9,12 @@ if [ "$#" -lt 1 ] ; then
     exit 1
 fi
 
-# Assign command-line argument to variable
-ALPHA_ACTOR=$2
 
 # Define the list of environments to loop through
 env_names=$1
 
+# Assign command-line argument to variable
+ALPHA_ACTOR=$2
 # Loop through all environments
     # Generate random seed for each environment
 seed=$RANDOM
@@ -29,7 +29,7 @@ python main.py \
     --env_name "$env_name" \
     --alpha_actor "$ALPHA_ACTOR" \
     --exp_name "alpha_actor_${ALPHA_ACTOR}" \
-    --seed "$seed" --use_q_loss
+    --seed "$seed" --agent.use_q_loss
 
 echo "Completed environment: $env_name"
 echo ""

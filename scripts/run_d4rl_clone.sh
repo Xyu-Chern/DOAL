@@ -18,13 +18,14 @@ alphas=(1000 3000.0 10000.0 30000.0)
 
 # Loop through all environments and alpha values
 for env_name in "${env_names[@]}"; do
+    seed=$RANDOM
     for alpha in "${alphas[@]}"; do
         echo "Running with Agent: $AGENT_NAME, Env: $env_name, Alpha: $alpha, ExpName: $EXP_NAME"
         python main.py \
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$env_name" \
-            --alpha "$alpha" \
+            --agent.alpha "$alpha" \
             --exp_name "$EXP_NAME" \
-            --seed "$RANDOM" 
+            --seed "$seed" 
     done
 done
