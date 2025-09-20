@@ -30,7 +30,6 @@ for alpha in "${alphas[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$ENV_NAME" \
-        --alpha_actor "$alpha" \
-        --exp_name alpha_actor $3 $4 $5 $6 $7\
-        --seed "$RANDOM" 
+        --alpha "$alpha" \
+        --exp_name alpha_actor $3 $4 $5 $6 $7
 done

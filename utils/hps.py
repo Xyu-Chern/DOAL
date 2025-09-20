@@ -71,7 +71,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 1.0
         },
-            "alpha_actor": 10.0,
+         "alpha_actor": 10.0,
         "diql": {
             "alpha_actor": 1.0,
         },
@@ -135,7 +135,7 @@ hyperparameters ={
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
         },
-        
+         "alpha_actor": 100.0,
         
     },
     "puzzle-3x3-play-singletask-v0": {

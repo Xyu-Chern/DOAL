@@ -116,6 +116,7 @@ def get_config():
             num_steps=1,  # IQL expectile.
             gn=200.0,
             return_next_actions=True,
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
             time_weight=False,
             alpha=50.0,  # BC coefficient (need to be tuned for each environment).
             test_alpha=0.0,

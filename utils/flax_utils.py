@@ -245,7 +245,7 @@ class DOALAgent(flax.struct.PyTreeNode):
         return _get_guided_action(q_action, action, observation, alpha, params)
 
     @jax.jit
-    def get_trust_action(self, q_action, action, observation, alpha, delta, params):
+    def trust(self, q_action, action, observation, alpha, delta, params):
 
         def make_hessian_psd_gershgorin(H, epsilon=1e-6):
             """

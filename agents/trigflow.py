@@ -10,56 +10,18 @@ import optax
 
 from utils.encoders import encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field,DOALAgent
+from agents.iql import IQLAgent
 from utils.networks import ActorVectorField, Value,TimeWeight
 from functools import partial
 import math
 
 
-class TrigFQLAgent(DOALAgent):
+class TrigFQLAgent(DOALAgent,IQLAgent):
     """Flow Q-learning (FQL) agent."""
 
     rng: Any
     network: Any
     config: Any = nonpytree_field()
-    @staticmethod
-    def expectile_loss(adv, diff, expectile):
-        """Compute the expectile loss."""
-        weight = jnp.where(adv >= 0, expectile, (1 - expectile))
-        return weight * (diff**2)
-
-    def value_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL value loss."""
-        q1, q2 = self.network.select("target_critic")(
-            batch["observations"], actions=batch["actions"]
-        )
-        q = jnp.minimum(q1, q2)
-        v = self.network.select("value")(batch["observations"], params=grad_params)        
-        lam = 1 / jax.lax.stop_gradient(jnp.abs(v).mean())
-        value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() 
-
-
-        aux.update({"v": v,"q": q,"lam": lam })
-        return value_loss, {
-            "value_loss": value_loss,
-            "v_mean": v.mean(),
-            "v_max": v.max(),
-            "v_min": v.min(),
-        }, aux
-
-    def critic_loss(self, batch, grad_params, aux={}):
-        """Compute the IQL critic loss."""
-        next_v = self.network.select("value")(batch["next_observations"])
-        q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
-
-        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
-
-        return critic_loss, {
-            "critic_loss": critic_loss,
-            "q_mean": q.mean(),
-            "q_max": q.max(),
-            "q_min": q.min(),
-        }, aux
 
         
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
@@ -329,6 +291,7 @@ def get_config():
             decode_type="ddim",
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
             loss_type="action",
             time_weight=False,
             expectile=0.9,  # IQL expectile.
