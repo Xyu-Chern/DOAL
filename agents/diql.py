@@ -114,6 +114,7 @@ def get_config():
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             gn=0.01,
+            num_ensembles=2,
             delta=2.0,
             actor_loss='awr',  # Actor loss type ('awr' or 'ddpgbc').
             actor_update_start=0.,

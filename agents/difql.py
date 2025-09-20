@@ -88,6 +88,7 @@ def get_config():
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             gn=0.01,
+            num_ensembles=2,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
