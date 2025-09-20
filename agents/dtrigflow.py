@@ -114,7 +114,7 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
-            gn=200.0,
+            gn=50.0,
             return_next_actions=True,
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             time_weight=False,

@@ -253,7 +253,8 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
                 optax.clip_by_global_norm(config['gn']),
                 optax.adam(learning_rate=config['lr'])
             )
-        network_tx = optax.adam(learning_rate=config['lr'])
+        else:
+            network_tx = optax.adam(learning_rate=config['lr'])
         network_params = network_def.init(init_rng, **network_args)['params']
         network = TrainState.create(network_def, network_params, tx=network_tx)
 
@@ -298,7 +299,7 @@ def get_config():
             delta =2.0,
             test_alpha=10.0,
             alpha=10.0,
-            gn=200.0,
+            gn=50.0,
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=32,  # Number of action samples for rejection sampling.
