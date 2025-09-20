@@ -113,7 +113,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.01,
+            gn=0.0,
             num_ensembles=2,
             delta=2.0,
             actor_loss='awr',  # Actor loss type ('awr' or 'ddpgbc').

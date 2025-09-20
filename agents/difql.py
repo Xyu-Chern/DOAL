@@ -87,7 +87,7 @@ def get_config():
             delta=2.0,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.01,
+            gn=0.0,
             num_ensembles=2,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.

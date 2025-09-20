@@ -295,7 +295,7 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
-            gn=200,
+            gn=0.0,
             alpha=50.0,
             delta=2.0,
             solver="linear",
