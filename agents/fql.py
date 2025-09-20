@@ -88,12 +88,16 @@ class FQLAgent(DOALAgent):
 
         # Q loss.
         actor_actions = jnp.clip(actor_actions, -1, 1)
-        qs = self.network.select('critic')(batch['observations'], actions=actor_actions)
-        q = jnp.mean(qs, axis=0)
+        if self.config["use_q_loss"] :
+            qs = self.network.select('critic')(batch['observations'], actions=actor_actions)
+            q = jnp.mean(qs, axis=0)
 
-        q_loss = -q.mean()
-        if self.config['normalize_q_loss']:
-            q_loss = aux["lam"] * q_loss
+            q_loss = -q.mean()
+            if self.config['normalize_q_loss']:
+                q_loss = aux["lam"] * q_loss
+        else:
+            q_loss = 0 * distill_loss
+            q = 0 * distill_loss
 
         # Total loss.
         actor_loss = bc_flow_loss +  self.config['alpha_actor'] *  distill_loss  + q_loss
@@ -295,10 +299,12 @@ def get_config():
             alpha=50.0,
             delta=2.0,
             solver="linear",
+            log_q_grad=False,
             q_agg='mean',  # Aggregation method for target Q values.
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
+            use_q_loss=True,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )
