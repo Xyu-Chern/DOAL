@@ -220,7 +220,7 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
         critic_def = Value(
             hidden_dims=config['value_hidden_dims'],
             layer_norm=config['layer_norm'],
-            num_ensembles=2,
+            num_ensembles=config['num_ensembles'],
             encoder=encoders.get('critic'),
         )
         actor_bc_flow_def = ActorVectorField(
@@ -295,6 +295,7 @@ def get_config():
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             loss_type="action",
             time_weight=False,
+            num_ensembles=2,
             expectile=0.9,  # IQL expectile.
             delta =2.0,
             test_alpha=10.0,

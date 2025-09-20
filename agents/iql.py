@@ -29,10 +29,10 @@ class IQLAgent(flax.struct.PyTreeNode):
 
     def value_loss(self, batch, grad_params, aux={}):
         """Compute the IQL value loss."""
-        q1, q2 = self.network.select("target_critic")(
+        qs = self.network.select("target_critic")(
             batch["observations"], actions=batch["actions"]
         )
-        q = jnp.minimum(q1, q2)
+        q = jnp.min(qs,axis=0,keepdims=False)
         v = self.network.select("value")(batch["observations"], params=grad_params)        
         lam = 1 / jax.lax.stop_gradient(jnp.abs(v).mean())
         value_loss = self.expectile_loss(q - v, q - v, self.config['expectile']).mean() 
@@ -54,8 +54,8 @@ class IQLAgent(flax.struct.PyTreeNode):
         next_v = self.network.select("value")(batch["next_observations"])
         q = batch["rewards"] + self.config["discount"] * batch["masks"] * next_v
 
-        q1, q2 = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
-        critic_loss = ((q1 - q) ** 2 + (q2 - q) ** 2).mean() 
+        qs = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
+        critic_loss = ((qs - q) ** 2 ).mean() 
 
         if self.config['normalize_q_loss']:
             critic_loss = aux["lam"] * critic_loss
@@ -224,7 +224,7 @@ class IQLAgent(flax.struct.PyTreeNode):
         critic_def = Value(
             hidden_dims=config["value_hidden_dims"],
             layer_norm=config["layer_norm"],
-            num_ensembles=2,
+            num_ensembles=config["num_ensembles"],
             encoder=encoders.get("critic"),
         )
         actor_def = Actor(
@@ -251,7 +251,8 @@ class IQLAgent(flax.struct.PyTreeNode):
             optax.adaptive_grad_clip(config["gn"]),
                 optax.adam(learning_rate=config["lr"]),
             )
-        network_tx = optax.adam(learning_rate=config["lr"])
+        else:
+            network_tx = optax.adam(learning_rate=config["lr"])
 
         network_params = network_def.init(init_rng, **network_args)["params"]
         network = TrainState.create(network_def, network_params, tx=network_tx)
@@ -276,7 +277,8 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.01,
+            num_ensembles=2,
+            gn=0.0,
             actor_loss="awr",  # Actor loss type ('awr' or 'ddpgbc').
             alpha_actor=10.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             const_std=True,  # Whether to use constant standard deviation for the actor.
