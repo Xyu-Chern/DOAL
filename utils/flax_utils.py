@@ -154,6 +154,7 @@ class DOALAgent(flax.struct.PyTreeNode):
         v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
         q, g = v_grad_q(q_action)
 
+        g = g +  2 * alpha * (action-q_action)
         norm = jnp.linalg.norm(g,axis=-1,keepdims=True)
         norm_mean = jnp.mean(norm)
         norm_std = jnp.std(norm)
@@ -184,6 +185,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             gs = jax.jacrev(bc_loss_wrt_q_action) (q_action)
 
             g = jnp.mean(gs,axis=0)
+            g = g + 2 * alpha * (action-q_action)
             cov = jnp.cov(gs.T) +  2*alpha* jnp.eye(q_action.shape[0], dtype=q_action.dtype)
             b = jnp.linalg.solve(cov, g)
 
@@ -211,6 +213,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
             q, g = v_grad_q(q_action)
 
+            g = g +  2 * alpha * (action-q_action)
             b =  g / (  2 * alpha )
 
             normb = jnp.linalg.norm(b)
@@ -354,131 +357,6 @@ class DOALAgent(flax.struct.PyTreeNode):
 
             eig =   jnp.diagonal(H)#jax.scipy.linalg.svd(H,full_matrices =False,compute_uv =False)
             return adjusted_actions, dx,eig, g, q
-
-        return _get_guided_action(q_action, action, observation, alpha, params)
-    @jax.jit
-    def get_gd_action(self, q_action, action, observation, alpha, delta, params):
-
-        @jax.jit
-        @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
-        def _get_guided_action(q_action, action, observation, alpha, params):
-
-            # --- HYPERPARAMETERS FOR MANUAL GRADIENT DESCENT ---
-            # These are the knobs you will need to tune for performance.
-            step_size = 1  # The learning rate for each gradient step.
-            num_steps = 10    # The number of optimization steps to perform.
-            
-            # 1. Define the objective function to be MINIMIZED (same as before).
-            #    We use value_and_grad for efficiency.
-            @jax.value_and_grad
-            def q_objective(optim_action, initial_action, obs, net_params):
-                qs = self.network.select('critic')(obs, optim_action, params=net_params)
-                q = jnp.mean(qs)
-                regularization = alpha * jnp.sum((optim_action - initial_action)**2)
-                return -q + regularization
-
-            # 2. Define the function for a single step of gradient descent.
-            #    This is the core function that `lax.scan` will loop over.
-            def gradient_descent_step(current_action, _):
-                # --- 1. Standard Gradient Step ---
-                value, grad = q_objective(current_action, q_action, observation, params)
-                # Take a step, creating a potentially unconstrained action
-                unconstrained_action = current_action - step_size * grad
-                
-                # --- 2a. L2 Ball Projection ---
-                # Project the action to be within an L2 distance of `delta` from the ORIGINAL action.
-                # This acts like a leash, keeping the action from straying too far.
-                diff = unconstrained_action - q_action
-                distance = jnp.linalg.norm(diff)
-                
-                # If the distance is > delta, scale the difference vector back to length delta.
-                # Otherwise, leave the action as is. `jnp.where` is JIT-friendly.
-                projected_action = jnp.where(
-                    distance > delta,
-                    q_action + diff * (delta / distance),
-                    unconstrained_action
-                )
-
-                # --- 2b. Clipping ---
-                # Enforce the absolute range limits on the action.
-                final_step_action = jnp.clip(projected_action, -1.0, 1.0)
-                
-                return final_step_action ,value
-
-            # 3. Run the scan loop.
-            #    - `gradient_descent_step`: The function to execute.
-            #    - `init=q_action`: The starting point for the optimization.
-            #    - `xs=None, length=num_steps`: Tells scan to run the function `num_steps` times.
-            final_action, values_over_time = jax.lax.scan(
-                f=gradient_descent_step,
-                init=q_action,
-                xs=None,
-                length=num_steps
-            )
-            
-            # 4. Extract and process the final results.
-            adjusted_actions = jax.lax.stop_gradient(final_action)
-
-            # Calculate the final Q-value at the optimized action.
-            final_objective_val, final_grad_unprocessed = q_objective(adjusted_actions, q_action, observation, params)
-            final_reg = alpha * jnp.sum((adjusted_actions - q_action)**2)
-            q_final = -(final_objective_val - final_reg)
-
-            dx = jax.lax.stop_gradient(adjusted_actions - action)
-            q = jax.lax.stop_gradient(q_final)
-            g = jax.lax.stop_gradient(-final_grad_unprocessed)
-
-            return adjusted_actions, dx, 0*q, g, q
-
-        return _get_guided_action(q_action, action, observation, alpha, params)
-    @jax.jit
-    def get_cg_action(self, q_action, action, observation, alpha, delta, params):
-
-        @jax.jit
-        @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
-        def _get_guided_action(q_action, action, observation, alpha, params):
-
-            # 1. Define the regularized objective function to be MINIMIZED.
-            def q_maximization_objective_regularized(optim_action, initial_action, obs, net_params):
-                """Returns the negative Q-value plus a regularization penalty."""
-                qs = self.network.select('critic')(obs, optim_action, params=net_params)
-                q = jnp.mean(qs)
-
-                # Penalty for deviating from the initial action. This keeps the
-                # optimized action within a "trust region" of the start.
-                regularization = alpha * jnp.sum((optim_action - initial_action)**2)
-
-                # We minimize (-Q + regularization)
-                return -q + regularization
-
-            # 2. Instantiate the L-BFGS solver.
-            solver = jaxopt.NonlinearCG(fun=q_maximization_objective_regularized, maxiter=1, tol=1e-3)
-
-
-            # 3. Run the optimization.
-            #    Note: We now pass `initial_action=q_action` as a static argument
-            #    to be used in the regularization term.
-            results = solver.run(init_params=q_action,
-                                initial_action=q_action,
-                                obs=observation,
-                                net_params=params)
-
-            # 4. Extract the results.
-            adjusted_actions = jax.lax.stop_gradient(clip(results.params))
-            final_objective_val = results.state.value
-
-            # To get the pure Q-value, we can re-evaluate the critic or subtract the
-            # regularization term from the final objective value.
-            final_reg = alpha * jnp.sum((adjusted_actions - q_action)**2)
-            q_final = -(final_objective_val - final_reg)
-            
-            dx = jax.lax.stop_gradient(adjusted_actions - action)
-            q = jax.lax.stop_gradient(q_final)
-            
-            final_grad = jax.grad(q_maximization_objective_regularized)(adjusted_actions, q_action, observation, params)
-            g = jax.lax.stop_gradient(-final_grad)
-
-            return adjusted_actions, dx, 0*q, g, q
 
         return _get_guided_action(q_action, action, observation, alpha, params)
 class ModuleDict(nn.Module):

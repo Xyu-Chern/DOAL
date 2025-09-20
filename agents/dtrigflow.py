@@ -27,23 +27,33 @@ class DTrigFQLAgent(TrigFQLAgent):
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
         alpha = self.config["alpha"] 
-
-        adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
-
-
-        # BC flow loss.
-        z = jax.random.normal(x_rng, (batch_size, action_dim))
-        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi  / 2
-
-    #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
-    # need ablation study 
-        if self.config["use_acton_for_sample"]:
+        if self.config["search_around_sample"]:
+            # BC flow loss.
+            z = jax.random.normal(x_rng, (batch_size, action_dim))
+            t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi  / 2
             x_t = jnp.cos(t)*   batch['actions'] + jnp.sin(t) * z
-        else:
-            x_t = jnp.cos(t)*  adjusted_actions + jnp.sin(t) * z
+            F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
+            pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
+            adjusted_actions , adjustment,hd,g, q = self.get_guided_action( pred_actions, batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
 
-        F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
-        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
+        
+        else:
+            adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=alpha,delta=self.config["delta"],params=self.network.params)
+
+
+            # BC flow loss.
+            z = jax.random.normal(x_rng, (batch_size, action_dim))
+            t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi  / 2
+
+        #    vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
+        # need ablation study 
+            if self.config["use_acton_for_sample"]:
+                x_t = jnp.cos(t)*   batch['actions'] + jnp.sin(t) * z
+            else:
+                x_t = jnp.cos(t)*  adjusted_actions + jnp.sin(t) * z
+
+            F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
+            pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
 
 
         #、 v = jax.lax.stop_gradient(aux["v"])
@@ -127,6 +137,7 @@ def get_config():
             norm_q_grad=False,
             clip=False,
             use_acton_for_sample=False,
+            search_around_sample=False,
             delta=1.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
