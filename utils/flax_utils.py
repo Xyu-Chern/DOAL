@@ -356,7 +356,7 @@ class DOALAgent(flax.struct.PyTreeNode):
         h_std = jnp.std(eigvals)
         inv_H = make_inv_h(U,eigvals +1e-4)
 
-        dx = alpha * jax.lax.batch_matmul (inv_H , grad_action )
+        dx = alpha *jax.numpy.squeeze(jax.lax.batch_matmul (inv_H , grad_action[...,None] ),axis=-1)
         unconstrained_action = q_action - dx
         distance = jnp.linalg.norm(dx)
         projected_action = jnp.where(
