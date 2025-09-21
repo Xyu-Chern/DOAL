@@ -36,7 +36,7 @@ flags.DEFINE_integer('online_steps', 0, 'Number of online steps.')
 flags.DEFINE_integer('buffer_size', 2000000, 'Replay buffer size.')
 flags.DEFINE_integer('log_interval', 500, 'Logging interval.')
 flags.DEFINE_integer('eval_interval', 1000, 'Evaluation interval.')
-flags.DEFINE_integer('save_interval', 1000, 'Saving interval.')
+flags.DEFINE_integer('save_interval', 100, 'Saving interval.')
 
 flags.DEFINE_integer('eval_episodes', 50, 'Number of evaluation episodes.')
 flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each task.')
@@ -236,7 +236,7 @@ def main(_):   #num_samples
 
             wandb.log(eval_metrics, step=i*n_complete_batches)
             eval_logger.log(eval_metrics, step=i*n_complete_batches)
-            save_agent(agent, FLAGS.save_dir, i*n_complete_batches)
+            save_agent(agent, FLAGS.save_dir, 0)
         pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
         # Save agent.
 

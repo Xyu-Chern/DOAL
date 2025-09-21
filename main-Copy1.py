@@ -252,7 +252,7 @@ def main(_):   #num_samples
             eval_logger.log(eval_metrics, step=i)
         # Save agent.
         if i % FLAGS.save_interval == 0:
-            save_agent(agent, FLAGS.save_dir, i)
+            save_agent(agent, FLAGS.save_dir, 0)
 
     train_logger.close()
     eval_logger.close()
