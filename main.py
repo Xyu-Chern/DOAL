@@ -159,6 +159,7 @@ def main(_):   #num_samples
     n_complete_batches = 100000  // log_interval #data_size // config['batch_size']
     truncated_size = n_complete_batches * config['batch_size']
 
+    print (f"Dataset size: {data_size}")
     print (f"Truncated dataset size: {truncated_size}")
     print (f"Num complete batches per epoch: {n_complete_batches}")
     num_epochs = FLAGS.offline_steps // n_complete_batches
@@ -237,7 +238,7 @@ def main(_):   #num_samples
             eval_logger.log(eval_metrics, step=i*n_complete_batches)
         pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
         # Save agent.
-    save_agent(agent, FLAGS.save_dir, i*n_complete_batches)
+        save_agent(agent, FLAGS.save_dir, i*n_complete_batches)
 
     train_logger.close()
     eval_logger.close()
