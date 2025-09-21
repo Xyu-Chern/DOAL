@@ -329,18 +329,6 @@ class DOALAgent(flax.struct.PyTreeNode):
     def auto_trust(self, q_action, action, observation, alpha, delta, params):
 
 
-        def projected_step(last_action,H,grad_action):
-            dz = -  jnp.linalg.solve(H, grad_action)
-            unconstrained_action = last_action + dz
-            
-            distance = jnp.linalg.norm(dz)
-            projected_action = jnp.where(
-                distance > delta,
-                last_action + dz * (delta / distance),
-                unconstrained_action
-            )
-            return jnp.clip(projected_action, -1.0, 1.0)
-
         @jax.jit
         @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
         def _get_svd(q_action, action, observation, alpha, params):
@@ -363,12 +351,21 @@ class DOALAgent(flax.struct.PyTreeNode):
         U, S, V, q_final,grad_action = _get_svd(q_action, action, observation, alpha, params)
         eigvals = jnp.abs(S)
         @jax.vmap
-        def make_pos_h(U, S):
-            return  jnp.dot(U, jnp.dot(jnp.diag(S), U.T))
+        def make_inv_h(U, S):
+            return  jnp.dot(U, jnp.dot(jnp.diag(1.0/S), U.T))
         h_std = jnp.std(eigvals)
-        H = make_pos_h(U,eigvals+alpha*h_std)
+        inv_H = make_inv_h(U,eigvals+alpha*h_std+1e-4)
 
-        adjusted_actions = projected_step(q_action,H,grad_action)
+        dx =  inv_H @ grad_action
+        unconstrained_action = q_action - dx
+        distance = jnp.linalg.norm(dx)
+        projected_action = jnp.where(
+            distance > delta,
+            q_action + dx * (delta / distance),
+            unconstrained_action
+        )
+        adjusted_actions = jnp.clip(projected_action, -1.0, 1.0)
+
 
         # 4. Extract the results.
         adjusted_actions = jax.lax.stop_gradient(adjusted_actions)

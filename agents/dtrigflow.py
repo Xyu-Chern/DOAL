@@ -72,7 +72,6 @@ class DTrigFQLAgent(TrigFQLAgent):
             time_weight_logits = jnp.zeros_like(t) 
 
 
-
         actor_loss = -q.mean()
         # Total loss.
         total_loss = actor_loss

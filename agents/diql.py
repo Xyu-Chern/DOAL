@@ -49,17 +49,12 @@ class DIQLAgent(DOALAgent,IQLAgent):
                 'aq': jnp.mean(aq),
                 'std': jnp.mean(dist.scale_diag),
             'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
-            'adj': jnp.mean(jnp.abs(adjustment)),
-            "hd": jnp.mean(hd),
-            "hd_abs": jnp.mean(jnp.abs(hd)),
-            "hd_std": jnp.std(hd),
-            "hd_max": jnp.max(hd),
-            "hd_min": jnp.min(hd),
-            "g": jnp.mean(g),
-            "g_std": jnp.std(g),
-            "g_abs": jnp.mean(jnp.abs(g)),
-            "g_max": jnp.max(g),
-            "g_min": jnp.min(g),
+            'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
+            "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
+            "eig_abs": jnp.mean(jnp.abs(hd)),
+            "eig_abs_std": jnp.std(jnp.abs(hd)),
+            "eig_std": jnp.std(hd),
+            "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
             }
 
             return actor_loss, actor_info
@@ -100,7 +95,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='diql',  # Agent name.
-            solver="auto",
+            solver="auto_trust",
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
             lr=3e-4,  # Learning rate.
@@ -115,10 +110,10 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             gn=0.0,
             num_ensembles=2,
-            delta=2.0,
+            delta=1.0,
             actor_loss='awr',  # Actor loss type ('awr' or 'ddpgbc').
             actor_update_start=0.,
-            alpha=50.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
+            alpha=0.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             alpha_actor = 10.0,
             const_std=True,  # Whether to use constant standard deviation for the actor.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
