@@ -338,7 +338,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             def bc_loss_wrt_q_action(q_action):
                 qs = self.network.select('critic')(observation, q_action, params=params)
                 q = jnp.mean(qs)
-                return  q 
+                return  -q 
 
 
 
@@ -353,16 +353,16 @@ class DOALAgent(flax.struct.PyTreeNode):
         @jax.vmap
         def get_dx(U, S,g):
             return  jnp.dot(U, jnp.dot(jnp.diag(1.0/S), U.T)) @ g
-    #    h_std = jnp.std(eigvals)
+        h_std = jnp.std(eigvals)
       #  inv_H = get_dx(U,eigvals +1e-4)
 
-        dx = alpha *get_dx(U,eigvals +1e-4,grad_action) #jax.numpy.squeeze(jax.lax.batch_matmul (inv_H , grad_action[...,None] ),axis=-1)
-        adjusted_actions = q_action + dx
+        dx = get_dx(U,eigvals +1e-4+alpha*h_std,grad_action) #jax.numpy.squeeze(jax.lax.batch_matmul (inv_H , grad_action[...,None] ),axis=-1)
+        adjusted_actions = q_action - dx
         if self.config["clip"]:
             distance = jnp.linalg.norm(dx)
             adjusted_actions = jnp.where(
                 distance > delta,
-                q_action + dx * (delta / distance),
+                q_action - dx * (delta / distance),
                 adjusted_actions
             )
             adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
