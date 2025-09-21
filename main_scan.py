@@ -4,7 +4,6 @@ import platform
 import json
 import random
 import time
-
 import jax
 import numpy as np
 import tqdm
@@ -35,9 +34,9 @@ flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
 flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
 flags.DEFINE_integer('online_steps', 0, 'Number of online steps.')
 flags.DEFINE_integer('buffer_size', 2000000, 'Replay buffer size.')
-flags.DEFINE_integer('log_interval', 5000, 'Logging interval.')
-flags.DEFINE_integer('eval_interval', 100000, 'Evaluation interval.')
-flags.DEFINE_integer('save_interval', 1000000, 'Saving interval.')
+flags.DEFINE_integer('log_interval', 500, 'Logging interval.')
+flags.DEFINE_integer('eval_interval', 1000, 'Evaluation interval.')
+flags.DEFINE_integer('save_interval', 100, 'Saving interval.')
 
 flags.DEFINE_integer('eval_episodes', 50, 'Number of evaluation episodes.')
 flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each task.')
@@ -47,11 +46,10 @@ flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 config_flags.DEFINE_config_file('agent', f'agents/dtrigflow.py', lock_config=False)
 
 flags.DEFINE_float('alpha_actor',None, 'coffeient for conservative') 
-
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
 flags.DEFINE_integer('balanced_sampling', 0, 'Whether to use balanced sampling for online fine-tuning.')
-
+import jax.numpy as jnp
 def main(_):   #num_samples
     # Set up logger.
 
@@ -154,84 +152,72 @@ def main(_):   #num_samples
     done = True
     expl_metrics = dict()
     online_rng = jax.random.PRNGKey(FLAGS.seed)
-    for i in tqdm.tqdm(range(1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
-        if i <= FLAGS.offline_steps:
-            # Offline RL.
-            batch = train_dataset.sample(config['batch_size'])
 
-            if 'rebrac' in config['agent_name'] :
-                agent, update_info = agent.update(batch, full_update=(i % config['actor_freq'] == 0))
-            else:
-                agent, update_info = agent.update(batch)
-        else:
-            # Online fine-tuning.
-            online_rng, key = jax.random.split(online_rng)
+    dataset = train_dataset._dict
+    data_size = dataset["masks"].shape[0] 
+    log_interval = 5000
+    n_complete_batches = 100000  // log_interval #data_size // config['batch_size']
+    truncated_size = n_complete_batches * config['batch_size']
 
-            if done:
-                step = 0
-                ob, _ = env.reset()
+    print (f"Dataset size: {data_size}")
+    print (f"Truncated dataset size: {truncated_size}")
+    print (f"Num complete batches per epoch: {n_complete_batches}")
+    num_epochs = FLAGS.offline_steps // n_complete_batches
+    print (f"Num epochs: {num_epochs}")
+    print (f"Num effective training steps: {num_epochs * n_complete_batches}")
 
-            action = agent.sample_actions(observations=ob, temperature=1, seed=key)
-            action = np.array(action)
+    @jax.jit
+    def scan_update(agent, batch):
+   #     jax.debug.print("before {bar}", bar=str(jax.tree_util.tree_map(lambda x: x.dtype, batch)))
+        batch = jax.tree_util.tree_map(lambda x: jnp.array(x), batch)
+    #    jax.debug.print("after {bar}", bar=str(jax.tree_util.tree_map(lambda x: x.dtype, batch)))
+        agent, info = agent.update(batch)
+        return agent, info
 
-            next_ob, reward, terminated, truncated, info = env.step(action.copy())
-            done = terminated or truncated
+    pbar = tqdm.tqdm(range(1, num_epochs + 1), smoothing=0.1, dynamic_ncols=True)
+    #for i in tqdm.tqdm(range(1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
+    rng = jax.random.PRNGKey(FLAGS.seed)
+    for i in pbar:
+        # Generate new random key for shuffling
+        rng, subkey = jax.random.split(rng)
 
-            if 'antmaze' in FLAGS.env_name and (
-                'diverse' in FLAGS.env_name or 'play' in FLAGS.env_name or 'umaze' in FLAGS.env_name
-            ):
-                # Adjust reward for D4RL antmaze.
-                reward = reward - 1.0
-
-            replay_buffer.add_transition(
-                dict(
-                    observations=ob,
-                    actions=action,
-                    rewards=reward,
-                    terminals=float(done),
-                    masks=1.0 - terminated,
-                    next_observations=next_ob,
-                )
-            )
-            ob = next_ob
-
-            if done:
-                expl_metrics = {f'exploration/{k}': np.mean(v) for k, v in flatten(info).items()}
-
-            step += 1
-
-            # Update agent.
-            if FLAGS.balanced_sampling:
-                # Half-and-half sampling from the training dataset and the replay buffer.
-                dataset_batch = train_dataset.sample(config['batch_size'] // 2)
-                replay_batch = replay_buffer.sample(config['batch_size'] // 2)
-                batch = {k: np.concatenate([dataset_batch[k], replay_batch[k]], axis=0) for k in dataset_batch}
-            else:
-                batch = replay_buffer.sample(config['batch_size'])
-
-            if 'rebrac' in config['agent_name']:
-                agent, update_info = agent.update(batch, full_update=(i % config['actor_freq'] == 0))
-            else:
-                agent, update_info = agent.update(batch)
-
+        before_shuffle = time.time() 
+        
+        # Shuffle indices and truncate to fit complete batches
+        perms = jax.random.randint(subkey,(truncated_size,) ,minval=0, maxval=data_size)
+        
+        # Shuffle and reshape dataset into batches
+        batches = jax.tree_util.tree_map(
+            lambda x: x[perms].reshape(-1, config['batch_size'], *x.shape[1:]),
+            dataset
+        )
+        after_shuffle = time.time() 
+        # Perform updates using scan over all batches
+        agent, update_info = jax.jit(jax.lax.scan,static_argnums=(0,))(
+            scan_update,
+            agent,
+            batches
+        )
+        update_info = jax.tree_util.tree_map(
+            lambda xs: jnp.mean(xs), 
+            update_info
+        )
         # Log metrics.
-        if i % FLAGS.log_interval == 0:
-            train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+        train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+        train_metrics['time/data_time'] = after_shuffle- before_shuffle
+        train_metrics['time/compute_time'] = time.time() - after_shuffle
+        train_metrics['time/total_time'] = time.time() - last_time
+        last_time = time.time()
+        wandb.log(train_metrics, step=i*n_complete_batches)
+        train_logger.log(train_metrics, step=i*n_complete_batches)
+
+        if i % log_interval == 0 or i == num_epochs:
+            eval_metrics = {}
             if val_dataset is not None:
                 val_batch = val_dataset.sample(config['batch_size'])
                 _, val_info = agent.total_loss(val_batch, grad_params=None)
-                train_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
-            train_metrics['time/epoch_time'] = (time.time() - last_time) / FLAGS.log_interval
-            train_metrics['time/total_time'] = time.time() - first_time
-            train_metrics.update(expl_metrics)
-            last_time = time.time()
-            wandb.log(train_metrics, step=i)
-            train_logger.log(train_metrics, step=i)
-
-        # Evaluate agent.
-        if FLAGS.eval_interval != 0 and (i == 1 or i % FLAGS.eval_interval == 0):
+                eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
             renders = []
-            eval_metrics = {}
             eval_info, trajs, cur_renders = evaluate_parallel(
                 agent=agent,
                 envs = envs,
@@ -248,11 +234,11 @@ def main(_):   #num_samples
                 video = get_wandb_video(renders=renders)
                 eval_metrics['video'] = video
 
-            wandb.log(eval_metrics, step=i)
-            eval_logger.log(eval_metrics, step=i)
-        # Save agent.
-        if i % FLAGS.save_interval == 0:
+            wandb.log(eval_metrics, step=i*n_complete_batches)
+            eval_logger.log(eval_metrics, step=i*n_complete_batches)
             save_agent(agent, FLAGS.save_dir, 0)
+            pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
+        # Save agent.
 
     train_logger.close()
     eval_logger.close()
