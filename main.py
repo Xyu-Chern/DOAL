@@ -155,7 +155,7 @@ def main(_):   #num_samples
 
     dataset = train_dataset._dict
     data_size = dataset["masks"].shape[0] 
-    log_interval = 10
+    log_interval = 100
     n_complete_batches = 100000  // log_interval #data_size // config['batch_size']
     truncated_size = n_complete_batches * config['batch_size']
 
