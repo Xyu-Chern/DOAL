@@ -111,6 +111,7 @@ def get_config():
             gn=0.0,
             num_ensembles=2,
             delta=1.0,
+            clip=True,
             actor_loss='awr',  # Actor loss type ('awr' or 'ddpgbc').
             actor_update_start=0.,
             alpha=0.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
