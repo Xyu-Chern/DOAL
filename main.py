@@ -155,7 +155,7 @@ def main(_):   #num_samples
 
     dataset = train_dataset._dict
     data_size = dataset["masks"].shape[0] 
-    log_interval = 100
+    log_interval = 5000
     n_complete_batches = 100000  // log_interval #data_size // config['batch_size']
     truncated_size = n_complete_batches * config['batch_size']
 
@@ -236,9 +236,9 @@ def main(_):   #num_samples
 
             wandb.log(eval_metrics, step=i*n_complete_batches)
             eval_logger.log(eval_metrics, step=i*n_complete_batches)
+            save_agent(agent, FLAGS.save_dir, i*n_complete_batches)
         pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
         # Save agent.
-        save_agent(agent, FLAGS.save_dir, i*n_complete_batches)
 
     train_logger.close()
     eval_logger.close()
