@@ -200,17 +200,6 @@ def main(_):   #num_samples
         # Log metrics.
 
         if i % log_interval == 0 or i == num_epochs:
-            update_info = jax.tree_util.tree_map(
-                lambda xs: jnp.mean(xs), 
-                update_info
-            )
-            train_metrics = {f'training/{k}': v for k, v in update_info.items()}
-            train_metrics['time/data_time'] = after_shuffle- before_shuffle
-            train_metrics['time/compute_time'] = time.time() - after_shuffle
-            train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
-            last_time = time.time()
-            wandb.log(train_metrics, step=i*n_complete_batches)
-            train_logger.log(train_metrics, step=i*n_complete_batches)
             eval_metrics = {}
             if val_dataset is not None:
                 val_batch = val_dataset.sample(config['batch_size'])
@@ -236,6 +225,19 @@ def main(_):   #num_samples
             wandb.log(eval_metrics, step=i*n_complete_batches)
             eval_logger.log(eval_metrics, step=i*n_complete_batches)
             save_agent(agent, FLAGS.save_dir, 0)
+            pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
+        if i % 100 == 0:
+            update_info = jax.tree_util.tree_map(
+                lambda xs: jnp.mean(xs), 
+                update_info
+            )
+            train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+            train_metrics['time/data_time'] = after_shuffle- before_shuffle
+            train_metrics['time/compute_time'] = time.time() - after_shuffle
+            train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
+            last_time = time.time()
+            wandb.log(train_metrics, step=i*n_complete_batches)
+            train_logger.log(train_metrics, step=i*n_complete_batches)
             pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
         # Save agent.
 

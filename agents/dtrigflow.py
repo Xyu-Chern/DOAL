@@ -84,6 +84,9 @@ class DTrigFQLAgent(TrigFQLAgent):
             'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
             'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
             "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
+            "eig_abs": jnp.mean(jnp.abs(hd)),
+            "eig_abs_std": jnp.std(jnp.abs(hd)),
+            "eig_std": jnp.std(hd),
             "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
             }
         if  self.config["loss_type"] == "action":

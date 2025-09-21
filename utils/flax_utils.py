@@ -19,7 +19,28 @@ from jax import jvp
 def hvp(grad_f, primals, tangents):
     return jvp(grad_f, primals, tangents)[1]
 
-
+@jax.jit
+def svd_computation(matrix):
+    """
+    使用 PyTorch 计算 SVD，支持 CUDA
+    正确处理 JAX tracer 对象
+    """
+    # 首先使用 lax.stop_gradient 来阻止梯度追踪
+  #  matrix_detached = lax.stop_gradient(matrix)
+    
+    # 将 JAX 数组转换为 numpy 数组
+   # matrix_np = np.array(matrix)
+    
+    
+    # 计算 SVD
+    U, S, V = jnp.linalg.svd(matrix)
+    
+    # 转换回 JAX 数组
+    U_jax = jnp.array(U)
+    S_jax = jnp.array(S)
+    V_jax = jnp.array(V)
+    
+    return U_jax, S_jax, V_jax
 def clip(x):
     return jnp.clip(x,-1,1)
 class DOALAgent(flax.struct.PyTreeNode):
@@ -307,41 +328,6 @@ class DOALAgent(flax.struct.PyTreeNode):
     @jax.jit
     def trust(self, q_action, action, observation, alpha, delta, params):
 
-        def make_hessian_psd_gershgorin(H, epsilon=1e-6):
-            """
-            Makes a Hessian PSD using Gershgorin circle theorem without linalg calls.
-
-            This is a robust method when eigh() or eigvalsh() are unavailable due to
-            environment issues (e.g., CUDA driver problems).
-
-            Args:
-                H: The input Hessian matrix (must be symmetric).
-                epsilon: A small positive value to ensure strict positive definiteness.
-
-            Returns:
-                The modified, positive semi-definite Hessian.
-            """
-            # Get the diagonal elements of the Hessian
-            H_diag = jnp.diag(H)
-            
-            # 1. Calculate Ri: the sum of absolute off-diagonal elements for each row
-            # We can get this by summing the absolute values of the whole matrix per row
-            # and then subtracting the absolute value of the diagonal element.
-            R = jnp.sum(jnp.abs(H), axis=1) - jnp.abs(H_diag)
-            
-            # 2. Find the Gershgorin lower bound for the minimum eigenvalue
-            g_min = jnp.min(H_diag - R)
-            
-            # 3. Determine the required shift (lambda)
-            # If g_min is positive, the matrix might already be PSD. We add a small
-            # epsilon just in case. If g_min is negative, we must shift it to be
-            # positive.
-            lambda_shift = jnp.maximum(0.0, -g_min) + epsilon
-
-            # 4. Add the scaled identity matrix to make the Hessian PSD
-            H_psd = H + lambda_shift * jnp.eye(H.shape[0])
-        
-            return H_psd
         @jax.jit
         @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
         def _get_guided_action(q_action, action, observation, alpha, params):
@@ -371,10 +357,10 @@ class DOALAgent(flax.struct.PyTreeNode):
             q_final,grad_action = jax.value_and_grad(bc_loss_wrt_q_action)(q_action)
          #   grad_action = grad_action + 2 * (q_action-action)
             H = jax.hessian(bc_loss_wrt_q_action)(q_action)
-            H = make_hessian_psd_gershgorin(H,alpha)
-         #   eigvals, eigvecs = jnp.linalg.eigh(H)
-          #  eigvals = jnp.abs(eigvals)
-           # H = jnp.dot(eigvecs, jnp.dot(jnp.diag(eigvals), eigvecs.T)).real
+           # H = make_hessian_psd_gershgorin(H,alpha)
+            S, V, D =  jnp.linalg.svd(H)
+            eigvals = jnp.abs(V)
+            H = jnp.dot(S, jnp.dot(jnp.diag(eigvals+2*alpha), D.T))
 
             adjusted_actions = projected_step(q_action,H,grad_action)
 
@@ -386,7 +372,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             
             g = jax.lax.stop_gradient(grad_action)
 
-            eig =   jnp.diagonal(H)#jax.scipy.linalg.svd(H,full_matrices =False,compute_uv =False)
+            eig =  V#jax.scipy.linalg.svd(H,full_matrices =False,compute_uv =False)
             return adjusted_actions, dx,eig, g, q
 
         return _get_guided_action(q_action, action, observation, alpha, params)
