@@ -365,7 +365,7 @@ class DOALAgent(flax.struct.PyTreeNode):
                 q_action - dx * (delta / distance),
                 adjusted_actions
             )
-            adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
+        adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
 
 
         # 4. Extract the results.
