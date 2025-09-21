@@ -326,6 +326,62 @@ class DOALAgent(flax.struct.PyTreeNode):
         return _get_guided_action(q_action, action, observation, alpha, params)
 
     @jax.jit
+    def auto_trust(self, q_action, action, observation, alpha, delta, params):
+
+
+        def projected_step(last_action,H,grad_action):
+            dz = -  jnp.linalg.solve(H, grad_action)
+            unconstrained_action = last_action + dz
+            
+            distance = jnp.linalg.norm(dz)
+            projected_action = jnp.where(
+                distance > delta,
+                last_action + dz * (delta / distance),
+                unconstrained_action
+            )
+            return jnp.clip(projected_action, -1.0, 1.0)
+
+        @jax.jit
+        @partial(jax.vmap, in_axes=(0, 0, 0, None, None))
+        def _get_svd(q_action, action, observation, alpha, params):
+
+            # 1. Define the regularized objective function to be MINIMIZED.
+
+            def bc_loss_wrt_q_action(q_action):
+                qs = self.network.select('critic')(observation, q_action, params=params)
+                q = jnp.mean(qs)
+                return - q 
+
+
+
+            q_final,grad_action = jax.value_and_grad(bc_loss_wrt_q_action)(q_action)
+         #   grad_action = grad_action + 2 * (q_action-action)
+            H = jax.hessian(bc_loss_wrt_q_action)(q_action)
+           # H = make_hessian_psd_gershgorin(H,alpha)
+            U, S, V =  jnp.linalg.svd(H)
+            return U, S, V ,q_final,grad_action
+        U, S, V, q_final,grad_action = _get_svd(q_action, action, observation, alpha, params)
+        eigvals = jnp.abs(S)
+        @jax.vmap
+        def make_pos_h(U, S):
+            return  jnp.dot(U, jnp.dot(jnp.diag(S), U.T))
+        h_std = jnp.std(eigvals)
+        H = make_pos_h(U,eigvals+alpha*h_std)
+
+        adjusted_actions = projected_step(q_action,H,grad_action)
+
+        # 4. Extract the results.
+        adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
+        
+        dx = jax.lax.stop_gradient(adjusted_actions - action)
+        q = jax.lax.stop_gradient(q_final)
+        
+        g = jax.lax.stop_gradient(grad_action)
+
+        eig =  jax.lax.stop_gradient(S)#jax.scipy.linalg.svd(H,full_matrices =False,compute_uv =False)
+
+        return adjusted_actions, dx,eig, g, q
+    @jax.jit
     def trust(self, q_action, action, observation, alpha, delta, params):
 
         @jax.jit

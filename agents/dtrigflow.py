@@ -131,12 +131,12 @@ def get_config():
             return_next_actions=True,
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             time_weight=False,
-            alpha=50.0,  # BC coefficient (need to be tuned for each environment).
+            alpha=1.0,  # BC coefficient (need to be tuned for each environment).
             test_alpha=0.0,
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             use_vel_loss=False,  # BC coefficient (need to be tuned for each environment).
             loss_type="action",
-            num_ensembles=4,
+            num_ensembles=2,
             norm_q_grad=False,
             clip=False,
             use_acton_for_sample=False,
