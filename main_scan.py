@@ -183,13 +183,12 @@ def main(_):   #num_samples
 
         before_shuffle = time.time() 
         
-        # Shuffle indices and truncate to fit complete batches
-        perms = jax.random.randint(subkey,(truncated_size,) ,minval=0, maxval=data_size)
+        batches = train_dataset.sample(truncated_size)
         
         # Shuffle and reshape dataset into batches
         batches = jax.tree_util.tree_map(
-            lambda x: x[perms].reshape(-1, config['batch_size'], *x.shape[1:]),
-            dataset
+            lambda x: x.reshape(-1, config['batch_size'], *x.shape[1:]),
+            batches
         )
         after_shuffle = time.time() 
         # Perform updates using scan over all batches
@@ -198,20 +197,20 @@ def main(_):   #num_samples
             agent,
             batches
         )
-        update_info = jax.tree_util.tree_map(
-            lambda xs: jnp.mean(xs), 
-            update_info
-        )
         # Log metrics.
-        train_metrics = {f'training/{k}': v for k, v in update_info.items()}
-        train_metrics['time/data_time'] = after_shuffle- before_shuffle
-        train_metrics['time/compute_time'] = time.time() - after_shuffle
-        train_metrics['time/total_time'] = time.time() - last_time
-        last_time = time.time()
-        wandb.log(train_metrics, step=i*n_complete_batches)
-        train_logger.log(train_metrics, step=i*n_complete_batches)
 
         if i % log_interval == 0 or i == num_epochs:
+            update_info = jax.tree_util.tree_map(
+                lambda xs: jnp.mean(xs), 
+                update_info
+            )
+            train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+            train_metrics['time/data_time'] = after_shuffle- before_shuffle
+            train_metrics['time/compute_time'] = time.time() - after_shuffle
+            train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
+            last_time = time.time()
+            wandb.log(train_metrics, step=i*n_complete_batches)
+            train_logger.log(train_metrics, step=i*n_complete_batches)
             eval_metrics = {}
             if val_dataset is not None:
                 val_batch = val_dataset.sample(config['batch_size'])

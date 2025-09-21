@@ -171,6 +171,38 @@ class DOALAgent(flax.struct.PyTreeNode):
 
 
     @jax.jit
+    def mpt_auto(self,q_action, action,observation,alpha,delta,params):
+
+
+        @jax.jit
+        @partial(jax.vmap, in_axes=(0,0,0,None,None))
+        def _get_guided_action(q_action, action,observation,alpha,params):
+
+            def bc_loss_wrt_q_action(q_action):
+                qs = self.network.select('critic')(observation, q_action, params=params)
+                return qs
+
+            gs = jax.jacrev(bc_loss_wrt_q_action) (q_action)
+
+            g = jnp.mean(gs,axis=0)
+            norm = jnp.linalg.norm(g,axis=-1,keepdims=True)
+            norm_mean = jnp.mean(norm)
+            g = g + 2 * alpha * (action-q_action)
+
+            alpha = alpha * norm_mean
+
+            cov = jnp.cov(gs.T) +  2*alpha* jnp.eye(q_action.shape[0], dtype=q_action.dtype)
+            b = jnp.linalg.solve(cov, g)
+
+            normb = jnp.linalg.norm(b)
+            dx = jnp.where(normb > delta,  b * delta/ normb,   b)
+            
+            adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
+            dx = jax.lax.stop_gradient(adjusted_actions - action)
+            q = jax.lax.stop_gradient(0 * normb)
+            return  adjusted_actions, dx, 2*  alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype) ,g, q
+        return _get_guided_action(q_action, action,observation,alpha,params)
+    @jax.jit
     def mpt(self,q_action, action,observation,alpha,delta,params):
 
 
@@ -185,7 +217,6 @@ class DOALAgent(flax.struct.PyTreeNode):
             gs = jax.jacrev(bc_loss_wrt_q_action) (q_action)
 
             g = jnp.mean(gs,axis=0)
-            g = g + 2 * alpha * (action-q_action)
             cov = jnp.cov(gs.T) +  2*alpha* jnp.eye(q_action.shape[0], dtype=q_action.dtype)
             b = jnp.linalg.solve(cov, g)
 
