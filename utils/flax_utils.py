@@ -354,9 +354,9 @@ class DOALAgent(flax.struct.PyTreeNode):
         def make_inv_h(U, S):
             return  jnp.dot(U, jnp.dot(jnp.diag(1.0/S), U.T))
         h_std = jnp.std(eigvals)
-        inv_H = make_inv_h(U,eigvals+alpha*h_std+1e-4)
+        inv_H = make_inv_h(U,eigvals +1e-4)
 
-        dx =  inv_H @ grad_action
+        dx = alpha *  inv_H @ grad_action
         unconstrained_action = q_action - dx
         distance = jnp.linalg.norm(dx)
         projected_action = jnp.where(
