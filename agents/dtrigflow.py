@@ -133,7 +133,7 @@ def get_config():
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             use_vel_loss=False,  # BC coefficient (need to be tuned for each environment).
             loss_type="action",
-            num_ensembles=2,
+            num_ensembles=4,
             norm_q_grad=False,
             clip=False,
             use_acton_for_sample=False,
