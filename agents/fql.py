@@ -106,19 +106,29 @@ class FQLAgent(DOALAgent):
         actions = self.sample_actions(batch['observations'], seed=rng)
         mse = jnp.mean((actions - batch['actions']) ** 2)
 
-        adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  actions, actions,batch['observations'],alpha=2*self.config["alpha_actor"],delta=self.config["delta"],params=self.network.params)
-        return actor_loss, {
-            'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
-            'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
-            "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
-            "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
-            'actor_loss': actor_loss,
-            'bc_flow_loss': bc_flow_loss,
-            'distill_loss': distill_loss,
-            'q_loss': q_loss,
-            'q': q.mean(),
-            'mse': mse,
-        }
+        if self.config['solver'] is not None:
+            adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  actions, actions,batch['observations'],alpha=2*self.config["alpha_actor"],delta=self.config["delta"],params=self.network.params)
+            return actor_loss, {
+                'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
+                'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
+                "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
+                "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
+                'actor_loss': actor_loss,
+                'bc_flow_loss': bc_flow_loss,
+                'distill_loss': distill_loss,
+                'q_loss': q_loss,
+                'q': q.mean(),
+                'mse': mse,
+            }
+        else:
+            return actor_loss, {
+                'actor_loss': actor_loss,
+                'bc_flow_loss': bc_flow_loss,
+                'distill_loss': distill_loss,
+                'q_loss': q_loss,
+                'q': q.mean(),
+                'mse': mse,
+            }
 
     @jax.jit
     def total_loss(self, batch, grad_params, rng=None):
@@ -298,7 +308,7 @@ def get_config():
             gn=0.0,
             alpha=50.0,
             delta=2.0,
-            solver="linear",
+            solver = ml_collections.config_dict.placeholder(str),
             log_q_grad=False,
             q_agg='mean',  # Aggregation method for target Q values.
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
