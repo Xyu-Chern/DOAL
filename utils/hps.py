@@ -240,135 +240,74 @@ hyperparameters ={
         }
     },
     "pen-expert-v1": {
-        "fql": {
-            "alpha_actor": 3000.0
-        },
-        "trigflow": {
-            "alpha_actor": 3000.0
-        },
+        "alpha_actor": 3000.0,
         "iql": {
             "alpha_actor": 0.5
         },
     },
     "pen-human-v1": {
-        "fql": {
-            "alpha_actor": 10000.0
-        },
-        "trigflow": {
-            "alpha_actor": 10000.0
-        },
+        "alpha_actor": 10000.0,
         "iql": {
             "alpha_actor": 0.5
         },
         
     },
     "pen-cloned-v1": {
-        "fql": {
-            "alpha_actor": 10000.0
-        },
-        "trigflow": {
-            "alpha_actor": 10000.0
-        },
+            "alpha_actor": 10000.0,
         "iql": {
             "alpha_actor": 0.5
         },
         
     },
     "door-expert-v1": {
-        "fql": {
-            "alpha_actor": 30000.0
-        },
-        "trigflow": {
-            "alpha_actor": 30000.0
-        },
+            "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },
     },
     "door-cloned-v1": {
-        "fql": {
-            "alpha_actor": 30000.0
-        },
-        "trigflow": {
-            "alpha_actor": 30000.0
-        },     
-        "iql": {
+            "alpha_actor": 30000.0,
             "alpha_actor": 0.5
         },  
     },
     "door-human-v1": {
-        "fql": {
-            "alpha_actor": 30000.0
-        },
-        "trigflow": {
-            "alpha_actor": 30000.0
-        },    
+            "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },  
     },
     "hammer-expert-v1": {
-        "fql": {
-            "alpha_actor": 30000.0
-        },
-        "trigflow": {
-            "alpha_actor": 30000.0
-        },      
+            "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },
     },
     "hammer-cloned-v1": {
-        "fql": {
-            "alpha_actor": 10000.0
-        },
-        "trigflow": {
-            "alpha_actor": 10000.0
-        },      
+            "alpha_actor": 10000.0,
         "iql": {
             "alpha_actor": 0.5
         },  
     },
     "hammer-human-v1": {
-        "fql": {
-            "alpha_actor": 30000.0
-        },
-        "trigflow": {
-            "alpha_actor": 30000.0
-        },  
+            "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },      
     },
     "relocate-expert-v1": {
-        "fql": {
-            "alpha_actor": 30000.0
-        },
-        "trigflow": {
-            "alpha_actor": 30000.0
-        },    
+            "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },    
     },
     "relocate-human-v1": {
-        "fql": {
-            "alpha_actor": 10000.0
-        },
-        "trigflow": {
-            "alpha_actor": 10000.0
-        },       
+            "alpha_actor": 10000.0,
         "iql": {
             "alpha_actor": 0.5
         },
     },
     "relocate-cloned-v1": {    
-        "fql": {
-            "alpha_actor": 30000.0
-        },
-        "trigflow": {
-            "alpha_actor": 30000.0
-        }, 
+        "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },
