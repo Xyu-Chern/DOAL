@@ -338,7 +338,7 @@ class DOALAgent(flax.struct.PyTreeNode):
             def bc_loss_wrt_q_action(q_action):
                 qs = self.network.select('critic')(observation, q_action, params=params)
                 q = jnp.mean(qs)
-                return - q 
+                return  -q 
 
 
 
@@ -346,26 +346,33 @@ class DOALAgent(flax.struct.PyTreeNode):
          #   grad_action = grad_action + 2 * (q_action-action)
             H = jax.hessian(bc_loss_wrt_q_action)(q_action)
            # H = make_hessian_psd_gershgorin(H,alpha)
-            U, S, V =  jnp.linalg.svd(H)
+            U, S, V =  jnp.linalg.svd(H,hermitian =True)
             return U, S, V ,q_final,grad_action
         U, S, V, q_final,grad_action = _get_svd(q_action, action, observation, alpha, params)
         eigvals = jnp.abs(S)
         @jax.vmap
-        def make_inv_h(U, S):
-            return  jnp.dot(U, jnp.dot(jnp.diag(1.0/S), U.T))
+        def get_dx(U, S,g):
+            return  jnp.dot(U, jnp.dot(jnp.diag(1.0/S), U.T)) @ g
         h_std = jnp.std(eigvals)
-        inv_H = make_inv_h(U,eigvals +1e-4)
+      #  inv_H = get_dx(U,eigvals +1e-4)
 
-        dx = alpha *jax.numpy.squeeze(jax.lax.batch_matmul (inv_H , grad_action[...,None] ),axis=-1)
-        unconstrained_action = q_action - dx
-        distance = jnp.linalg.norm(dx)
-        adjusted_actions = jnp.where(
-            distance > delta,
-            q_action + dx * (delta / distance),
-            unconstrained_action
-        )
-        if self.config["clip"]:
+        dx = get_dx(U,eigvals +1e-4,grad_action) #jax.numpy.squeeze(jax.lax.batch_matmul (inv_H , grad_action[...,None] ),axis=-1)
+        distance = jnp.linalg.vector_norm(dx,axis=-1,keepdims=True) 
+        global_distance = jnp.mean(distance)
+
+        scale = alpha / global_distance
+
+        dx = (alpha / global_distance) * dx
+        if self.config["clip"]:            
+            distance = jnp.linalg.vector_norm(dx,axis=-1,keepdims=True) 
+            adjusted_actions = jnp.where(
+                distance > delta,
+                q_action - dx * (delta / distance),
+                q_action - dx 
+            )
             adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
+        else:
+            adjusted_actions = q_action - dx 
 
 
         # 4. Extract the results.

@@ -83,12 +83,12 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             time_weight=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
-            alpha=50.0,  # BC coefficient (need to be tuned for each environment).
+            alpha=1.0,  # BC coefficient (need to be tuned for each environment).
             delta=2.0,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             gn=0.0,
-            clip=True,
+            clip=False,
             num_ensembles=2,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.

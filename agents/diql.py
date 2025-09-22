@@ -110,11 +110,11 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             gn=0.0,
             num_ensembles=2,
-            delta=1.0,
-            clip=True,
+            delta=4.0,
+            clip=False,
             actor_loss='awr',  # Actor loss type ('awr' or 'ddpgbc').
             actor_update_start=0.,
-            alpha=0.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
+            alpha=1.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             alpha_actor = 10.0,
             const_std=True,  # Whether to use constant standard deviation for the actor.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
