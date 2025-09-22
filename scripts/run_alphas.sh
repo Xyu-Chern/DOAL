@@ -22,8 +22,8 @@ ENV_NAME=$2
 # relocate-expert-v1	
 
 # Define the list of alpha parameters
-alphas=(1 3   )
-seeds = (1 2 )
+alphas=( 0.1 0.3 1.0 )
+seeds = (11 12 )
 for seed in "${seeds[@]}"; do
 # Loop through all alpha values
     for alpha in "${alphas[@]}"; do
@@ -32,8 +32,9 @@ for seed in "${seeds[@]}"; do
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$ENV_NAME" \
             --agent.alpha "$alpha" \
-            --exp_name alpha $3 $4 $5 $6 $7 \
-            --seed "$seed"
+            --run_group alpha \
+            --exp_name alpha_tune $3 $4 $5 $6 $7 \
+            --seed "$seed" --offline_steps 1500000
 
     done
 done

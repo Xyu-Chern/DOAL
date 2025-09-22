@@ -140,7 +140,7 @@ def get_config():
             clip=True,
             use_acton_for_sample=False,
             search_around_sample=False,
-            delta=1.0,
+            delta=2.0,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.

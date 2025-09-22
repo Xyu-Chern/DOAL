@@ -78,7 +78,7 @@ hyperparameters ={
         },
         "alpha_critic": 0.01,
          "alpha_actor": 10.0,
-        "alpha":0.2,
+        "alpha":0.05,
     },
     "cube-single-play-singletask-v0": {
         "iql": {
@@ -116,6 +116,9 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 10.0
         },
+        "fql": {
+            "alpha_actor": 300.0
+        },
         "diql": {
             "alpha_actor": 10.0,
         },
@@ -127,7 +130,7 @@ hyperparameters ={
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
         },
-        "alpha_actor": 300.0,
+        "alpha_actor": 100.0,
         "alpha":0.1,
         
     },
