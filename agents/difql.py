@@ -44,9 +44,6 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
 
         raw_actor_loss = (pred - vel) ** 2
-        actor_loss = self.config["alpha_actor"] * jnp.mean( raw_actor_loss)
-
-        raw_actor_loss = (pred - vel) ** 2
         if self.config["time_weight"]:
             time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
@@ -118,7 +115,7 @@ def get_config():
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             gn=0.0,
-            clip=False,
+            clip=True,
             num_ensembles=2,
             num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.

@@ -13,7 +13,7 @@ if [ "$#" -eq 2 ]; then
     EXP_NAME=$2
 fi
 
-env_names=("pen-cloned-v1" "door-cloned-v1" "hammer-cloned-v1" "relocate-cloned-v1")
+env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1 " "door-expert-v1" "hammer-expert-v1" "relocate-expert-v1" )
 alphas=(1000 3000.0 10000.0 30000.0)
 
 # Loop through all environments and alpha values
