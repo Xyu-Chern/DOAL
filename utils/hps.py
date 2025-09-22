@@ -8,6 +8,7 @@ hyperparameters ={
         },
         "alpha_critic": 0.01,
         "alpha_actor": 10.0,
+        "alpha":0.1,
     },
     "antmaze-giant-navigate-singletask-v0": {
         "iql": {
@@ -25,6 +26,7 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "alpha_actor": 10.0,
+        "alpha":0.1,
         
         
     },
@@ -44,6 +46,7 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "alpha_actor": 30.0,
+        "alpha":0.2,
     },
     "humanoidmaze-large-navigate-singletask-v0": {
         "iql": {
@@ -61,8 +64,7 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "alpha_actor": 30.0,
-        
-        
+        "alpha":0.2,
     },
     "antsoccer-arena-navigate-singletask-v0": {
         "iql": {
@@ -76,6 +78,7 @@ hyperparameters ={
         },
         "alpha_critic": 0.01,
          "alpha_actor": 10.0,
+        "alpha":0.2,
     },
     "cube-single-play-singletask-v0": {
         "iql": {
@@ -87,11 +90,9 @@ hyperparameters ={
         "rebrac": {
             "alpha_actor": 1.0
         },
-        "fql": {
-        "alpha_actor": 300.0,
-        },
         "alpha_critic": 1.0,
-        "alpha_actor": 100.0,
+        "alpha_actor": 300.0,
+        "alpha":0.05,
     },
     "cube-double-play-singletask-v0": {
         "iql": {
@@ -109,15 +110,11 @@ hyperparameters ={
             "alpha_critic": 1.0
         },
         "alpha_actor": 300.0,
-        
-        
+        "alpha":0.1,
     },
     "scene-play-singletask-v0": {
         "iql": {
             "alpha_actor": 10.0
-        },
-        "fql": {
-            "alpha_actor": 300.0,
         },
         "diql": {
             "alpha_actor": 10.0,
@@ -130,7 +127,8 @@ hyperparameters ={
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
         },
-         "alpha_actor": 100.0,
+        "alpha_actor": 300.0,
+        "alpha":0.1,
         
     },
     "puzzle-3x3-play-singletask-v0": {
@@ -149,6 +147,7 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
             "alpha_actor": 1000.0,
+        "alpha":0.1,
 
     },
     "puzzle-4x4-play-singletask-v0": {
@@ -167,6 +166,7 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "alpha_actor": 1000.0,
+        "alpha":0.1,
     },
     "antmaze-umaze-v2": {
         "fql": {
@@ -243,6 +243,9 @@ hyperparameters ={
         "trigflow": {
             "alpha_actor": 3000.0
         },
+        "iql": {
+            "alpha_actor": 0.5
+        },
     },
     "pen-human-v1": {
         "fql": {
@@ -250,6 +253,9 @@ hyperparameters ={
         },
         "trigflow": {
             "alpha_actor": 10000.0
+        },
+        "iql": {
+            "alpha_actor": 0.5
         },
         
     },
@@ -260,6 +266,9 @@ hyperparameters ={
         "trigflow": {
             "alpha_actor": 10000.0
         },
+        "iql": {
+            "alpha_actor": 0.5
+        },
         
     },
     "door-expert-v1": {
@@ -269,6 +278,9 @@ hyperparameters ={
         "trigflow": {
             "alpha_actor": 30000.0
         },
+        "iql": {
+            "alpha_actor": 0.5
+        },
     },
     "door-cloned-v1": {
         "fql": {
@@ -276,7 +288,10 @@ hyperparameters ={
         },
         "trigflow": {
             "alpha_actor": 30000.0
-        },       
+        },     
+        "iql": {
+            "alpha_actor": 0.5
+        },  
     },
     "door-human-v1": {
         "fql": {
@@ -284,7 +299,10 @@ hyperparameters ={
         },
         "trigflow": {
             "alpha_actor": 30000.0
-        },      
+        },    
+        "iql": {
+            "alpha_actor": 0.5
+        },  
     },
     "hammer-expert-v1": {
         "fql": {
@@ -293,6 +311,9 @@ hyperparameters ={
         "trigflow": {
             "alpha_actor": 30000.0
         },      
+        "iql": {
+            "alpha_actor": 0.5
+        },
     },
     "hammer-cloned-v1": {
         "fql": {
@@ -300,7 +321,10 @@ hyperparameters ={
         },
         "trigflow": {
             "alpha_actor": 10000.0
-        },        
+        },      
+        "iql": {
+            "alpha_actor": 0.5
+        },  
     },
     "hammer-human-v1": {
         "fql": {
@@ -308,7 +332,10 @@ hyperparameters ={
         },
         "trigflow": {
             "alpha_actor": 30000.0
-        },        
+        },  
+        "iql": {
+            "alpha_actor": 0.5
+        },      
     },
     "relocate-expert-v1": {
         "fql": {
@@ -316,7 +343,10 @@ hyperparameters ={
         },
         "trigflow": {
             "alpha_actor": 30000.0
-        },        
+        },    
+        "iql": {
+            "alpha_actor": 0.5
+        },    
     },
     "relocate-human-v1": {
         "fql": {
@@ -325,6 +355,9 @@ hyperparameters ={
         "trigflow": {
             "alpha_actor": 10000.0
         },       
+        "iql": {
+            "alpha_actor": 0.5
+        },
     },
     "relocate-cloned-v1": {    
         "fql": {
@@ -333,6 +366,9 @@ hyperparameters ={
         "trigflow": {
             "alpha_actor": 30000.0
         }, 
+        "iql": {
+            "alpha_actor": 0.5
+        },
     },
 
 }
