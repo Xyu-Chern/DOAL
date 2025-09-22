@@ -9,7 +9,7 @@ import optax
 
 from utils.encoders import encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field,DOALAgent
-from utils.networks import ActorVectorField, Value
+from utils.networks import ActorVectorField, Value,TimeWeight
 
 
 from functools import partial
@@ -46,23 +46,52 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
         raw_actor_loss = (pred - vel) ** 2
         actor_loss = self.config["alpha_actor"] * jnp.mean( raw_actor_loss)
 
-        return actor_loss, {
-            "raw_actor_loss":jnp.mean(raw_actor_loss),
-            'actor_loss': actor_loss,
-            'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
-            'adj': jnp.mean(jnp.abs(adjustment)),
-            "q":jnp.mean(q),
-            "hd": jnp.mean(hd),
-            "hd_abs": jnp.mean(jnp.abs(hd)),
-            "hd_std": jnp.std(hd),
-            "hd_max": jnp.max(hd),
-            "hd_min": jnp.min(hd),
-            "g": jnp.mean(g),
-            "g_std": jnp.std(g),
-            "g_abs": jnp.mean(jnp.abs(g)),
-            "g_max": jnp.max(g),
-            "g_min": jnp.min(g),
-        }
+        raw_actor_loss = (pred - vel) ** 2
+        if self.config["time_weight"]:
+            time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
+
+            weight = jnp.exp(time_weight_logits) / action_dim
+            time_weight_logits = time_weight_logits - jax.lax.stop_gradient(time_weight_logits)
+            bc_flow_loss = ( weight*  raw_actor_loss -time_weight_logits).mean()   
+            actor_loss = self.config['alpha_actor'] * bc_flow_loss            
+            return actor_loss, {
+                "weight":weight.mean(),
+                "raw_actor_loss":jnp.mean(raw_actor_loss),
+                'actor_loss': actor_loss,
+                'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
+                'adj': jnp.mean(jnp.abs(adjustment)),
+                "q":jnp.mean(q),
+                "hd": jnp.mean(hd),
+                "hd_abs": jnp.mean(jnp.abs(hd)),
+                "hd_std": jnp.std(hd),
+                "hd_max": jnp.max(hd),
+                "hd_min": jnp.min(hd),
+                "g": jnp.mean(g),
+                "g_std": jnp.std(g),
+                "g_abs": jnp.mean(jnp.abs(g)),
+                "g_max": jnp.max(g),
+                "g_min": jnp.min(g),
+            }
+        else:
+            actor_loss = self.config['alpha_actor'] *  jnp.mean(raw_actor_loss)
+
+            return actor_loss, {
+                "raw_actor_loss":jnp.mean(raw_actor_loss),
+                'actor_loss': actor_loss,
+                'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
+                'adj': jnp.mean(jnp.abs(adjustment)),
+                "q":jnp.mean(q),
+                "hd": jnp.mean(hd),
+                "hd_abs": jnp.mean(jnp.abs(hd)),
+                "hd_std": jnp.std(hd),
+                "hd_max": jnp.max(hd),
+                "hd_min": jnp.min(hd),
+                "g": jnp.mean(g),
+                "g_std": jnp.std(g),
+                "g_abs": jnp.mean(jnp.abs(g)),
+                "g_max": jnp.max(g),
+                "g_min": jnp.min(g),
+            }
 
 
 def get_config():
@@ -81,7 +110,8 @@ def get_config():
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
-            time_weight=False,  # Whether to use layer normalization for the actor.
+            time_weight=False,
+            time_hidden_dims=(32,),
             discount=0.99,  # Discount factor.
             alpha=1.0,  # BC coefficient (need to be tuned for each environment).
             delta=2.0,

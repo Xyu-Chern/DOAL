@@ -9,7 +9,7 @@ import optax
 
 from utils.encoders import encoder_modules
 from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
-from utils.networks import ActorVectorField, Value
+from utils.networks import ActorVectorField, Value, TimeWeight,TimeWeight
 from agents.iql import IQLAgent
 class IFQLAgent(IQLAgent):
     """Flow Q-learning (FQL) agent."""
@@ -30,11 +30,26 @@ class IFQLAgent(IQLAgent):
         vel = x_1 - x_0
 
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
-        actor_loss = self.config['alpha_actor'] *  jnp.mean((pred - vel) ** 2)
+        raw_actor_loss = (pred - vel) ** 2
+        if self.config["time_weight"]:
+            time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
-        return actor_loss, {
-            'actor_loss': actor_loss,
-        }
+            weight = jnp.exp(time_weight_logits) / action_dim
+            time_weight_logits = time_weight_logits - jax.lax.stop_gradient(time_weight_logits)
+            bc_flow_loss = ( weight*  raw_actor_loss -time_weight_logits).mean()   
+            actor_loss = self.config['alpha_actor'] * bc_flow_loss
+
+            return actor_loss, {
+                "weight":weight.mean(),
+                'actor_loss': actor_loss,
+            }
+
+        else:
+            actor_loss = self.config['alpha_actor'] *  jnp.mean(raw_actor_loss)
+
+            return actor_loss, {
+                'actor_loss': actor_loss,
+            }
 
 
     @jax.jit
@@ -166,11 +181,16 @@ class IFQLAgent(IQLAgent):
             encoder=encoders.get('actor_flow'),
         )
 
+        time_weight_def = TimeWeight(
+            hidden_dims=config['time_hidden_dims'],
+            layer_norm=config['layer_norm'],
+        )
         network_info = dict(
             value=(value_def, (ex_observations,)),
             critic=(critic_def, (ex_observations, ex_actions)),
             target_critic=(copy.deepcopy(critic_def), (ex_observations, ex_actions)),
             actor_flow=(actor_flow_def, (ex_observations, ex_actions, ex_times)),
+            time_weight = (time_weight_def, (ex_times)),
         )
         if encoders.get('actor_flow') is not None:
             # Add actor_flow_encoder to ModuleDict to make it separately callable.
@@ -210,6 +230,8 @@ def get_config():
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             discount=0.99,  # Discount factor.
             alpha=10.0,
+            time_weight=False,
+            time_hidden_dims=(32,),
             num_ensembles=2,
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
