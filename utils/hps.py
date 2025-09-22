@@ -87,8 +87,11 @@ hyperparameters ={
         "rebrac": {
             "alpha_actor": 1.0
         },
-        "alpha_critic": 1.0,
+        "fql": {
         "alpha_actor": 300.0,
+        },
+        "alpha_critic": 1.0,
+        "alpha_actor": 1000.0,
     },
     "cube-double-play-singletask-v0": {
         "iql": {

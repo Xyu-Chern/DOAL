@@ -130,7 +130,7 @@ def get_config():
             return_next_actions=True,
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             time_weight=False,
-            alpha=1.0,  # BC coefficient (need to be tuned for each environment).
+            alpha=0.05,  # BC coefficient (need to be tuned for each environment).
             test_alpha=0.0,
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             use_vel_loss=False,  # BC coefficient (need to be tuned for each environment).

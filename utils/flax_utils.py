@@ -356,16 +356,23 @@ class DOALAgent(flax.struct.PyTreeNode):
         h_std = jnp.std(eigvals)
       #  inv_H = get_dx(U,eigvals +1e-4)
 
-        dx = get_dx(U,eigvals +1e-4+alpha*h_std,grad_action) #jax.numpy.squeeze(jax.lax.batch_matmul (inv_H , grad_action[...,None] ),axis=-1)
-        adjusted_actions = q_action - dx
-        if self.config["clip"]:
-            distance = jnp.linalg.norm(dx)
+        dx = get_dx(U,eigvals +1e-4,grad_action) #jax.numpy.squeeze(jax.lax.batch_matmul (inv_H , grad_action[...,None] ),axis=-1)
+        distance = jnp.linalg.vector_norm(dx,axis=-1,keepdims=True) 
+        global_distance = jnp.mean(distance)
+
+        scale = alpha / global_distance
+
+        dx = (alpha / global_distance) * dx
+        if self.config["clip"]:            
+            distance = jnp.linalg.vector_norm(dx,axis=-1,keepdims=True) 
             adjusted_actions = jnp.where(
                 distance > delta,
                 q_action - dx * (delta / distance),
-                adjusted_actions
+                q_action - dx 
             )
-        adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
+            adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
+        else:
+            adjusted_actions = q_action - dx 
 
 
         # 4. Extract the results.
