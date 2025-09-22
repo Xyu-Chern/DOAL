@@ -22,15 +22,18 @@ ENV_NAME=$2
 # relocate-expert-v1	
 
 # Define the list of alpha parameters
-alphas=( 30.0 100.0  300 1000)
-
+alphas=( 1 3  )
+seeds=( 1 2 )
+for seed in "${seeds[@]}"; do
 # Loop through all alpha values
-for alpha in "${alphas[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: $EXP_NAME"
-    python main.py \
-        --agent "agents/$AGENT_NAME.py" \
-        --env_name "$ENV_NAME" \
-        --alpha_actor "$alpha" \
-        --exp_name alpha_actor \
-        --seed $3
+    for alpha in "${alphas[@]}"; do
+        echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, alpha_actor: $alpha, ExpName: "
+        python main.py \
+            --agent "agents/$AGENT_NAME.py" \
+            --env_name "$ENV_NAME" \
+            --alpha_actor "$alpha" \
+            --exp_name alpha_actor $3 $4 $5 $6 $7 \
+            --seed "$seed"
+
+    done
 done
