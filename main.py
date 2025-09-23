@@ -29,7 +29,7 @@ flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (
 flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '/home/bml/storage/exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
-flags.DEFINE_integer('restore_epoch', None, 'Restore epoch.')
+flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
 flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
 flags.DEFINE_integer('online_steps', 0, 'Number of online steps.')
@@ -127,7 +127,6 @@ def main(_):   #num_samples
 
     agent_class = agents[config['agent_name']]
     flag_dict["agent_config"] = config
-    setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
 
    # artifact = wandb.Artifact(name="agent", type="code")
    # artifact.add_file(f'agents/{FLAGS.agent_name}.py')
@@ -140,12 +139,32 @@ def main(_):   #num_samples
     )
    # print ("config",config)
     # Restore agent.
-    if FLAGS.restore_path is not None:
-        agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
 
-    # Train agent.
+    if FLAGS.restore_path is not None:
+        
+        restored_agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
+        agent = restored_agent.replace(config=agent.config)
+        print ("agent.config",agent.config)
+        eval_metrics = {}
+        renders = []
+        eval_info, trajs, cur_renders = evaluate_parallel(
+            agent=agent,
+            envs = envs,
+            config=config,
+            num_eval_episodes=FLAGS.eval_episodes,
+            num_video_episodes=FLAGS.video_episodes,
+            video_frame_skip=FLAGS.video_frame_skip,
+        )
+        renders.extend(cur_renders)
+        for k, v in eval_info.items():
+            eval_metrics[f'evaluation/{k}'] = v
+
+        print (eval_metrics)
+        assert False 
+    setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
     train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
     eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
+    # Train agent.
     first_time = time.time()
     last_time = time.time()
 
