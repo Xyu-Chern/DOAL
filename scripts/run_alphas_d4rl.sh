@@ -5,15 +5,14 @@
 # to be passed as arguments.
 
 # Check for the correct number of arguments
-if [ "$#" -lt 2 ] ; then
-    echo "Usage: $0 <agent_name> <env_name> [exp_name]"
-    echo "Example: $0 my_new_agent my_new_environment-v1 my_experiment"
+if [ "$#" -lt 1 ] ; then
+    echo "Usage: $0 <agent_name> "
+    echo "Example: $0 my_new_agent "
     exit 1
 fi
 
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
-ENV_NAME=$2
 
 
 # pen-expert-v1		
@@ -22,19 +21,25 @@ ENV_NAME=$2
 # relocate-expert-v1	
 
 # Define the list of alpha parameters
+
+env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1" "door-expert-v1" "hammer-expert-v1" "relocate-expert-v1" )
+
+# Loop through all environments and alpha values
 alphas=( 0.01 0.03 0.1 )
 seeds=(11 12 )
-for seed in "${seeds[@]}"; do
-# Loop through all alpha values
-    for alpha in "${alphas[@]}"; do
-        echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: "
-        python main.py \
-            --agent "agents/$AGENT_NAME.py" \
-            --env_name "$ENV_NAME" \
-            --alpha "$alpha" \
-            --run_group alpha \
-            --exp_name alpha_tune $3 $4 $5 $6 $7 \
-            --seed "$seed" --offline_steps 1000000
+for env_name in "${env_names[@]}"; do
+    for seed in "${seeds[@]}"; do
+    # Loop through all alpha values
+        for alpha in "${alphas[@]}"; do
+            echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: "
+            python main.py \
+                --agent "agents/$AGENT_NAME.py" \
+                --env_name "$env_name" \
+                --alpha "$alpha" \
+                --run_group alpha \
+                --exp_name alpha_tune $3 $4 $5 $6 $7 \
+                --seed "$seed" --offline_steps 500000
 
+        done
     done
 done
