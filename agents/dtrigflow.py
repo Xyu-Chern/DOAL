@@ -149,13 +149,13 @@ def get_config():
             loss_type="action",
             num_ensembles=2,
             norm_q_grad=False,
-            sampling=False,
+            sampling=True,
             clip=True,
             use_acton_for_sample=False,
             search_around_sample=False,
             gn=200.0,
             delta=2.0,
-            num_samples=4,  # Number of action samples for rejection sampling.
+            num_samples=32,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.
             test_guidance=False,
