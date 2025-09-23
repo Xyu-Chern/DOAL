@@ -287,7 +287,6 @@ def get_config():
             tau=0.005,  # Target network update rate.
             q_agg='min',  # Aggregation method for target Q values.
             test_guidance=False,
-            q_steps=10,
             return_next_actions=True,
             decode_type="ddim",
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
@@ -300,11 +299,11 @@ def get_config():
             delta =2.0,
             test_alpha=10.0,
             alpha=1.0,
-            gn=0.0,
+            gn=200.0,
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
-            num_samples=32,  # Number of action samples for rejection sampling.
-            flow_steps=10,  # Number of flow steps.
+            num_samples=4,  # Number of action samples for rejection sampling.
+            flow_steps=4,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )

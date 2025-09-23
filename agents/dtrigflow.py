@@ -139,7 +139,6 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
-            gn=0.0,
             return_next_actions=True,
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             time_weight=False,
@@ -153,9 +152,10 @@ def get_config():
             clip=True,
             use_acton_for_sample=False,
             search_around_sample=False,
+            gn=200.0,
             delta=2.0,
-            num_samples=32,  # Number of action samples for rejection sampling.
-            flow_steps=10,  # Number of flow steps.
+            num_samples=4,  # Number of action samples for rejection sampling.
+            flow_steps=4,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.
             test_guidance=False,
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).

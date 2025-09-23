@@ -189,7 +189,7 @@ class DOALAgent(flax.struct.PyTreeNode):
         adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
         dx = jax.lax.stop_gradient(adjusted_actions - action)
         q =  jax.lax.stop_gradient(q)
-        return adjusted_actions,dx, ( norm_mean / alpha) *  jnp.eye(q_action.shape[0], dtype=q_action.dtype),g,q
+        return adjusted_actions,dx, ( norm_mean / alpha) *  jnp.ones(q_action.shape[0], dtype=q_action.dtype),g,q
 
 
     @jax.jit
@@ -269,13 +269,16 @@ class DOALAgent(flax.struct.PyTreeNode):
             g = g +  2 * alpha * (action-q_action)
             b =  g / (  2 * alpha )
 
-            normb = jnp.linalg.norm(b)
-            dx = jnp.where(normb > delta,  b * delta/ normb,   b)
+            if self.config["clip"]:            
+                normb = jnp.linalg.norm(b)
+                dx = jnp.where(normb > delta,  b * delta/ normb,   b)
+            else:
+                dx = g
             
             adjusted_actions = jax.lax.stop_gradient(clip(q_action + dx))
             dx = jax.lax.stop_gradient(adjusted_actions - action)
             q =  jax.lax.stop_gradient(q)
-            return  adjusted_actions, dx, 2*  alpha *  jnp.eye(q_action.shape[0], dtype=q_action.dtype) ,g, q
+            return  adjusted_actions, dx, 2*  alpha *  jnp.ones(q_action.shape[0], dtype=q_action.dtype) ,g, q
         return _get_guided_action(q_action, action,observation,alpha,params)
 # Assume self.network is defined elsewhere
 

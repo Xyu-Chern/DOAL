@@ -89,7 +89,7 @@ class FQLAgent(DOALAgent):
         mse = jnp.mean((actions - batch['actions']) ** 2)
 
         if self.config['solver'] is not None:
-            adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  actions, actions,batch['observations'],alpha=2*self.config["alpha_actor"],delta=self.config["delta"],params=self.network.params)
+            adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  actions, batch['actions'],batch['observations'],alpha=2*self.config["alpha_actor"],delta=self.config["delta"],params=self.network.params)
             return actor_loss, {
                 'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
                 'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
@@ -290,6 +290,7 @@ def get_config():
             gn=0.0,
             delta=2.0,
             solver = ml_collections.config_dict.placeholder(str),
+            clip=False,
             log_q_grad=False,
             alpha=1.0,
             q_agg='mean',  # Aggregation method for target Q values.
