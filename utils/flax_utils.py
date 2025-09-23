@@ -182,7 +182,9 @@ class DOALAgent(flax.struct.PyTreeNode):
 
         clipped_g = jnp.where(norm > norm_up,  g * norm_up / norm,   g)
         dx =   (alpha / norm_mean ) * clipped_g 
-        adjusted_actions = jnp.clip(q_action + dx, -1.0, 1.0)
+        adjusted_actions = q_action + dx
+        if self.config["clip"]:
+            adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
             
         adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
         dx = jax.lax.stop_gradient(adjusted_actions - action)
