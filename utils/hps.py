@@ -90,7 +90,7 @@ hyperparameters ={
         },
         "alpha_critic": 1.0,
         "alpha_actor": 300.0,
-        "alpha":0.05,
+        "alpha":0.2,
     },
     "cube-double-play-singletask-v0": {
         "iql": {

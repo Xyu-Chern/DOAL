@@ -149,6 +149,7 @@ def get_config():
             loss_type="action",
             num_ensembles=2,
             norm_q_grad=False,
+            sampling=False,
             clip=True,
             use_acton_for_sample=False,
             search_around_sample=False,

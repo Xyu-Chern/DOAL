@@ -175,6 +175,21 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
             actions , adjustment,hd,g, q = self.get_guided_action( actions, actions,n_observations,alpha=self.config["test_alpha"],delta=self.config["delta"],params=self.network.params)
         # Pick the action with the highest Q-value.
         q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
+
+                # --- MODIFIED ACTION SELECTION ---
+        # The following lines replace the deterministic argmax selection.
+        # We use a softmax distribution based on Q-values and temperature.
+        if self.config["sampling"]:
+            logits = q / temperature
+            
+            # Use jax.random.categorical to sample an index from the logits distribution.
+            action_idx = jax.random.categorical(noise_seed, logits)
+
+            # Select the action corresponding to the sampled index.
+            actions = actions[action_idx]
+            
+            return actions
+
         actions = actions[jnp.argmax(q)]
         return actions
     @classmethod
@@ -296,6 +311,7 @@ def get_config():
             time_weight=False,
             num_ensembles=2,
             expectile=0.9,  # IQL expectile.
+            sampling=False,
             delta =2.0,
             test_alpha=10.0,
             alpha=1.0,
