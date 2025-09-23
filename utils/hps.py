@@ -128,7 +128,7 @@ hyperparameters ={
             "alpha_actor": 0.1,
             "alpha_critic": 0.01
         },
-        "alpha_actor": 100.0,
+        "alpha_actor": 1000.0,
         "alpha":0.1,
         
     },
