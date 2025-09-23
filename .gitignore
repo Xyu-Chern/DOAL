@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.pyd
 *.pyo
-
+exp/
 # C extensions
 *.so
 .ipynb_checkpoints/
