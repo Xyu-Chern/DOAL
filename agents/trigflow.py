@@ -180,7 +180,7 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
         # The following lines replace the deterministic argmax selection.
         # We use a softmax distribution based on Q-values and temperature.
         if self.config["sampling"]:
-            logits = q * self.config['num_samples'] / temperature
+            logits = q  / temperature
             
             # Use jax.random.categorical to sample an index from the logits distribution.
             action_idx = jax.random.categorical(noise_seed, logits)

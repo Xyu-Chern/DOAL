@@ -74,7 +74,7 @@ def main(_):   #num_samples
         print ("update",hyperparameters[env_class][config['agent_name']])
         
     exp_name = FLAGS.exp_name     
-    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name)
+    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name,FLAGS.env_name,config['agent_name'])
 
     flag_dict = get_flag_dict()
     os.makedirs(FLAGS.save_dir, exist_ok=True)
@@ -141,25 +141,31 @@ def main(_):   #num_samples
     # Restore agent.
 
     if FLAGS.restore_path is not None:
-        
+        print ("FLAGS.save_dir",FLAGS.save_dir)
+      #  jax.disable_jit()
         restored_agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
         agent = restored_agent.replace(config=agent.config)
-        print ("agent.config",agent.config)
-        eval_metrics = {}
-        renders = []
-        eval_info, trajs, cur_renders = evaluate_parallel(
-            agent=agent,
-            envs = envs,
-            config=config,
-            num_eval_episodes=FLAGS.eval_episodes,
-            num_video_episodes=FLAGS.video_episodes,
-            video_frame_skip=FLAGS.video_frame_skip,
-        )
-        renders.extend(cur_renders)
-        for k, v in eval_info.items():
-            eval_metrics[f'evaluation/{k}'] = v
 
-        print (eval_metrics)
+        for sampling in [True, False]:
+            for num_samples in [1,2,4,8,16,32]:
+                config = agent.config.copy({"sampling":sampling,"num_samples":num_samples})
+                agent = restored_agent.replace(config=config)
+                print ("config",config)
+                eval_metrics = {}
+                renders = []
+                eval_info, trajs, cur_renders = evaluate_parallel(
+                    agent=agent,
+                    envs = envs,
+                    config=config,
+                    num_eval_episodes=FLAGS.eval_episodes,
+                    num_video_episodes=FLAGS.video_episodes,
+                    video_frame_skip=FLAGS.video_frame_skip,
+                )
+                renders.extend(cur_renders)
+                for k, v in eval_info.items():
+                    eval_metrics[f'evaluation/{k}'] = v
+
+                print (sampling, num_samples, eval_metrics["evaluation/success"])
         assert False 
     setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
     train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
