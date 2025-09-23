@@ -146,8 +146,8 @@ def main(_):   #num_samples
         restored_agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
         agent = restored_agent.replace(config=agent.config)
 
-        for sampling in [True, False]:
-            for num_samples in [1,2,4,8,16,32]:
+        for sampling in [ False]:
+            for num_samples in [10,12]:
                 config = agent.config.copy({"sampling":sampling,"num_samples":num_samples})
                 agent = restored_agent.replace(config=config)
                 eval_metrics = {}
