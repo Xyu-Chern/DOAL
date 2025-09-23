@@ -303,7 +303,7 @@ def get_config():
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
             num_samples=4,  # Number of action samples for rejection sampling.
-            flow_steps=4,  # Number of flow steps.
+            flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
