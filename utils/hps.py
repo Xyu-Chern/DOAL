@@ -44,7 +44,7 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "alpha_actor": 30.0,
-        "alpha":0.2,
+        "alpha":0.3,
     },
     "humanoidmaze-large-navigate-singletask-v0": {
         "iql": {
@@ -62,7 +62,7 @@ hyperparameters ={
             "alpha_critic": 0.01
         },
         "alpha_actor": 30.0,
-        "alpha":0.2,
+        "alpha":0.3,
     },
     "antsoccer-arena-navigate-singletask-v0": {
         "iql": {
@@ -76,7 +76,7 @@ hyperparameters ={
         },
         "alpha_critic": 0.01,
          "alpha_actor": 10.0,
-        "alpha":0.05,
+        "alpha":0.03,
     },
     "cube-single-play-singletask-v0": {
         "iql": {
@@ -90,7 +90,7 @@ hyperparameters ={
         },
         "alpha_critic": 1.0,
         "alpha_actor": 300.0,
-        "alpha":0.05,
+        "alpha":0.03,
     },
     "cube-double-play-singletask-v0": {
         "iql": {
