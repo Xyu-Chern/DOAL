@@ -26,6 +26,8 @@ class DTrigFQLAgent(TrigFQLAgent):
         batch_size, action_dim = batch['actions'].shape
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
+
+        # we should call this delta in paper 
         alpha = self.config["alpha"] 
         if self.config["search_around_sample"]:
             # BC flow loss.

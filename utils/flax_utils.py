@@ -176,7 +176,7 @@ class DOALAgent(flax.struct.PyTreeNode):
         q, g = v_grad_q(q_action)
         distance = jnp.linalg.vector_norm(g,axis=-1,keepdims=True) 
         global_distance = jnp.mean(distance)
-        dx = (alpha / global_distance) * g
+        dx = (alpha / global_distance) * g #so that mean (norm(dx)) = alpha ,  so del
         adjusted_actions = q_action - dx 
         if self.config["clip"]:            
             adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)

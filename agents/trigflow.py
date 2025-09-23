@@ -72,7 +72,7 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
 
             actor_loss = -q.mean()
             # Total loss.
-            total_loss = actor_loss * self.config["alpha"]
+            total_loss = actor_loss * self.config["alpha"] #call alpha_q
             out["q"] =  q.mean()
         else:
             total_loss = 0

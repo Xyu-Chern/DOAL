@@ -82,7 +82,7 @@ class FQLAgent(DOALAgent):
             q = 0 * distill_loss
 
         # Total loss.
-        actor_loss = bc_flow_loss +  self.config['alpha_actor'] *  distill_loss  + q_loss
+        actor_loss = bc_flow_loss +  self.config['alpha_actor'] *  distill_loss  + self.config['alpha'] * q_loss 
 
         # Additional metrics for logging.
         actions = self.sample_actions(batch['observations'], seed=rng)
@@ -288,10 +288,10 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             gn=0.0,
-            alpha=50.0,
             delta=2.0,
             solver = ml_collections.config_dict.placeholder(str),
             log_q_grad=False,
+            alpha=1.0,
             q_agg='mean',  # Aggregation method for target Q values.
             alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.

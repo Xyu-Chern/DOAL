@@ -31,7 +31,7 @@ for seed in "${seeds[@]}"; do
         python main.py \
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$ENV_NAME" \
-            --agent.alpha "$alpha" \
+            --alpha "$alpha" \
             --run_group alpha \
             --exp_name alpha_tune $3 $4 $5 $6 $7 \
             --seed "$seed" --offline_steps 1500000

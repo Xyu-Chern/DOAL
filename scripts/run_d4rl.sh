@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check for the correct number of arguments
-if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
+if [ "$#" -lt 1 ] ; then
     echo "Usage: $0 <agent_name> [exp_name]"
     echo "Example: $0 my_new_agent my_experiment"
     exit 1
@@ -25,8 +25,7 @@ for env_name in "${env_names[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --run_group final \
-        --offline_steps 500000
-        --seed "$seed" \
-        "$@"
+        --run_group d4rl \
+        --offline_steps 700000 \
+        --seed "$seed" "$@"
 done

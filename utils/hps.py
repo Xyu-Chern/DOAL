@@ -27,8 +27,6 @@ hyperparameters ={
         },
         "alpha_actor": 10.0,
         "alpha":0.1,
-        
-        
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
         "iql": {
@@ -149,7 +147,7 @@ hyperparameters ={
             "alpha_actor": 0.3,
             "alpha_critic": 0.01
         },
-            "alpha_actor": 1000.0,
+        "alpha_actor": 1000.0,
         "alpha":0.1,
 
     },
@@ -233,7 +231,6 @@ hyperparameters ={
             "alpha_actor": 0.001
         },
         "alpha_critic": 0.0,
-        
         "drebrac": {
             "alpha_actor": 0.001,
             "alpha_critic": 0.0
@@ -266,42 +263,43 @@ hyperparameters ={
         },
     },
     "door-cloned-v1": {
-            "alpha_actor": 30000.0,
+        "alpha_actor": 30000.0,
+        "iql": {
             "alpha_actor": 0.5
         },  
     },
     "door-human-v1": {
-            "alpha_actor": 30000.0,
+        "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },  
     },
     "hammer-expert-v1": {
-            "alpha_actor": 30000.0,
+        "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },
     },
     "hammer-cloned-v1": {
-            "alpha_actor": 10000.0,
+        "alpha_actor": 10000.0,
         "iql": {
             "alpha_actor": 0.5
         },  
     },
     "hammer-human-v1": {
-            "alpha_actor": 30000.0,
+        "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },      
     },
     "relocate-expert-v1": {
-            "alpha_actor": 30000.0,
+        "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },    
     },
     "relocate-human-v1": {
-            "alpha_actor": 10000.0,
+        "alpha_actor": 10000.0,
         "iql": {
             "alpha_actor": 0.5
         },
