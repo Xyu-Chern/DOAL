@@ -22,8 +22,8 @@ ENV_NAME=$2
 # relocate-expert-v1	
 
 # Define the list of alpha parameters
-alphas=( 0.1 0.3 1.0 )
-seeds = (11 12 )
+alphas=( 0.01 0.03 0.1 )
+seeds=(11 12 )
 for seed in "${seeds[@]}"; do
 # Loop through all alpha values
     for alpha in "${alphas[@]}"; do
@@ -34,7 +34,7 @@ for seed in "${seeds[@]}"; do
             --alpha "$alpha" \
             --run_group alpha \
             --exp_name alpha_tune $3 $4 $5 $6 $7 \
-            --seed "$seed" --offline_steps 1500000
+            --seed "$seed" --offline_steps 1000000
 
     done
 done
