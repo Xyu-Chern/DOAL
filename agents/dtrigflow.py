@@ -95,6 +95,17 @@ class DTrigFQLAgent(TrigFQLAgent):
             bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
             total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
             out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
+        elif  self.config["loss_type"] == "awr":
+            v = jax.lax.stop_gradient(aux["v"])
+            q = jax.lax.stop_gradient(aux["q"])
+            adv = q - v
+
+            exp_a = jnp.exp(adv * 0.3 )
+            weight = jnp.minimum(exp_a, 100.0)
+            raw_zero_shot_loss = ( ( pred_actions- adjusted_actions ) ** 2)
+            bc_flow_loss = ( weight*  raw_zero_shot_loss).mean()   
+            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
+            out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
         elif  self.config["loss_type"] ==  "vel":
             vel =  jnp.cos(t)* z  - jnp.sin(t) * adjusted_actions
             raw_vel_loss = ( ( F_theta- vel ) ** 2)
