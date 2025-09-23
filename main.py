@@ -27,7 +27,7 @@ flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 42, 'Random seed.')
 flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (dataset) name.')
 flags.DEFINE_string('exp_name', "", 'extra experiment name.')
-flags.DEFINE_string('save_dir', '/home/bml/storage/exp/', 'Save directory.')
+flags.DEFINE_string('save_dir', './exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
@@ -74,7 +74,7 @@ def main(_):   #num_samples
         print ("update",hyperparameters[env_class][config['agent_name']])
         
     exp_name = FLAGS.exp_name     
-    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name,FLAGS.env_name,config['agent_name'])
+    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name,FLAGS.env_name,config['agent_name'],str(FLAGS.seed))
 
     flag_dict = get_flag_dict()
     os.makedirs(FLAGS.save_dir, exist_ok=True)
@@ -249,7 +249,7 @@ def main(_):   #num_samples
 
             wandb.log(eval_metrics, step=i*n_complete_batches)
             eval_logger.log(eval_metrics, step=i*n_complete_batches)
-            save_agent(agent, FLAGS.save_dir, FLAGS.seed)
+            save_agent(agent, FLAGS.save_dir, 0)
             pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
         if i % 100 == 0:
             update_info = jax.tree_util.tree_map(
