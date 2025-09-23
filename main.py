@@ -150,7 +150,6 @@ def main(_):   #num_samples
             for num_samples in [1,2,4,8,16,32]:
                 config = agent.config.copy({"sampling":sampling,"num_samples":num_samples})
                 agent = restored_agent.replace(config=config)
-                print ("config",config)
                 eval_metrics = {}
                 renders = []
                 eval_info, trajs, cur_renders = evaluate_parallel(
