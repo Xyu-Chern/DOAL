@@ -17,7 +17,7 @@ else
     shift 1
 fi
 
-env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1 " "door-expert-v1" "hammer-expert-v1" "relocate-expert-v1" )
+env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1" "door-expert-v1" "hammer-expert-v1" "relocate-expert-v1" )
 
 # Loop through all environments and alpha values
 for env_name in "${env_names[@]}"; do
