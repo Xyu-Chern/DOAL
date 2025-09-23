@@ -18,8 +18,8 @@ else
 fi
 
 
-env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1" "door-expert-v1" "hammer-expert-v1" "relocate-expert-v1" )
 
+env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1" "door-cloned-v1"  "door-human-v1" "door-expert-v1" "hammer-cloned-v1" "hammer-expert-v1" "hammer-human-v1" "relocate-expert-v1" "relocate-human-v1" "relocate-cloned-v1" )
 # Loop through all environments and alpha values
 for env_name in "${env_names[@]}"; do
     echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $seed, Additional Args: $@"
