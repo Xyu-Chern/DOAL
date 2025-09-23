@@ -249,7 +249,7 @@ def main(_):   #num_samples
 
             wandb.log(eval_metrics, step=i*n_complete_batches)
             eval_logger.log(eval_metrics, step=i*n_complete_batches)
-            save_agent(agent, FLAGS.save_dir, 0)
+            save_agent(agent, FLAGS.save_dir, FLAGS.seed)
             pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
         if i % 100 == 0:
             update_info = jax.tree_util.tree_map(
