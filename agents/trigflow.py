@@ -311,14 +311,14 @@ def get_config():
             time_weight=False,
             num_ensembles=2,
             expectile=0.9,  # IQL expectile.
-            sampling=True,
+            sampling=False,
             delta =2.0,
             test_alpha=10.0,
             alpha=1.0,
             gn=200.0,
             vel_actor = 0.0,
             alpha_critic=0.0,  # Critic BC coefficient.
-            num_samples=32,  # Number of action samples for rejection sampling.
+            num_samples=12,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).

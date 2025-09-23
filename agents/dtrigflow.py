@@ -155,7 +155,7 @@ def get_config():
             search_around_sample=False,
             gn=200.0,
             delta=2.0,
-            num_samples=32,  # Number of action samples for rejection sampling.
+            num_samples=12,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             use_q_loss=False,  # Whether to normalize the Q loss.
             test_guidance=False,
