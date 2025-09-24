@@ -29,8 +29,9 @@ flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (
 flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '../exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
-flags.DEFINE_boolean('restore', False, 'Restore path.')
+flags.DEFINE_boolean('restore', False, 'Restore path.') 
 flags.DEFINE_boolean('retest', False, 'Restore path.')
+flags.DEFINE_boolean('save_code', True, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
 flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
@@ -177,7 +178,7 @@ def main(_):   #num_samples
                 print (num_samples, eval_metrics["evaluation/success"])
             eval_logger.log(eval_metrics, step=num_samples)
         assert False 
-    setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
+    setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict,save_code=FLAGS.save_code)
     train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
     eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
     # Train agent.
