@@ -167,10 +167,10 @@ def main(_):   #num_samples
             renders.extend(cur_renders)
             for k, v in eval_info.items():
                 eval_metrics[f'evaluation/{k}'] = v
-            if "evaluation/success" in eval_metrics:
+            if "evaluation/episode.normalized_return" in eval_metrics:
+                print (num_samples, eval_metrics["evaluation/normalized_return"])
+            elif "evaluation/success" in eval_metrics:
                 print (num_samples, eval_metrics["evaluation/success"])
-            elif "evaluation/episode.normalized_return" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
             eval_logger.log(eval_metrics, step=num_samples)
         assert False 
     setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
@@ -297,10 +297,10 @@ def main(_):   #num_samples
         renders.extend(cur_renders)
         for k, v in eval_info.items():
             eval_metrics[f'evaluation/{k}'] = v
-        if "evaluation/success" in eval_metrics:
+        if "evaluation/episode.normalized_return" in eval_metrics:
+            print (num_samples, eval_metrics["evaluation/normalized_return"])
+        elif "evaluation/success" in eval_metrics:
             print (num_samples, eval_metrics["evaluation/success"])
-        elif "evaluation/episode.normalized_return" in eval_metrics:
-            print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
         eval_logger.log(eval_metrics, step=num_samples)
     eval_logger.close()
 
