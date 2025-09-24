@@ -6,9 +6,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
         },
-        "alpha_critic": 0.01,
         "alpha_actor": 10.0,
         "alpha":0.1,
+        "num_samples":4,
     },
     "antmaze-giant-navigate-singletask-v0": {
         "iql": {
@@ -17,16 +17,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
         },
-        "rebrac": {
-            "alpha_actor": 0.003
-        },
-        "alpha_critic": 0.01,
-        "drebrac": {
-            "alpha_actor": 0.003,
-            "alpha_critic": 0.01
-        },
         "alpha_actor": 10.0,
         "alpha":0.1,
+        "num_samples":4,
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
         "iql": {
@@ -35,16 +28,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
         },
-        "rebrac": {
-            "alpha_actor": 0.01
-        },
-        "alpha_critic": 0.01,
-        "drebrac": {
-            "alpha_actor": 0.01,
-            "alpha_critic": 0.01
-        },
         "alpha_actor": 30.0,
         "alpha":0.3,
+        "num_samples":32,
     },
     "humanoidmaze-large-navigate-singletask-v0": {
         "iql": {
@@ -53,16 +39,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
         },
-        "rebrac": {
-            "alpha_actor": 0.01
-        },
-        "alpha_critic": 0.01,
-        "drebrac": {
-            "alpha_actor": 0.01,
-            "alpha_critic": 0.01
-        },
         "alpha_actor": 30.0,
-        "alpha":0.3,
+        "alpha":0.1,
+        "num_samples":8,
     },
     "antsoccer-arena-navigate-singletask-v0": {
         "iql": {
@@ -71,12 +50,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 1.0,
         },
-        "rebrac": {
-            "alpha_actor": 0.01
-        },
-        "alpha_critic": 0.01,
          "alpha_actor": 10.0,
-        "alpha":0.03,
+        "alpha":0.3,
+        "num_samples":32,
     },
     "cube-single-play-singletask-v0": {
         "iql": {
@@ -85,12 +61,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 1.0,
         },
-        "rebrac": {
-            "alpha_actor": 1.0
-        },
-        "alpha_critic": 1.0,
         "alpha_actor": 300.0,
         "alpha":0.03,
+        "num_samples":32,
     },
     "cube-double-play-singletask-v0": {
         "iql": {
@@ -99,16 +72,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 0.3,
         },
-        "rebrac": {
-            "alpha_actor": 1.0
-        },
-        "alpha_critic": 1.0,
-        "drebrac": {
-            "alpha_actor": 1.0,
-            "alpha_critic": 1.0
-        },
         "alpha_actor": 300.0,
         "alpha":0.1,
+        "num_samples":16,
     },
     "scene-play-singletask-v0": {
         "iql": {
@@ -117,16 +83,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
         },
-        "rebrac": {
-            "alpha_actor": 0.1
-        },
-        "alpha_critic": 0.01,
-        "drebrac": {
-            "alpha_actor": 0.1,
-            "alpha_critic": 0.01
-        },
         "alpha_actor": 300.0,
-        "alpha":0.1,
+        "alpha":0.03,
+        "num_samples":32,
         
     },
     "puzzle-3x3-play-singletask-v0": {
@@ -136,16 +95,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
         },
-        "rebrac": {
-            "alpha_actor": 0.3
-        },
-        "alpha_critic": 0.01,
-        "drebrac": {
-            "alpha_actor": 0.3,
-            "alpha_critic": 0.01
-        },
         "alpha_actor": 1000.0,
-        "alpha":0.1,
+        "alpha":0.03,
+        "num_samples":8,
 
     },
     "puzzle-4x4-play-singletask-v0": {
@@ -155,16 +107,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 3.0,
         },
-        "rebrac": {
-            "alpha_actor": 0.3
-        },
-        "alpha_critic": 0.01,
-        "drebrac": {
-            "alpha_actor": 0.3,
-            "alpha_critic": 0.01
-        },
         "alpha_actor": 1000.0,
         "alpha":0.1,
+        "num_samples":32,
     },
     "antmaze-umaze-v2": {
         "fql": {
