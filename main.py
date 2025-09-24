@@ -29,6 +29,7 @@ flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (
 flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '../exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
+flags.DEFINE_boolean('restore', False, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
 flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
@@ -54,6 +55,8 @@ import jax.numpy as jnp
 def main(_):   #num_samples
     # Set up logger.
 
+    if FLAGS.restore:
+        os.environ['JAX_PLATFORM_NAME'] = 'cpu'
     config = FLAGS.agent
 
      
@@ -140,31 +143,33 @@ def main(_):   #num_samples
    # print ("config",config)
     # Restore agent.
 
-    if FLAGS.restore_path is not None:
+    if FLAGS.restore :
+        os.environ['JAX_PLATFORM_NAME'] = 'cpu'
         print ("FLAGS.save_dir",FLAGS.save_dir)
+        eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
       #  jax.disable_jit()
-        restored_agent = restore_agent(agent, FLAGS.restore_path, FLAGS.restore_epoch)
+        restored_agent = restore_agent(agent, FLAGS.save_dir, FLAGS.restore_epoch)
         agent = restored_agent.replace(config=agent.config)
 
-        for sampling in [ False]:
-            for num_samples in [10,12]:
-                config = agent.config.copy({"sampling":sampling,"num_samples":num_samples})
-                agent = restored_agent.replace(config=config)
-                eval_metrics = {}
-                renders = []
-                eval_info, trajs, cur_renders = evaluate_parallel(
-                    agent=agent,
-                    envs = envs,
-                    config=config,
-                    num_eval_episodes=FLAGS.eval_episodes,
-                    num_video_episodes=FLAGS.video_episodes,
-                    video_frame_skip=FLAGS.video_frame_skip,
-                )
-                renders.extend(cur_renders)
-                for k, v in eval_info.items():
-                    eval_metrics[f'evaluation/{k}'] = v
+        for num_samples in [1,2,4,8,16,32]:
+            config = agent.config.copy({"num_samples":num_samples})
+            agent = agent.replace(config=config)
+            eval_metrics = {}
+            renders = []
+            eval_info, trajs, cur_renders = evaluate_parallel(
+                agent=agent,
+                envs = envs,
+                config=config,
+                num_eval_episodes=100,
+                num_video_episodes=FLAGS.video_episodes,
+                video_frame_skip=FLAGS.video_frame_skip,
+            )
+            renders.extend(cur_renders)
+            for k, v in eval_info.items():
+                eval_metrics[f'evaluation/{k}'] = v
 
-                print (sampling, num_samples, eval_metrics["evaluation/success"])
+            print (num_samples, eval_metrics["evaluation/success"])
+            eval_logger.log(eval_metrics, step=num_samples)
         assert False 
     setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
     train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
@@ -267,6 +272,32 @@ def main(_):   #num_samples
         # Save agent.
 
     train_logger.close()
+    eval_logger.close()
+
+    eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
+    #  jax.disable_jit()
+    restored_agent = restore_agent(agent, FLAGS.save_dir, FLAGS.restore_epoch)
+    agent = restored_agent.replace(config=agent.config)
+
+    for num_samples in [2,4,8,16]:
+        config = agent.config.copy({"num_samples":num_samples})
+        agent = agent.replace(config=config)
+        eval_metrics = {}
+        renders = []
+        eval_info, trajs, cur_renders = evaluate_parallel(
+            agent=agent,
+            envs = envs,
+            config=config,
+            num_eval_episodes=100,
+            num_video_episodes=FLAGS.video_episodes,
+            video_frame_skip=FLAGS.video_frame_skip,
+        )
+        renders.extend(cur_renders)
+        for k, v in eval_info.items():
+            eval_metrics[f'evaluation/{k}'] = v
+
+        print (num_samples, eval_metrics["evaluation/success"])
+        eval_logger.log(eval_metrics, step=num_samples)
     eval_logger.close()
 
 

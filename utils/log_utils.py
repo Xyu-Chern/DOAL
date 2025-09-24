@@ -68,7 +68,7 @@ def setup_wandb(
     config=None,
 ):
     """Set up Weights & Biases for logging."""
-    wandb_output_dir = tempfile.mkdtemp()
+    wandb_output_dir = os.environ["WANDB_DIR"] if "WANDB_DIR" in os.environ else  tempfile.mkdtemp()
     tags = [group] if group is not None else None
     init_kwargs = dict(
         config=config,
