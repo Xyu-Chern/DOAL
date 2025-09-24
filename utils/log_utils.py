@@ -64,7 +64,7 @@ def setup_wandb(
     project='project',
     group=None,
     name=None,
-  #  mode='online',
+    mode='online',
     config=None,
 ):
     """Set up Weights & Biases for logging."""
@@ -83,7 +83,7 @@ def setup_wandb(
             _disable_stats=False,
             code_dir=".",
         ),
-      #  mode=mode,
+        mode=os.environ["WANDB_MODE"],
         save_code=True,
     )
 
