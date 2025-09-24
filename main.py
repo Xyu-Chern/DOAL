@@ -146,10 +146,12 @@ def main(_):   #num_samples
 
     if FLAGS.restore :
         os.environ['JAX_PLATFORM_NAME'] = 'cpu'
-        print ("FLAGS.save_dir",FLAGS.save_dir)
-        eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
+        restore_path = FLAGS.restore_path is FLAGS.restore_path is not None else FLAGS.save_dir
+        print ("restore_path",restore_path)
+        print 
+        eval_logger = CsvLogger(os.path.join(restore_path, 're_eval.csv'))
       #  jax.disable_jit()
-        restored_agent = restore_agent(agent, FLAGS.save_dir, FLAGS.restore_epoch)
+        restored_agent = restore_agent(agent, restore_path, FLAGS.restore_epoch)
         agent = restored_agent.replace(config=agent.config)
 
         for num_samples in [1,2,4,8,16,32]:
