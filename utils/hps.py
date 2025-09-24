@@ -52,7 +52,7 @@ hyperparameters ={
         },
          "alpha_actor": 10.0,
         "alpha":0.3,
-        "num_samples":32,
+        "num_samples":8,
     },
     "cube-single-play-singletask-v0": {
         "iql": {

@@ -95,7 +95,7 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='diql',  # Agent name.
-            solver="auto_trust",
+            solver="auto",
             step_size=1.0,  # IQL expectile.
             num_steps=1,  # IQL expectile.
             lr=3e-4,  # Learning rate.
@@ -108,7 +108,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
-            gn=0.0,
+            gn=200.0,
             num_ensembles=2,
             delta=1.0,
             clip=True,
