@@ -146,7 +146,7 @@ def main(_):   #num_samples
 
     if FLAGS.restore :
         os.environ['JAX_PLATFORM_NAME'] = 'cpu'
-        restore_path = FLAGS.restore_path is FLAGS.restore_path is not None else FLAGS.save_dir
+        restore_path = FLAGS.restore_path if FLAGS.restore_path is not None else FLAGS.save_dir
         print ("restore_path",restore_path)
         print 
         eval_logger = CsvLogger(os.path.join(restore_path, 're_eval.csv'))
