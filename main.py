@@ -30,6 +30,7 @@ flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '../exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_boolean('restore', False, 'Restore path.')
+flags.DEFINE_boolean('retest', True, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
 flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
@@ -77,7 +78,7 @@ def main(_):   #num_samples
         print ("update",hyperparameters[env_class][config['agent_name']])
         
     exp_name = FLAGS.exp_name     
-    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.run_group, exp_name,FLAGS.env_name,config['agent_name'],str(FLAGS.seed))
+    FLAGS.save_dir = os.path.join(FLAGS.save_dir, "doal", FLAGS.env_name,config['agent_name'],str(FLAGS.seed))
 
     flag_dict = get_flag_dict()
     os.makedirs(FLAGS.save_dir, exist_ok=True)
@@ -276,33 +277,32 @@ def main(_):   #num_samples
     train_logger.close()
     eval_logger.close()
 
-    eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
     #  jax.disable_jit()
-    restored_agent = restore_agent(agent, FLAGS.save_dir, FLAGS.restore_epoch)
-    agent = restored_agent.replace(config=agent.config)
+    if FLAGS.retest:
 
-    for num_samples in [1, 2,4,8,16]:
-        config = agent.config.copy({"num_samples":num_samples})
-        agent = agent.replace(config=config)
-        eval_metrics = {}
-        renders = []
-        eval_info, trajs, cur_renders = evaluate_parallel(
-            agent=agent,
-            envs = envs,
-            config=config,
-            num_eval_episodes=200,
-            num_video_episodes=FLAGS.video_episodes,
-            video_frame_skip=FLAGS.video_frame_skip,
-        )
-        renders.extend(cur_renders)
-        for k, v in eval_info.items():
-            eval_metrics[f'evaluation/{k}'] = v
-        if "evaluation/episode.normalized_return" in eval_metrics:
-            print (num_samples, eval_metrics["evaluation/normalized_return"])
-        elif "evaluation/success" in eval_metrics:
-            print (num_samples, eval_metrics["evaluation/success"])
-        eval_logger.log(eval_metrics, step=num_samples)
-    eval_logger.close()
+        eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
+        for num_samples in [1, 2,4,8,16]:
+            config = agent.config.copy({"num_samples":num_samples})
+            agent = agent.replace(config=config)
+            eval_metrics = {}
+            renders = []
+            eval_info, trajs, cur_renders = evaluate_parallel(
+                agent=agent,
+                envs = envs,
+                config=config,
+                num_eval_episodes=200,
+                num_video_episodes=FLAGS.video_episodes,
+                video_frame_skip=FLAGS.video_frame_skip,
+            )
+            renders.extend(cur_renders)
+            for k, v in eval_info.items():
+                eval_metrics[f'evaluation/{k}'] = v
+            if "evaluation/episode.normalized_return" in eval_metrics:
+                print (num_samples, eval_metrics["evaluation/normalized_return"])
+            elif "evaluation/success" in eval_metrics:
+                print (num_samples, eval_metrics["evaluation/success"])
+            eval_logger.log(eval_metrics, step=num_samples)
+        eval_logger.close()
 
 
 if __name__ == '__main__':
