@@ -30,7 +30,7 @@ flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '../exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_boolean('restore', False, 'Restore path.')
-flags.DEFINE_boolean('retest', True, 'Restore path.')
+flags.DEFINE_boolean('retest', False, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
 flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')

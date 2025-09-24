@@ -34,6 +34,7 @@ for env_name in "${env_names[@]}"; do
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
         --run_group nun_samples \
+        --retest \
         --seed "$seed" \
         "$@"
 done
