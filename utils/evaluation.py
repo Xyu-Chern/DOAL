@@ -133,6 +133,7 @@ def evaluate_parallel(
     eval_temperature=0,
     obs_statistics=(0, 1, np.inf),
     act_statistics=None,
+    fix_seed =False,
 ):
     actor_fn = jax.vmap(agent.sample_actions,in_axes =(0,0,None))
     total_episodes = num_eval_episodes + num_video_episodes
@@ -140,8 +141,10 @@ def evaluate_parallel(
     trajs = []
 
     renders = []
-
-    outs = [env.reset() for env in envs]
+    if fix_seed:
+        outs = [env.reset(seed = i % 50) for i, env in enumerate(envs)]
+    else:
+        outs = [env.reset() for env in envs]
     next_observations = [obs for obs, _ in outs]
     rewards = [ 0.0 for i in range(total_episodes)]
     step = 0

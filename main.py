@@ -154,7 +154,7 @@ def main(_):   #num_samples
         restored_agent = restore_agent(agent, restore_path, FLAGS.restore_epoch)
         agent = restored_agent.replace(config=agent.config)
 
-        for num_samples in [1,2,4,8,16,32]:
+        for num_samples in [1,2,4,8,16,32,64,128]:
             config = agent.config.copy({"num_samples":num_samples})
             agent = agent.replace(config=config)
             eval_metrics = {}
@@ -163,9 +163,10 @@ def main(_):   #num_samples
                 agent=agent,
                 envs = envs,
                 config=config,
-                num_eval_episodes=200,
+                num_eval_episodes=500,
                 num_video_episodes=FLAGS.video_episodes,
                 video_frame_skip=FLAGS.video_frame_skip,
+                fix_seed=True,
             )
             renders.extend(cur_renders)
             for k, v in eval_info.items():
@@ -292,9 +293,10 @@ def main(_):   #num_samples
                 agent=agent,
                 envs = envs,
                 config=config,
-                num_eval_episodes=200,
+                num_eval_episodes=500,
                 num_video_episodes=FLAGS.video_episodes,
                 video_frame_skip=FLAGS.video_frame_skip,
+                fix_seed=True,
             )
             renders.extend(cur_renders)
             for k, v in eval_info.items():
