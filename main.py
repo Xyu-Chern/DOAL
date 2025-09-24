@@ -172,7 +172,7 @@ def main(_):   #num_samples
             for k, v in eval_info.items():
                 eval_metrics[f'evaluation/{k}'] = v
             if "evaluation/episode.normalized_return" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/normalized_return"])
+                print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
             elif "evaluation/success" in eval_metrics:
                 print (num_samples, eval_metrics["evaluation/success"])
             eval_logger.log(eval_metrics, step=num_samples)
@@ -302,7 +302,7 @@ def main(_):   #num_samples
             for k, v in eval_info.items():
                 eval_metrics[f'evaluation/{k}'] = v
             if "evaluation/episode.normalized_return" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/normalized_return"])
+                print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
             elif "evaluation/success" in eval_metrics:
                 print (num_samples, eval_metrics["evaluation/success"])
             eval_logger.log(eval_metrics, step=num_samples)
