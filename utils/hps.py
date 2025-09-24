@@ -218,7 +218,7 @@ hyperparameters ={
             "alpha_actor": 0.5
         },  
         "alpha":0.03,
-        "num_samples":2,
+        "num_samples":4,
     },
     "door-human-v1": {
         "alpha_actor": 30000.0,
