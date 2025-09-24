@@ -160,15 +160,17 @@ def main(_):   #num_samples
                 agent=agent,
                 envs = envs,
                 config=config,
-                num_eval_episodes=100,
+                num_eval_episodes=200,
                 num_video_episodes=FLAGS.video_episodes,
                 video_frame_skip=FLAGS.video_frame_skip,
             )
             renders.extend(cur_renders)
             for k, v in eval_info.items():
                 eval_metrics[f'evaluation/{k}'] = v
-
-            print (num_samples, eval_metrics["evaluation/success"])
+            if "evaluation/success" in eval_metrics:
+                print (num_samples, eval_metrics["evaluation/success"])
+            elif "evaluation/episode.normalized_return" in eval_metrics:
+                print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
             eval_logger.log(eval_metrics, step=num_samples)
         assert False 
     setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict)
@@ -279,7 +281,7 @@ def main(_):   #num_samples
     restored_agent = restore_agent(agent, FLAGS.save_dir, FLAGS.restore_epoch)
     agent = restored_agent.replace(config=agent.config)
 
-    for num_samples in [2,4,8,16]:
+    for num_samples in [1, 2,4,8,16]:
         config = agent.config.copy({"num_samples":num_samples})
         agent = agent.replace(config=config)
         eval_metrics = {}
@@ -288,15 +290,17 @@ def main(_):   #num_samples
             agent=agent,
             envs = envs,
             config=config,
-            num_eval_episodes=100,
+            num_eval_episodes=200,
             num_video_episodes=FLAGS.video_episodes,
             video_frame_skip=FLAGS.video_frame_skip,
         )
         renders.extend(cur_renders)
         for k, v in eval_info.items():
             eval_metrics[f'evaluation/{k}'] = v
-
-        print (num_samples, eval_metrics["evaluation/success"])
+        if "evaluation/success" in eval_metrics:
+            print (num_samples, eval_metrics["evaluation/success"])
+        elif "evaluation/episode.normalized_return" in eval_metrics:
+            print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
         eval_logger.log(eval_metrics, step=num_samples)
     eval_logger.close()
 

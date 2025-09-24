@@ -117,7 +117,7 @@ def get_config():
             gn=0.0,
             clip=True,
             num_ensembles=2,
-            num_samples=12,  # Number of action samples for rejection sampling.
+            num_samples=8,  # Number of action samples for rejection sampling.
             flow_steps=10,  # Number of flow steps.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
