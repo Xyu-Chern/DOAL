@@ -83,7 +83,7 @@ def setup_wandb(
             _disable_stats=False,
             code_dir=".",
         ),
-        mode=os.environ["WANDB_MODE"],
+        mode=os.environ["WANDB_MODE"] if "WANDB_MODE" in os.environ else "online",
         save_code=True,
     )
 
