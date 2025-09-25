@@ -22,7 +22,7 @@ SEED=$2
 
 # Define the list of alpha parameters
 
-env_names=(  "relocate-expert-v1" "relocate-human-v1"  )
+env_names=(  "relocate-expert-v1"   )
 
 # Loop through all environments and alpha values
 alphas=(  0.003 0.01  )
