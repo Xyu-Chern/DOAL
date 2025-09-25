@@ -26,7 +26,7 @@ fi
 
 
 # Loop through all environment names
-python main.py --agent agents/trigflow.py --env_name humanoidmaze-medium-navigate-singletask-task1-v0  --run_group fun  --seed 40 "$@"
+python main.py --agent agents/trigflow.py --env_name "$env_name"  --run_group fun  --seed "$seed"  "$@"
 python main.py --agent agents/trigflow.py --env_name "$env_name"  --run_group fun  --seed "$seed"  "$@" --agent.use_q_loss
 python main.py --agent agents/dtrigflow.py --env_name "$env_name"  --run_group fun  --seed "$seed"  "$@"
 python main.py --agent agents/diql.py --env_name "$env_name"  --run_group fun  --seed "$seed"  "$@"
