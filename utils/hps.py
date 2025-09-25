@@ -217,7 +217,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },  
-        "alpha":0.03,
+        "alpha":0.003,
         "num_samples":4,
     },
     "door-human-v1": {
