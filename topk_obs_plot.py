@@ -167,39 +167,7 @@ def main(_):
 
         
     exp_name = FLAGS.exp_name 
-    if FLAGS.alpha != -1:
-        config["alpha"] = FLAGS.alpha
-        exp_name +=  "_alpha _" + str(config["alpha"])
-    if FLAGS.expectile != -1:
-        config["expectile"] = FLAGS.expectile
-        exp_name +=  "_expectile _" + str(config["expectile"])
-    if FLAGS.gn != -1:
-        config["gn"] = FLAGS.gn
-        exp_name +=  "_gn _" + str(config["gn"])
-    elif env_class in hyperparameters and "alpha" in hyperparameters[env_class] :
-        alpha = hyperparameters[env_class]["alpha"]
-        config.update({"alpha":alpha})
-        print("env alpha is ", alpha)
-    if FLAGS.alpha_actor != -1:
-        config["alpha_actor"] = FLAGS.alpha_actor
-        exp_name +=  "_alpha_actor_" + str(config["alpha_actor"])
-    if FLAGS.solver is not None:
-        config["solver"] = FLAGS.solver
-        exp_name +=  "_solver_" + str(config["solver"])
-    if FLAGS.distill_factor != -1:
-        config["distill_factor"] = FLAGS.distill_factor
-        exp_name +=  "_distill_factor_" + str(config["distill_factor"])  
-    if FLAGS.normalize_q_loss:
-        config['normalize_q_loss'] = FLAGS.normalize_q_loss
-    if FLAGS.time_weight is not None:
-        config['time_weight'] = FLAGS.time_weight
-        print ("time_weight", FLAGS.time_weight)
     FLAGS.save_dir = os.path.join(FLAGS.save_dir, "fql", FLAGS.run_group, exp_name)
-
-    os.makedirs(FLAGS.save_dir, exist_ok=True)
-    flag_dict = get_flag_dict()
-    with open(os.path.join(FLAGS.save_dir, 'flags.json'), 'w') as f:
-        json.dump(flag_dict, f)
 
     # Make environment and datasets.
     env, envs, train_dataset, val_dataset = make_env_and_datasets(FLAGS.env_name, frame_stack=FLAGS.frame_stack,eval_episodes=FLAGS.eval_episodes + FLAGS.video_episodes)

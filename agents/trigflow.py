@@ -95,28 +95,6 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
         return total_loss, out 
 
 
-    @jax.jit
-    def total_loss(self, batch, grad_params, rng=None):
-        """Compute the total loss."""
-        info = {}
-        rng = rng if rng is not None else self.rng
-
-        value_loss, value_info, aux = self.value_loss(batch, grad_params)
-        for k, v in value_info.items():
-            info[f"value/{k}"] = v
-
-        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params, aux)
-        for k, v in critic_info.items():
-            info[f"critic/{k}"] = v
-
-        rng, actor_rng = jax.random.split(rng)
-        actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng, aux)
-        for k, v in actor_info.items():
-            info[f"actor/{k}"] = v
-
-        loss = value_loss + critic_loss + actor_loss
-        return loss, info
-
     def target_update(self, network, module_name):
         """Update the target network."""
         new_target_params = jax.tree_util.tree_map(

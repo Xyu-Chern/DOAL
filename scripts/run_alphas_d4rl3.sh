@@ -22,10 +22,10 @@ SEED=$2
 
 # Define the list of alpha parameters
 
-env_names=( "hammer-human-v1" "relocate-expert-v1" "relocate-human-v1" "relocate-cloned-v1" )
+env_names=(  "relocate-expert-v1" "relocate-human-v1"  )
 
 # Loop through all environments and alpha values
-alphas=(  0.03 0.1 0.3 )
+alphas=(  0.003 0.01 0.03 )
 for env_name in "${env_names[@]}"; do
     # Loop through all alpha values
     for alpha in "${alphas[@]}"; do
