@@ -183,7 +183,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.3,
+        "alpha":0.003,
         "num_samples":128,
     },
     "pen-human-v1": {
@@ -209,7 +209,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.03,
+        "alpha":0.01,
         "num_samples":2,
     },
     "door-cloned-v1": {
@@ -233,7 +233,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.1,
+        "alpha":0.003,
         "num_samples":2,
     },
     "hammer-cloned-v1": {
@@ -257,7 +257,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },    
-        "alpha":0.03,
+        "alpha":0.01,
         "num_samples":2,
     },
     "relocate-human-v1": {
