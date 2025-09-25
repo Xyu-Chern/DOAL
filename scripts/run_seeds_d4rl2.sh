@@ -22,7 +22,7 @@ alpha=$2
 
 # Define the list of alpha parameters
 
-env_names=("pen-human-v1" "pen-expert-v1"  "pen-cloned-v1" )
+env_names=(  "relocate-expert-v1"  "door-expert-v1" "hammer-expert-v1"  )
 
 # Loop through all environments and alpha values
 seeds=(  1 2 3)
