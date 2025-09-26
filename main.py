@@ -283,8 +283,8 @@ def main(_):   #num_samples
     #  jax.disable_jit()
     if FLAGS.retest:
 
-        eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
-        for num_samples in [1, 2,4,8,16,32,64]:
+        reeval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
+        for num_samples in [1, 2,4,8,16,32,64,128]:
             config = agent.config.copy({"num_samples":num_samples})
             agent = agent.replace(config=config)
             eval_metrics = {}
@@ -305,9 +305,9 @@ def main(_):   #num_samples
                 print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
             elif "evaluation/success" in eval_metrics:
                 print (num_samples, eval_metrics["evaluation/success"])
-            eval_logger.log(eval_metrics, step=num_samples)
+            reeval_logger.log(eval_metrics, step=num_samples)
             wandb.log(eval_metrics, step=num_samples)
-        eval_logger.close()
+        reeval_logger.close()
 
 
 if __name__ == '__main__':
