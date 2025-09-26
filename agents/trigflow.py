@@ -95,28 +95,6 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
         return total_loss, out 
 
 
-    @jax.jit
-    def total_loss(self, batch, grad_params, rng=None):
-        """Compute the total loss."""
-        info = {}
-        rng = rng if rng is not None else self.rng
-
-        value_loss, value_info, aux = self.value_loss(batch, grad_params)
-        for k, v in value_info.items():
-            info[f"value/{k}"] = v
-
-        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params, aux)
-        for k, v in critic_info.items():
-            info[f"critic/{k}"] = v
-
-        rng, actor_rng = jax.random.split(rng)
-        actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng, aux)
-        for k, v in actor_info.items():
-            info[f"actor/{k}"] = v
-
-        loss = value_loss + critic_loss + actor_loss
-        return loss, info
-
     def target_update(self, network, module_name):
         """Update the target network."""
         new_target_params = jax.tree_util.tree_map(
@@ -192,6 +170,54 @@ class TrigFQLAgent(DOALAgent,IQLAgent):
 
         actions = actions[jnp.argmax(q)]
         return actions
+
+        
+    @jax.jit
+    def get_stats(
+        self,
+        observations,
+        seed=None,
+        temperature=1.0,
+    ):
+        """Sample actions from the actor."""
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_flow_encoder')(observations)
+        action_seed, noise_seed = jax.random.split(seed)
+
+        # Sample `num_samples` noises and propagate them through the flow.
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[:-1],
+                self.config['num_samples'],
+                self.config['action_dim'],
+            ),
+        ) 
+        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), self.config['num_samples'], axis=0)
+        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), self.config['num_samples'], axis=0)
+        # Euler method.
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*observations.shape[:-1],self.config['num_samples'], 1), (1.0 - i / self.config['flow_steps']) *math.pi / 2)
+            vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
+            s = jnp.full((*observations.shape[:-1], self.config['num_samples'],1), (1.0 - (i+1) / self.config['flow_steps']) *math.pi / 2)
+            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) #* self.config["sigma"]
+
+        actions = jnp.clip(actions, -1, 1)
+
+
+        # Pick the action with the highest Q-value.
+        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
+
+
+        out = {
+            'actions_std': jnp.std(actions,axis=0).mean(),
+            "q_std": jnp.std(q),
+            "q_mean": jnp.mean(q),
+            "q_max": jnp.max(q),
+            }
+        return out
+
     @classmethod
     def create(
         cls,

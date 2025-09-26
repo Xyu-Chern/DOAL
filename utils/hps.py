@@ -183,7 +183,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.2,
+        "alpha":0.003,
         "num_samples":128,
     },
     "pen-human-v1": {
@@ -191,7 +191,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.05,
+        "alpha":0.03,
         "num_samples":8,
         
     },
@@ -200,7 +200,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.05,
+        "alpha":0.03,
         "num_samples":32,
         
     },
@@ -209,7 +209,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.005,
+        "alpha":0.01,
         "num_samples":2,
     },
     "door-cloned-v1": {
@@ -217,15 +217,15 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },  
-        "alpha":0.005,
-        "num_samples":1,
+        "alpha":0.003,
+        "num_samples":4,
     },
     "door-human-v1": {
         "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },  
-        "alpha":0.005,
+        "alpha":0.03,
         "num_samples":8,
     },
     "hammer-expert-v1": {
@@ -233,15 +233,15 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.05,
-        "num_samples":1,
+        "alpha":0.003,
+        "num_samples":2,
     },
     "hammer-cloned-v1": {
         "alpha_actor": 10000.0,
         "iql": {
             "alpha_actor": 0.5
         },  
-        "alpha":0.05,
+        "alpha":0.3,
         "num_samples":4,
     },
     "hammer-human-v1": {
@@ -249,7 +249,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },      
-        "alpha":0.05,
+        "alpha":0.03,
         "num_samples":8,
     },
     "relocate-expert-v1": {
@@ -265,7 +265,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.01,
+        "alpha":0.1,
         "num_samples":64,
     },
     "relocate-cloned-v1": {    
@@ -273,7 +273,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.01,
+        "alpha":0.1,
         "num_samples":128,
     },
 

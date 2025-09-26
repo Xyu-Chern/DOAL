@@ -25,11 +25,11 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 42, 'Random seed.')
-flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (dataset) name.')
+flags.DEFINE_string('env_name', 'humanoidmaze-medium-navigate-singletask-v0', 'Environment (dataset) name.')
 flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '../exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
-flags.DEFINE_boolean('restore', False, 'Restore path.') 
+flags.DEFINE_boolean('restore', True, 'Restore path.') 
 flags.DEFINE_boolean('retest', False, 'Restore path.')
 flags.DEFINE_boolean('save_code', True, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
@@ -153,38 +153,6 @@ def main(_):   #num_samples
         eval_logger = CsvLogger(os.path.join(restore_path, 're_eval.csv'))
       #  jax.disable_jit()
         restored_agent = restore_agent(agent, restore_path, FLAGS.restore_epoch)
-        agent = restored_agent.replace(config=agent.config)
-
-        for num_samples in [1,2,4,8,16,32,64,128]:
-            config = agent.config.copy({"num_samples":num_samples})
-            agent = agent.replace(config=config)
-            eval_metrics = {}
-            renders = []
-            eval_info, trajs, cur_renders = evaluate_parallel(
-                agent=agent,
-                envs = envs,
-                config=config,
-                num_eval_episodes=500,
-                num_video_episodes=FLAGS.video_episodes,
-                video_frame_skip=FLAGS.video_frame_skip,
-                fix_seed=True,
-            )
-            renders.extend(cur_renders)
-            for k, v in eval_info.items():
-                eval_metrics[f'evaluation/{k}'] = v
-            if "evaluation/episode.normalized_return" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
-            elif "evaluation/success" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/success"])
-            eval_logger.log(eval_metrics, step=num_samples)
-        assert False 
-    setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict,save_code=FLAGS.save_code)
-    train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
-    eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
-    # Train agent.
-    first_time = time.time()
-    last_time = time.time()
-
     step = 0
     done = True
     expl_metrics = dict()
@@ -214,102 +182,18 @@ def main(_):   #num_samples
     pbar = tqdm.tqdm(range(1, num_epochs + 1), smoothing=0.1, dynamic_ncols=True)
     #for i in tqdm.tqdm(range(1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
     rng = jax.random.PRNGKey(FLAGS.seed)
-    for i in pbar:
         # Generate new random key for shuffling
-        rng, subkey = jax.random.split(rng)
+    eval_metrics = {}
 
-        before_shuffle = time.time() 
-        
-        batches = train_dataset.sample(truncated_size)
-        
-        # Shuffle and reshape dataset into batches
-        batches = jax.tree_util.tree_map(
-            lambda x: x.reshape(-1, config['batch_size'], *x.shape[1:]),
-            batches
-        )
-        after_shuffle = time.time() 
-        # Perform updates using scan over all batches
-        agent, update_info = jax.jit(jax.lax.scan,static_argnums=(0,))(
-            scan_update,
-            agent,
-            batches
-        )
-        # Log metrics.
+    d = 5120
+    idx = np.arange(d)
+    val_batch = val_dataset.sample(d,idx)
+    val_info = jax.vmap(agent.get_stats,in_axes=(0,None))(val_batch["observations"],rng)
+    val_info_mean = jax.tree.map(lambda x: jnp.mean(x, axis=0), val_info)
 
-        if i % log_interval == 0 or i == num_epochs:
-            eval_metrics = {}
-            if val_dataset is not None:
-                val_batch = val_dataset.sample(config['batch_size'])
-                _, val_info = agent.total_loss(val_batch, grad_params=None)
-                eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
-            renders = []
-            eval_info, trajs, cur_renders = evaluate_parallel(
-                agent=agent,
-                envs = envs,
-                config=config,
-                num_eval_episodes=FLAGS.eval_episodes,
-                num_video_episodes=FLAGS.video_episodes,
-                video_frame_skip=FLAGS.video_frame_skip,
-            )
-            renders.extend(cur_renders)
-            for k, v in eval_info.items():
-                eval_metrics[f'evaluation/{k}'] = v
-
-            if FLAGS.video_episodes > 0:
-                video = get_wandb_video(renders=renders)
-                eval_metrics['video'] = video
-
-            wandb.log(eval_metrics, step=i*n_complete_batches)
-            eval_logger.log(eval_metrics, step=i*n_complete_batches)
-            save_agent(agent, FLAGS.save_dir, 0)
-            pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
-        if i % 100 == 0:
-            update_info = jax.tree_util.tree_map(
-                lambda xs: jnp.mean(xs), 
-                update_info
-            )
-            train_metrics = {f'training/{k}': v for k, v in update_info.items()}
-            train_metrics['time/data_time'] = after_shuffle- before_shuffle
-            train_metrics['time/compute_time'] = time.time() - after_shuffle
-            train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
-            last_time = time.time()
-            wandb.log(train_metrics, step=i*n_complete_batches)
-            train_logger.log(train_metrics, step=i*n_complete_batches)
-            pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
-        # Save agent.
-
-    train_logger.close()
-    eval_logger.close()
-
-    #  jax.disable_jit()
-    if FLAGS.retest:
-
-        reeval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
-        for num_samples in [1, 2,4,8,16,32,64,128]:
-            config = agent.config.copy({"num_samples":num_samples})
-            agent = agent.replace(config=config)
-            eval_metrics = {}
-            renders = []
-            eval_info, trajs, cur_renders = evaluate_parallel(
-                agent=agent,
-                envs = envs,
-                config=config,
-                num_eval_episodes=500,
-                num_video_episodes=FLAGS.video_episodes,
-                video_frame_skip=FLAGS.video_frame_skip,
-                fix_seed=True,
-            )
-            renders.extend(cur_renders)
-            for k, v in eval_info.items():
-                eval_metrics[f'retest/{k}'] = v
-            if "evaluation/episode.normalized_return" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
-            elif "evaluation/success" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/success"])
-            reeval_logger.log(eval_metrics, step=num_samples)
-            wandb.log(eval_metrics, step=num_samples)
-        reeval_logger.close()
-
+    # Now val_info_mean is a dictionary with the same structure, 
+    # but each array has the batch dimension removed and replaced by the mean value.
+    print(val_info_mean)
 
 if __name__ == '__main__':
     app.run(main)

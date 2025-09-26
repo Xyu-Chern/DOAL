@@ -66,27 +66,40 @@ def setup_wandb(
     name=None,
     mode='online',
     config=None,
+    save_code=True,
 ):
     """Set up Weights & Biases for logging."""
     wandb_output_dir = os.environ["WANDB_DIR"] if "WANDB_DIR" in os.environ else  tempfile.mkdtemp()
     tags = [group] if group is not None else None
-    init_kwargs = dict(
-        config=config,
-        project=project,
-        entity=entity,
-        tags=tags,
-        group=group,
-        dir=wandb_output_dir,
-        name=name,
-        settings=wandb.Settings(
-            start_method='thread',
-            _disable_stats=False,
-            code_dir=".",
-        ),
-        mode=os.environ["WANDB_MODE"] if "WANDB_MODE" in os.environ else "online",
-        save_code=True,
-    )
-
+    if save_code:
+        init_kwargs = dict(
+            config=config,
+            project=project,
+            entity=entity,
+            tags=tags,
+            group=group,
+            dir=wandb_output_dir,
+            name=name,
+            settings=wandb.Settings(
+                start_method='thread',
+                _disable_stats=False,
+                code_dir=".",
+            ),
+            mode=os.environ["WANDB_MODE"] if "WANDB_MODE" in os.environ else "online",
+            save_code=save_code,
+        )
+    else:
+        init_kwargs = dict(
+            config=config,
+            project=project,
+            entity=entity,
+            tags=tags,
+            group=group,
+            dir=wandb_output_dir,
+            name=name,
+            mode=os.environ["WANDB_MODE"] if "WANDB_MODE" in os.environ else "online",
+            save_code=save_code,
+        )
     run = wandb.init(**init_kwargs)
 
     return run

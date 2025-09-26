@@ -181,7 +181,7 @@ class IQLAgent(flax.struct.PyTreeNode):
     ):
         """Sample actions from the actor."""
         dist = self.network.select("actor")(observations, temperature=temperature)
-        actions = dist.sample(seed=seed)
+        actions = dist.mode()
         actions = jnp.clip(actions, -1, 1)
         return actions
 
@@ -278,7 +278,7 @@ def get_config():
             tau=0.005,  # Target network update rate.
             expectile=0.9,  # IQL expectile.
             num_ensembles=2,
-            gn=0.0,
+            gn=200.0,
             actor_loss="awr",  # Actor loss type ('awr' or 'ddpgbc').
             alpha_actor=10.0,  # Temperature in AWR or BC coefficient in DDPG+BC.
             const_std=True,  # Whether to use constant standard deviation for the actor.
