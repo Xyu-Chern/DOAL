@@ -284,7 +284,7 @@ def main(_):   #num_samples
     if FLAGS.retest:
 
         eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
-        for num_samples in [1, 2,4,8,16]:
+        for num_samples in [1, 2,4,8,16,32,64]:
             config = agent.config.copy({"num_samples":num_samples})
             agent = agent.replace(config=config)
             eval_metrics = {}
@@ -300,12 +300,13 @@ def main(_):   #num_samples
             )
             renders.extend(cur_renders)
             for k, v in eval_info.items():
-                eval_metrics[f'evaluation/{k}'] = v
+                eval_metrics[f'retest/{k}'] = v
             if "evaluation/episode.normalized_return" in eval_metrics:
                 print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
             elif "evaluation/success" in eval_metrics:
                 print (num_samples, eval_metrics["evaluation/success"])
             eval_logger.log(eval_metrics, step=num_samples)
+            wandb.log(eval_metrics, step=num_samples)
         eval_logger.close()
 
 
