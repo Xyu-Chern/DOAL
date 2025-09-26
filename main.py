@@ -178,7 +178,7 @@ def main(_):   #num_samples
                 print (num_samples, eval_metrics["evaluation/success"])
             eval_logger.log(eval_metrics, step=num_samples)
         assert False 
-    setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict,save_code=FLAGS.save_code)
+    run = setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict,save_code=FLAGS.save_code)
     train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
     eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
     # Train agent.
@@ -320,7 +320,6 @@ def main(_):   #num_samples
         # Log the table to W&B
         run.log({"Table Name": my_table})
         reeval_logger.close()
-    wandb.close()
 
 if __name__ == '__main__':
     app.run(main)
