@@ -34,7 +34,7 @@ flags.DEFINE_boolean('retest', True, 'Restore path.')
 flags.DEFINE_boolean('save_code', True, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
-flags.DEFINE_integer('offline_steps', 500000, 'Number of offline steps.')
+flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
 flags.DEFINE_integer('online_steps', 0, 'Number of online steps.')
 flags.DEFINE_integer('buffer_size', 2000000, 'Replay buffer size.')
 flags.DEFINE_integer('log_interval', 500, 'Logging interval.')
@@ -283,7 +283,7 @@ def main(_):   #num_samples
 
     #  jax.disable_jit()
     if FLAGS.retest:
-
+        data = []
         reeval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))
         for num_samples in [1, 2,4,8,16,32,64,128]:
             config = agent.config.copy({"num_samples":num_samples})
@@ -302,12 +302,23 @@ def main(_):   #num_samples
             renders.extend(cur_renders)
             for k, v in eval_info.items():
                 eval_metrics[f'retest/{k}'] = v
-            if "evaluation/episode.normalized_return" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/episode.normalized_return"])
-            elif "evaluation/success" in eval_metrics:
-                print (num_samples, eval_metrics["evaluation/success"])
+            if "retest/episode.normalized_return" in eval_metrics:
+                print (num_samples, eval_metrics["retest/episode.normalized_return"])
+                key = "normalized_return"
+                data.append([num_samples,eval_metrics["retest/episode.normalized_return"]])
+            elif "retest/success" in eval_metrics:
+                print (num_samples, eval_metrics["retest/success"])
+                key = "success"
+                data.append([num_samples,eval_metrics["retest/success"]])
             reeval_logger.log(eval_metrics, step=num_samples)
-            wandb.log(eval_metrics, step=num_samples)
+        my_table = wandb.Table(
+            columns=["num_samples", key],
+            data=data,
+            log_mode="IMMUTABLE"
+            )
+
+        # Log the table to W&B
+        run.log({"Table Name": my_table})
         reeval_logger.close()
     wandb.close()
 
