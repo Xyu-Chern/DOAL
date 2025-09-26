@@ -30,11 +30,11 @@ flags.DEFINE_string('exp_name', "", 'extra experiment name.')
 flags.DEFINE_string('save_dir', '../exp/', 'Save directory.')
 flags.DEFINE_string('restore_path', None, 'Restore path.')
 flags.DEFINE_boolean('restore', False, 'Restore path.') 
-flags.DEFINE_boolean('retest', False, 'Restore path.')
+flags.DEFINE_boolean('retest', True, 'Restore path.')
 flags.DEFINE_boolean('save_code', True, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
-flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
+flags.DEFINE_integer('offline_steps', 500000, 'Number of offline steps.')
 flags.DEFINE_integer('online_steps', 0, 'Number of online steps.')
 flags.DEFINE_integer('buffer_size', 2000000, 'Replay buffer size.')
 flags.DEFINE_integer('log_interval', 500, 'Logging interval.')
@@ -309,7 +309,7 @@ def main(_):   #num_samples
             reeval_logger.log(eval_metrics, step=num_samples)
             wandb.log(eval_metrics, step=num_samples)
         reeval_logger.close()
-
+    wandb.close()
 
 if __name__ == '__main__':
     app.run(main)
