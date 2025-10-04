@@ -33,8 +33,8 @@ for env_name in "${env_names[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --run_group nun_samples \
-        --retest  --offline_steps 500000 \
+        --run_group nun_samples_og \
+        --retest  --offline_steps 1000000 \
         --seed "$seed" \
         "$@"
 done
