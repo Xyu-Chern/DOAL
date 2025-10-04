@@ -25,7 +25,7 @@ else
 fi
 
 # Define the list of environment names  "door-cloned-v1"   "door-human-v1" "door-expert-v1" "hammer-cloned-v1" "hammer-expert-v1" "hammer-human-v1" "relocate-expert-v1" "relocate-human-v1" "relocate-cloned-v1" "pen-human-v1"
-env_names=( "pen-cloned-v1" "pen-expert-v1"  "door-cloned-v1"  )
+env_names=( "pen-cloned-v1" "pen-expert-v1"  "door-cloned-v1"   "door-human-v1"  "door-cloned-v1"  )
 
 # Loop through all environment names
 for env_name in "${env_names[@]}"; do
@@ -35,6 +35,6 @@ for env_name in "${env_names[@]}"; do
         --env_name "$env_name" \
         --run_group nun_samples \
         --retest  --offline_steps 500000 \
-        --seed "$seed" \
+        --seed $RANDOM \
         "$@"
 done
