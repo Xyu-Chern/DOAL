@@ -24,8 +24,8 @@ else
     shift 1
 fi
 
-# Define the list of environment names
-env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1" "door-cloned-v1"   "door-human-v1" "door-expert-v1" "hammer-cloned-v1" "hammer-expert-v1" "hammer-human-v1" "relocate-expert-v1" "relocate-human-v1" "relocate-cloned-v1" )
+# Define the list of environment names  "door-cloned-v1"   "door-human-v1" "door-expert-v1" "hammer-cloned-v1" "hammer-expert-v1" "hammer-human-v1" "relocate-expert-v1" "relocate-human-v1" "relocate-cloned-v1" "pen-human-v1"
+env_names=( "pen-cloned-v1" "pen-expert-v1"  "door-cloned-v1"  )
 
 # Loop through all environment names
 for env_name in "${env_names[@]}"; do
