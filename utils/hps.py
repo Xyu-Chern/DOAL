@@ -52,7 +52,7 @@ hyperparameters ={
         },
          "alpha_actor": 10.0,
         "alpha":0.03,
-        "num_samples":4,
+        "num_samples":16,
     },
     "cube-single-play-singletask-v0": {
         "iql": {
@@ -97,7 +97,7 @@ hyperparameters ={
         },
         "alpha_actor": 1000.0,
         "alpha":0.03,
-        "num_samples":8,
+        "num_samples":4,
 
     },
     "puzzle-4x4-play-singletask-v0": {
@@ -109,7 +109,7 @@ hyperparameters ={
         },
         "alpha_actor": 1000.0,
         "alpha":0.1,
-        "num_samples":32,
+        "num_samples":64,
     },
     "antmaze-umaze-v2": {
         "fql": {
