@@ -33,7 +33,7 @@ fi
 env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1"  "door-expert-v1"  "hammer-expert-v1" "relocate-expert-v1"  )
 
 # Loop through all environments and alpha values
-alphas=( 0.003 0.01 0.03)
+alphas=( 0.0003 0.001 )
 for env_name in "${env_names[@]}"; do
     # Loop through all alpha values
     for alpha in "${alphas[@]}"; do
