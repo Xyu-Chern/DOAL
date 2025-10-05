@@ -8,26 +8,19 @@ if [ "$#" -lt 1 ] ; then
 fi
 
 AGENT_NAME=$1
-if [ -n "$2" ] ; then
-    seed=$2
-    # Shift arguments to handle the rest of the optional parameters
-    shift 2
-else
-    seed=$RANDOM
-    shift 1
-fi
-
-
+seeds=(111 222 333 444 555 666 777 888)
 
 env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1"  "door-expert-v1"  "hammer-expert-v1" "relocate-expert-v1"  )
 # Loop through all environments and alpha values
-for env_name in "${env_names[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $seed, Additional Args: $@"
-    python main.py \
-        --agent "agents/$AGENT_NAME.py" \
-        --env_name "$env_name" \
-        --run_group submit_final \
-            --noretest \
-        --offline_steps 500000 \
-        --seed "$seed" "$@"
+for seed in "${seeds[@]}"; do
+    for env_name in "${env_names[@]}"; do
+        echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $seed, Additional Args: $@"
+        python main.py \
+            --agent "agents/$AGENT_NAME.py" \
+            --env_name "$env_name" \
+            --run_group submit_d4rl \
+                --noretest \
+            --offline_steps 500000 \
+            --seed "$seed" "$@"
+    done
 done
