@@ -7,7 +7,7 @@ hyperparameters ={
             "alpha_actor": 10.0,
         },
         "alpha_actor": 10.0,
-        "alpha":0.1,
+        "alpha":0.03,
         "num_samples":4,
     },
     "antmaze-giant-navigate-singletask-v0": {
@@ -18,7 +18,7 @@ hyperparameters ={
             "alpha_actor": 10.0,
         },
         "alpha_actor": 10.0,
-        "alpha":0.1,
+        "alpha":0.03,
         "num_samples":4,
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
@@ -29,7 +29,7 @@ hyperparameters ={
             "alpha_actor": 10.0,
         },
         "alpha_actor": 30.0,
-        "alpha":0.3,
+        "alpha":0.1,
         "num_samples":32,
     },
     "humanoidmaze-large-navigate-singletask-v0": {
@@ -40,7 +40,7 @@ hyperparameters ={
             "alpha_actor": 10.0,
         },
         "alpha_actor": 30.0,
-        "alpha":0.1,
+        "alpha":0.03,
         "num_samples":8,
     },
     "antsoccer-arena-navigate-singletask-v0": {
@@ -51,7 +51,7 @@ hyperparameters ={
             "alpha_actor": 1.0,
         },
          "alpha_actor": 10.0,
-        "alpha":0.03,
+        "alpha":0.1,
         "num_samples":16,
     },
     "cube-single-play-singletask-v0": {
@@ -84,7 +84,7 @@ hyperparameters ={
             "alpha_actor": 10.0,
         },
         "alpha_actor": 300.0,
-        "alpha":0.03,
+        "alpha":0.1,
         "num_samples":32,
         
     },
@@ -108,7 +108,7 @@ hyperparameters ={
             "alpha_actor": 3.0,
         },
         "alpha_actor": 1000.0,
-        "alpha":0.1,
+        "alpha":0.03,
         "num_samples":64,
     },
     "antmaze-umaze-v2": {
