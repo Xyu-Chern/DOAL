@@ -1,21 +1,10 @@
-# 
-
-[![PyPI version](https://img.shields.io/pypi/v/flowrl.svg)](https://pypi.org/project/flowrl) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-green.svg)](https://www.python.org/) [![Python 3.8+](https://static.pepy.tech/badge/flowrl)](https://pepy.tech/projects/flowrl)
-
-Flow RL is a high-performance reinforcement learning library, combining modern deep RL algorithms with flow and diffusion models for advanced policy parameterization, planning ability or dynamics modeling. It features:
-- **State-of-the-Art Algorithms and Efficiency**: We provide JAX implementations of SOTA algorithms, such FQL, BDPO, DAC and etc;
-- **Flexible Flow Architectures**: We provide built-in support various types of flow and diffusion models, such as CNFs and DDPM;
-- **Comprehensive Evaluations**: We test the algorithms on commonly adopted benchmark and provide the results.
+# DIRECT OPTIMAL ACTION LEARNING
 
 ## 🚀 Installation & Usage
-Currently FlowRL is hosted on PyPI and therefore can be installed via `pip install flowrl`. However, we recommend to clone and install the library using the following commands:
+
 ```bash
-git clone https://github.com/typoverflow/flow-rl.git
-cd flow-rl
-pip install -e .
+pip install -r requirement.txt
 ```
-
-
 
 ## 📊 Supported Algorithms
 Offline RL:
