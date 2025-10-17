@@ -3,15 +3,19 @@
 ## 🚀 Installation & Usage
 
 ```bash
-pip install -r requirement.txt
+pip install -r requirements.txt
 ```
 
 ## 📊 Supported Algorithms
 Offline RL:
 |Algorithm|Location|WandB Report|
 |:---:|:---:|:---:|
-|IQL|`DOAL/agent/iql.py`|[[Performance]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b&panelDisplayName=eval%2Fmean&panelSectionName=eval) [[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)|
-|DIQL|`DOAL/agent/ivr.py`|[[Performance]](https://wandb.ai/lamda-rl/flow-rl/panel/nz7r4sj4n?nw=oslzekjlr1q) [[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=oslzekjlr1q)|
-|FQL|`DOAL/agent/fql/fql.py`|[[Performance]](https://wandb.ai/lamda-rl/flow-rl?nw=u9y84ki7rdi&panelDisplayName=eval%2Fmean&panelSectionName=eval) [[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=u9y84ki7rdi)|
-
-
+|IQL|`DOAL/agents/iql.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|DIQL|`DOAL/agents/diql.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|FQL|`DOAL/agents/fql.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|DFQL|`DOAL/agents/dfql.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|IFQL|`DOAL/agents/ifql.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|DIFQL|`DOAL/agents/difql.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|TRIGFLOW|`DOAL/agents/trigflow.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|TRIGFLOWQL|`DOAL/agents/trigflow.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
+|Dtrigflow|`DOAL/agents/fql/dtrigflow.py`|[[Full Log]](https://wandb.ai/lamda-rl/flow-rl?nw=urvdu9rz7b)]|
