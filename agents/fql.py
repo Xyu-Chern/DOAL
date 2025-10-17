@@ -8,11 +8,11 @@ import ml_collections
 import optax
 
 from utils.encoders import encoder_modules
-from utils.flax_utils import ModuleDict, TrainState, nonpytree_field,DOALAgent
+from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import ActorVectorField, Value
 
 
-class FQLAgent(DOALAgent):
+class FQLAgent(flax.struct.PyTreeNode):
     """Flow Q-learning (FQL) agent."""
 
     rng: Any
@@ -33,20 +33,17 @@ class FQLAgent(DOALAgent):
 
         target_q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_q
 
-        q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)        
-        critic_loss = jnp.square(q - target_q).mean() #* jax.lax.stop_gradient(1 / jnp.abs(q).mean())
+        q = self.network.select('critic')(batch['observations'], actions=batch['actions'], params=grad_params)
+        critic_loss = jnp.square(q - target_q).mean()
 
-        if self.config['normalize_q_loss']:
-            critic_loss = aux["lam"] * critic_loss
-            
         return critic_loss, {
             'critic_loss': critic_loss,
             'q_mean': q.mean(),
             'q_max': q.max(),
             'q_min': q.min(),
-        }, {"lam": jax.lax.stop_gradient(1 / jnp.abs(q).mean())}
+        }
 
-    def actor_loss(self, batch, grad_params, rng,aux):
+    def actor_loss(self, batch, grad_params, rng):
         """Compute the FQL actor loss."""
         batch_size, action_dim = batch['actions'].shape
         rng, x_rng, t_rng = jax.random.split(rng, 3)
@@ -70,47 +67,29 @@ class FQLAgent(DOALAgent):
 
         # Q loss.
         actor_actions = jnp.clip(actor_actions, -1, 1)
-        if self.config["use_q_loss"] :
-            qs = self.network.select('critic')(batch['observations'], actions=actor_actions)
-            q = jnp.mean(qs, axis=0)
+        qs = self.network.select('critic')(batch['observations'], actions=actor_actions)
+        q = jnp.mean(qs, axis=0)
 
-            q_loss = -q.mean()
-            if self.config['normalize_q_loss']:
-                q_loss = aux["lam"] * q_loss
-        else:
-            q_loss = 0 * distill_loss
-            q = 0 * distill_loss
+        q_loss = -q.mean()
+        if self.config['normalize_q_loss']:
+            lam = jax.lax.stop_gradient(1 / jnp.abs(q).mean())
+            q_loss = lam * q_loss
 
         # Total loss.
-        actor_loss = bc_flow_loss +  self.config['alpha_actor'] *  distill_loss  + self.config['alpha'] * q_loss 
+        actor_loss = bc_flow_loss + self.config['alpha_actor'] * distill_loss + q_loss
 
         # Additional metrics for logging.
         actions = self.sample_actions(batch['observations'], seed=rng)
         mse = jnp.mean((actions - batch['actions']) ** 2)
 
-        if self.config['solver'] is not None:
-            adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  actions, batch['actions'],batch['observations'],alpha=2*self.config["alpha_actor"],delta=self.config["delta"],params=self.network.params)
-            return actor_loss, {
-                'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
-                'adj_std': jnp.std(jnp.linalg.vector_norm(adjustment,axis=-1)),
-                "g_norm": jnp.mean(jnp.linalg.vector_norm(g,axis=-1)),
-                "g_std": jnp.std(jnp.linalg.vector_norm(g,axis=-1)),
-                'actor_loss': actor_loss,
-                'bc_flow_loss': bc_flow_loss,
-                'distill_loss': distill_loss,
-                'q_loss': q_loss,
-                'q': q.mean(),
-                'mse': mse,
-            }
-        else:
-            return actor_loss, {
-                'actor_loss': actor_loss,
-                'bc_flow_loss': bc_flow_loss,
-                'distill_loss': distill_loss,
-                'q_loss': q_loss,
-                'q': q.mean(),
-                'mse': mse,
-            }
+        return actor_loss, {
+            'actor_loss': actor_loss,
+            'bc_flow_loss': bc_flow_loss,
+            'distill_loss': distill_loss,
+            'q_loss': q_loss,
+            'q': q.mean(),
+            'mse': mse,
+        }
 
     @jax.jit
     def total_loss(self, batch, grad_params, rng=None):
@@ -120,11 +99,11 @@ class FQLAgent(DOALAgent):
 
         rng, actor_rng, critic_rng = jax.random.split(rng, 3)
 
-        critic_loss, critic_info, aux = self.critic_loss(batch, grad_params, critic_rng)
+        critic_loss, critic_info = self.critic_loss(batch, grad_params, critic_rng)
         for k, v in critic_info.items():
             info[f'critic/{k}'] = v
 
-        actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng,aux)
+        actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng)
         for k, v in actor_info.items():
             info[f'actor/{k}'] = v
 
@@ -255,12 +234,6 @@ class FQLAgent(DOALAgent):
         network_args = {k: v[1] for k, v in network_info.items()}
 
         network_def = ModuleDict(networks)
-
-        if config["gn"] > 0:
-            network_tx = optax.chain(
-                optax.adaptive_grad_clip(config["gn"]),
-                optax.adam(learning_rate=config['lr'])
-            )
         network_tx = optax.adam(learning_rate=config['lr'])
         network_params = network_def.init(init_rng, **network_args)['params']
         network = TrainState.create(network_def, network_params, tx=network_tx)
@@ -287,17 +260,10 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
-            gn=0.0,
-            delta=2.0,
-            solver = ml_collections.config_dict.placeholder(str),
-            clip=False,
-            log_q_grad=False,
-            alpha=1.0,
             q_agg='mean',  # Aggregation method for target Q values.
-            alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
+            alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
-            use_q_loss=True,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )

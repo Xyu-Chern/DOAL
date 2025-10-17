@@ -14,6 +14,8 @@ from utils.networks import ActorVectorField, Value,TimeWeight
 
 from functools import partial
 from agents.ifql import IFQLAgent
+
+
 class DIFQLAgent(DOALAgent,IFQLAgent):
     """Implicit flow Q-learning (IFQL) agent.
 
@@ -37,9 +39,6 @@ class DIFQLAgent(DOALAgent,IFQLAgent):
 
             x_t = (1 - t) * x_0 + t * adjusted_actions
         vel = adjusted_actions - x_0
-
-
-
 
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
 
