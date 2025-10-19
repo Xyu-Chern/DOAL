@@ -23,7 +23,7 @@ class DFQLAgent(DOALAgent):
     def critic_loss(self, batch, grad_params, rng):
         """Compute the FQL critic loss."""
         rng, sample_rng = jax.random.split(rng)
-        next_actions = self.sample_actions(batch['next_observations'], seed=sample_rng)
+        next_actions = self.sample_flow_actions(batch['next_observations'], seed=sample_rng)
         next_actions = jnp.clip(next_actions, -1, 1)
 
         next_qs = self.network.select('target_critic')(batch['next_observations'], actions=next_actions)
@@ -103,12 +103,7 @@ class DFQLAgent(DOALAgent):
         rng, noise_rng = jax.random.split(rng)
         noises = jax.random.normal(noise_rng, (batch_size, action_dim))
 
-        if schedule_type == "gradient":
-            target_flow_actions = self.compute_flow_actions(batch['observations'], noises=noises)
-            adjusted_actions , adjustment,hd,g, q = self.get_guided_action( target_flow_actions, batch['actions'],batch['observations'],alpha=self.config["alpha"],delta=self.config["delta"],params=self.network.params)
-
-        else:
-            target_flow_actions = 0
+        adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  batch['actions'], batch['actions'],batch['observations'],alpha=self.config["alpha"],delta=self.config["delta"],params=self.network.params)
 
         actor_actions = self.network.select('actor_onestep_doal_flow')(batch['observations'], noises, params=grad_params)
         distill_loss = jnp.mean((actor_actions - adjusted_actions) ** 2)
@@ -156,6 +151,25 @@ class DFQLAgent(DOALAgent):
 
         return self.replace(network=new_network, rng=new_rng), info
 
+    @jax.jit
+    def sample_flow_actions(
+        self,
+        observations,
+        seed=None,
+        temperature=1.0,
+    ):
+        """Sample actions from the one-step policy."""
+        action_seed, noise_seed = jax.random.split(seed)
+        noises = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[: -len(self.config['ob_dims'])],
+                self.config['action_dim'],
+            ),
+        )
+        actions = self.network.select('actor_onestep_flow')(observations, noises)
+        actions = jnp.clip(actions, -1, 1)
+        return actions
     @jax.jit
     def sample_actions(
         self,

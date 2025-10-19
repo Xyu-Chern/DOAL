@@ -76,7 +76,7 @@ class FQLAgent(flax.struct.PyTreeNode):
             q_loss = lam * q_loss
 
         # Total loss.
-        actor_loss = bc_flow_loss + self.config['alpha_actor'] * distill_loss + q_loss
+        actor_loss = bc_flow_loss + self.config['alpha_actor'] * distill_loss + self.config['beta_actor'] * q_loss
 
         # Additional metrics for logging.
         actions = self.sample_actions(batch['observations'], seed=rng)
@@ -148,6 +148,8 @@ class FQLAgent(flax.struct.PyTreeNode):
                 self.config['action_dim'],
             ),
         )
+        if self.config["sample_with_flow"] :
+            return self.compute_flow_actions(observations,noises)
         actions = self.network.select('actor_onestep_flow')(observations, noises)
         actions = jnp.clip(actions, -1, 1)
         return actions
@@ -254,6 +256,7 @@ def get_config():
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
+            sample_with_flow=False,
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
@@ -261,6 +264,7 @@ def get_config():
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             q_agg='mean',  # Aggregation method for target Q values.
+            beta_actor=1.0,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
