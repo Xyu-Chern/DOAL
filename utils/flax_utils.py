@@ -43,6 +43,7 @@ def svd_computation(matrix):
     return U_jax, S_jax, V_jax
 def clip(x):
     return jnp.clip(x,-1,1)
+    
 class DOALAgent(flax.struct.PyTreeNode):
     """Implicit Q-learning (IQL) agent."""
 
