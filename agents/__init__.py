@@ -8,7 +8,8 @@ from agents.diql import DIQLAgent
 from agents.trigflow import TrigFQLAgent
 from agents.dtrigflow import DTrigFQLAgent
 from agents.retrigflow import ReTrigFQLAgent
-from agents.dfql import DFQLAgent
+from agents.dsfql import DSFQLAgent
+from agents.dmfql import DMFQLAgent
 
 agents = dict(
     iql=IQLAgent,
@@ -21,5 +22,6 @@ agents = dict(
     rebrac=ReBRACAgent,
     drebrac=DReBRACAgent,
     retrigflow=ReTrigFQLAgent,
-    dfql=DFQLAgent,
+    dsfql=DSFQLAgent,
+    dmfql=DMFQLAgent,
 )

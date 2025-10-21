@@ -176,7 +176,7 @@ class DOALAgent(flax.struct.PyTreeNode):
         v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
         q, g = v_grad_q(q_action)
 
-        norm = jnp.linalg.norm(g,axis=-1,keepdims=True)
+        norm = jnp.linalg.norm(g,axis=-1,keepdims=True) + 1e-5
         norm_mean = jnp.mean(norm)
         norm_std = jnp.std(norm)
         norm_up = norm_mean + delta * norm_std
