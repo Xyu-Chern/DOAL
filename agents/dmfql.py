@@ -335,7 +335,7 @@ class DMFQLAgent(DOALAgent):
 def get_config():
     config = ml_collections.ConfigDict(
         dict(
-            agent_name='dfql',  # Agent name.
+            agent_name='dmfql',  # Agent name.
             solver="auto",  
             ob_dims=ml_collections.config_dict.placeholder(list),  # Observation dimensions (will be set automatically).
             action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
