@@ -23,7 +23,7 @@ SEED=$2
 # Define the list of alpha parameters
 
 
-env_names=("antmaze-large-navigate-singletask-v0" 'humanoidmaze-medium-navigate-singletask-v0' "humanoidmaze-large-navigate-singletask-v0" "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0" "scene-play-singletask-v0"  "cube-double-play-singletask-v0"  "puzzle-4x4-play-singletask-v0" "puzzle-3x3-play-singletask-v0" "puzzle-4x4-play-singletask-v0" )
+env_names=("antmaze-large-navigate-singletask-v0" 'humanoidmaze-medium-navigate-singletask-v0' "humanoidmaze-large-navigate-singletask-v0" "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0" "scene-play-singletask-v0"  "cube-double-play-singletask-v0"  "puzzle-4x4-play-singletask-v0" "puzzle-3x3-play-singletask-v0"  )
 # Loop through all environments and alpha values
 alphas=( 0 0.03 0.1 0.3 )
 for env_name in "${env_names[@]}"; do
