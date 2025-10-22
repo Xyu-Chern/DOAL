@@ -10,6 +10,12 @@ hyperparameters ={
         "alpha_actor": 10.0,
         "alpha":0.03,
         "num_samples":4,
+        "mfql":{
+        "num_samples":4,
+        },
+        "dmfql":{
+        "num_samples":4,
+        },
     },
     "antmaze-giant-navigate-singletask-v0": {
         "iql": {
@@ -33,6 +39,12 @@ hyperparameters ={
         "alpha_actor": 30.0,
         "alpha":0.1,
         "num_samples":32,
+        "mfql":{
+        "num_samples":4,
+        },
+        "dmfql":{
+        "num_samples":4,
+        },
     },
     "humanoidmaze-large-navigate-singletask-v0": {
         "iql": {
@@ -45,6 +57,12 @@ hyperparameters ={
         "alpha_actor": 30.0,
         "alpha":0.03,
         "num_samples":8,
+        "mfql":{
+        "num_samples":4,
+        },
+        "dmfql":{
+        "num_samples":4,
+        },
     },
     "antsoccer-arena-navigate-singletask-v0": {
         "iql": {
@@ -57,6 +75,12 @@ hyperparameters ={
          "alpha_actor": 10.0,
         "alpha":0.1,
         "num_samples":16,
+        "mfql":{
+        "num_samples":4,
+        },
+        "dmfql":{
+        "num_samples":4,
+        },
     },
     "cube-single-play-singletask-v0": {
         "iql": {
@@ -69,6 +93,12 @@ hyperparameters ={
         "alpha_actor": 300.0,
         "alpha":0.03,
         "num_samples":32,
+        "mfql":{
+        "num_samples":4,
+        },
+        "dmfql":{
+        "num_samples":4,
+        },
     },
     "cube-double-play-singletask-v0": {
         "iql": {
@@ -80,6 +110,12 @@ hyperparameters ={
         "alpha_actor": 300.0,
         "alpha":0.1,
         "num_samples":16,
+        "mfql":{
+        "num_samples":8,
+        },
+        "dmfql":{
+        "num_samples":8,
+        },
     },
     "scene-play-singletask-v0": {
         "iql": {
@@ -92,6 +128,12 @@ hyperparameters ={
         "alpha_actor": 300.0,
         "alpha":0.1,
         "num_samples":32,
+        "mfql":{
+        "num_samples":2,
+        },
+        "dmfql":{
+        "num_samples":2,
+        },
         
     },
     "puzzle-3x3-play-singletask-v0": {
@@ -105,6 +147,12 @@ hyperparameters ={
         "alpha_actor": 1000.0,
         "alpha":0.03,
         "num_samples":4,
+        "mfql":{
+        "num_samples":2,
+        },
+        "dmfql":{
+        "num_samples":2,
+        },
 
     },
     "puzzle-4x4-play-singletask-v0": {
@@ -118,6 +166,12 @@ hyperparameters ={
         "alpha_actor": 1000.0,
         "alpha":0.03,
         "num_samples":64,
+        "mfql":{
+        "num_samples":8,
+        },
+        "dmfql":{
+        "num_samples":8,
+        },
     },
     "antmaze-umaze-v2": {
         "fql": {

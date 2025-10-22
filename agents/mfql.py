@@ -56,7 +56,7 @@ class MFQLAgent(DOALAgent):
         x_t = (1 - t) * x_0 + t * x_1
         vel = x_1 - x_0
 
-        pred = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
+        pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
         bc_flow_loss = jnp.mean((pred - vel) ** 2)
 
         # Total loss.
@@ -120,7 +120,7 @@ class MFQLAgent(DOALAgent):
         """Sample actions from the actor."""
         orig_observations = observations
         if self.config['encoder'] is not None:
-            observations = self.network.select('actor_bc_flow_encoder')(observations)
+            observations = self.network.select('actor_flow_encoder')(observations)
         action_seed, noise_seed = jax.random.split(seed)
 
         # Sample `num_samples` noises and propagate them through the flow.
@@ -136,7 +136,7 @@ class MFQLAgent(DOALAgent):
         n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), self.config['num_samples'], axis=0)
         for i in range(self.config['flow_steps']):
             t = jnp.full((*observations.shape[:-1], self.config['num_samples'], 1), i / self.config['flow_steps'])
-            vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
+            vels = self.network.select('actor_flow')(n_observations, actions, t, is_encoded=True)
             actions = actions + vels / self.config['flow_steps']
         actions = jnp.clip(actions, -1, 1)
 
@@ -155,7 +155,7 @@ class MFQLAgent(DOALAgent):
         """Sample actions from the actor."""
         orig_observations = observations
         if self.config['encoder'] is not None:
-            observations = self.network.select('actor_bc_flow_encoder')(observations)
+            observations = self.network.select('actor_flow_encoder')(observations)
         action_seed, noise_seed = jax.random.split(seed)
 
         # Sample `num_samples` noises and propagate them through the flow.
@@ -168,7 +168,7 @@ class MFQLAgent(DOALAgent):
         )
         for i in range(self.config['flow_steps']):
             t = jnp.full((*observations.shape[:-1], 1), i / self.config['flow_steps'])
-            vels = self.network.select('actor_bc_flow')(observations, actions, t, is_encoded=True)
+            vels = self.network.select('actor_flow')(observations, actions, t, is_encoded=True)
             actions = actions + vels / self.config['flow_steps']
         actions = jnp.clip(actions, -1, 1)
 
@@ -183,7 +183,7 @@ class MFQLAgent(DOALAgent):
         """Sample actions from the actor."""
         orig_observations = observations
         if self.config['encoder'] is not None:
-            observations = self.network.select('actor_bc_flow_encoder')(observations)
+            observations = self.network.select('actor_flow_encoder')(observations)
         action_seed, noise_seed = jax.random.split(seed)
 
         # Sample `num_samples` noises and propagate them through the flow.
@@ -198,7 +198,7 @@ class MFQLAgent(DOALAgent):
         )
         for i in range(self.config['flow_steps']):
             t = jnp.full((*n_observations.shape[:-1], 1), i / self.config['flow_steps'])
-            vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
+            vels = self.network.select('actor_flow')(n_observations, actions, t, is_encoded=True)
             actions = actions + vels / self.config['flow_steps']
         actions = jnp.clip(actions, -1, 1)
 
@@ -239,7 +239,7 @@ class MFQLAgent(DOALAgent):
         if config['encoder'] is not None:
             encoder_module = encoder_modules[config['encoder']]
             encoders['critic'] = encoder_module()
-            encoders['actor_bc_flow'] = encoder_module()
+            encoders['actor_flow'] = encoder_module()
             encoders['actor_onestep_flow'] = encoder_module()
             encoders['actor_onestep_doal_flow'] = encoder_module() 
 
@@ -250,21 +250,21 @@ class MFQLAgent(DOALAgent):
             num_ensembles=2,
             encoder=encoders.get('critic'),
         )
-        actor_bc_flow_def = ActorVectorField(
+        actor_flow_def = ActorVectorField(
             hidden_dims=config['actor_hidden_dims'],
             action_dim=action_dim,
             layer_norm=config['actor_layer_norm'],
-            encoder=encoders.get('actor_bc_flow'),
+            encoder=encoders.get('actor_flow'),
         )
 
         network_info = dict(
             critic=(critic_def, (ex_observations, ex_actions)),
             target_critic=(copy.deepcopy(critic_def), (ex_observations, ex_actions)),
-            actor_bc_flow=(actor_bc_flow_def, (ex_observations, ex_actions, ex_times)),
+            actor_flow=(actor_flow_def, (ex_observations, ex_actions, ex_times)),
         )
-        if encoders.get('actor_bc_flow') is not None:
-            # Add actor_bc_flow_encoder to ModuleDict to make it separately callable.
-            network_info['actor_bc_flow_encoder'] = (encoders.get('actor_bc_flow'), (ex_observations,))
+        if encoders.get('actor_flow') is not None:
+            # Add actor_flow_encoder to ModuleDict to make it separately callable.
+            network_info['actor_flow_encoder'] = (encoders.get('actor_flow'), (ex_observations,))
         networks = {k: v[0] for k, v in network_info.items()}
         network_args = {k: v[1] for k, v in network_info.items()}
 
