@@ -23,7 +23,7 @@ class MFQLAgent(DOALAgent):
     def critic_loss(self, batch, grad_params, rng):
         """Compute the FQL critic loss."""
         rng, sample_rng = jax.random.split(rng)
-        next_actions = self.sample_actions(batch['next_observations'], seed=sample_rng)
+        next_actions = self.sample_actions_simple(batch['next_observations'], seed=sample_rng)
         next_actions = jnp.clip(next_actions, -1, 1)
 
         next_qs = self.network.select('target_critic')(batch['next_observations'], actions=next_actions)
@@ -145,6 +145,34 @@ class MFQLAgent(DOALAgent):
         actions = actions[jnp.argmax(q)]
         return actions
 
+    @jax.jit
+    def sample_actions_simple(
+        self,
+        observations,
+        seed=None,
+        temperature=1.0,
+    ):
+        """Sample actions from the actor."""
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_bc_flow_encoder')(observations)
+        action_seed, noise_seed = jax.random.split(seed)
+
+        # Sample `num_samples` noises and propagate them through the flow.
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[:-1],
+                self.config['action_dim'],
+            ),
+        )
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*observations.shape[:-1], 1), i / self.config['flow_steps'])
+            vels = self.network.select('actor_bc_flow')(observations, actions, t, is_encoded=True)
+            actions = actions + vels / self.config['flow_steps']
+        actions = jnp.clip(actions, -1, 1)
+
+        return actions
     @jax.jit
     def sample_actions(
         self,
