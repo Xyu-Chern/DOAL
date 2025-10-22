@@ -7,6 +7,9 @@ hyperparameters ={
             "alpha_actor": 10.0,
             "alpha" : 0.1,
         },
+        "dtrigflow": {
+            "alpha" : 0.1,
+        },
         "alpha_actor": 10.0,
         "alpha":0.03,
         "num_samples":4,
@@ -17,6 +20,7 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 10.0,
+            "alpha" : 0.1,
         },
         "alpha_actor": 10.0,
         "alpha":0.03,
@@ -76,6 +80,7 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 0.3,
+            "alpha" : 0.1,
         },
         "alpha_actor": 300.0,
         "alpha":0.1,

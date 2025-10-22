@@ -331,7 +331,6 @@ class DMFQLAgent(DOALAgent):
         config['action_dim'] = action_dim
         return cls(rng, network=network, config=flax.core.FrozenDict(**config))
 
-
 def get_config():
     config = ml_collections.ConfigDict(
         dict(
