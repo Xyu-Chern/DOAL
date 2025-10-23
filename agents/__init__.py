@@ -12,6 +12,7 @@ from agents.dsfql import DSFQLAgent
 from agents.dmfql import DMFQLAgent
 from agents.mfql import MFQLAgent
 from agents.sfql import SFQLAgent
+from agents.trigql import TrigQLAgent
 
 agents = dict(
     iql=IQLAgent,
@@ -28,4 +29,5 @@ agents = dict(
     dmfql=DMFQLAgent,
     mfql=MFQLAgent,
     sfql=SFQLAgent,
+    trigql=TrigQLAgent,
 )
