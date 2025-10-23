@@ -23,8 +23,12 @@ class MFQLAgent(DOALAgent):
     def critic_loss(self, batch, grad_params, rng):
         """Compute the FQL critic loss."""
         rng, sample_rng = jax.random.split(rng)
-        next_actions = self.sample_actions_simple(batch['next_observations'], seed=sample_rng)
-        next_actions = jnp.clip(next_actions, -1, 1)
+
+        if self.config["target_num_samples"] > 0:
+            next_actions = self.sample_actions_simple(batch['next_observations'], seed=sample_rng)
+            next_actions = jnp.clip(next_actions, -1, 1)
+        else:
+            next_actions = batch["next_actions"]
 
         next_qs = self.network.select('target_critic')(batch['next_observations'], actions=next_actions)
         if self.config['q_agg'] == 'min':
@@ -116,13 +120,12 @@ class MFQLAgent(DOALAgent):
         self,
         observations,
         seed=None,
-        num_samples=4,
     ):
         orig_observations = observations
         if self.config['encoder'] is not None:
             observations = self.network.select('actor_flow_encoder')(observations)
         action_seed, noise_seed = jax.random.split(seed)
-
+        num_samples = self.config["target_num_samples"]
         # Sample `num_samples` noises and propagate them through the flow.
         n_observations = jnp.repeat(jnp.expand_dims(observations, 0), num_samples, axis=0)
         n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), num_samples, axis=0)
@@ -270,7 +273,9 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
+            return_next_actions=True,
             q_agg='mean',  # Aggregation method for target Q values.
+            target_num_samples = 4,
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
             delta=1.0,
