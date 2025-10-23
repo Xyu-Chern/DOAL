@@ -110,68 +110,42 @@ class MFQLAgent(DOALAgent):
 
         return self.replace(network=new_network, rng=new_rng), info
 
-    @jax.jit
-    def sample_batch_actions(
-        self,
-        observations,
-        seed=None,
-        temperature=1.0,
-    ):
-        """Sample actions from the actor."""
-        orig_observations = observations
-        if self.config['encoder'] is not None:
-            observations = self.network.select('actor_flow_encoder')(observations)
-        action_seed, noise_seed = jax.random.split(seed)
-
-        # Sample `num_samples` noises and propagate them through the flow.
-        actions = jax.random.normal(
-            action_seed,
-            (
-                *observations.shape[:-1],
-                self.config['num_samples'],
-                self.config['action_dim'],
-            ),
-        )
-        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), self.config['num_samples'], axis=0)
-        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), self.config['num_samples'], axis=0)
-        for i in range(self.config['flow_steps']):
-            t = jnp.full((*observations.shape[:-1], self.config['num_samples'], 1), i / self.config['flow_steps'])
-            vels = self.network.select('actor_flow')(n_observations, actions, t, is_encoded=True)
-            actions = actions + vels / self.config['flow_steps']
-        actions = jnp.clip(actions, -1, 1)
-
-        # Pick the action with the highest Q-value.
-        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
-        actions = actions[jnp.argmax(q)]
-        return actions
 
     @jax.jit
     def sample_actions_simple(
         self,
         observations,
         seed=None,
-        temperature=1.0,
+        num_samples=4,
     ):
-        """Sample actions from the actor."""
         orig_observations = observations
         if self.config['encoder'] is not None:
             observations = self.network.select('actor_flow_encoder')(observations)
         action_seed, noise_seed = jax.random.split(seed)
 
         # Sample `num_samples` noises and propagate them through the flow.
+        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), num_samples, axis=0)
+        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), num_samples, axis=0)
         actions = jax.random.normal(
             action_seed,
             (
-                *observations.shape[:-1],
+                *n_observations.shape[:-1],
                 self.config['action_dim'],
             ),
         )
         for i in range(self.config['flow_steps']):
-            t = jnp.full((*observations.shape[:-1], 1), i / self.config['flow_steps'])
-            vels = self.network.select('actor_flow')(observations, actions, t, is_encoded=True)
+            t = jnp.full((*n_observations.shape[:-1], 1), i / self.config['flow_steps'])
+            vels = self.network.select('actor_flow')(n_observations, actions, t, is_encoded=True)
             actions = actions + vels / self.config['flow_steps']
         actions = jnp.clip(actions, -1, 1)
 
+        # Pick the action with the highest Q-value.
+        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
+        if len(actions.shape) == 3:
+            b = orig_observations.shape[0]
+            actions = actions[jnp.argmax(q,axis=0),jnp.arange(b)]
+        else:
+            actions = actions[jnp.argmax(q)]
         return actions
     @jax.jit
     def sample_actions(
