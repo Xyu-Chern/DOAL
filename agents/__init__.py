@@ -11,6 +11,7 @@ from agents.retrigflow import ReTrigFQLAgent
 from agents.dsfql import DSFQLAgent
 from agents.dmfql import DMFQLAgent
 from agents.mfql import MFQLAgent
+from agents.sfql import SFQLAgent
 
 agents = dict(
     iql=IQLAgent,
@@ -26,4 +27,5 @@ agents = dict(
     dsfql=DSFQLAgent,
     dmfql=DMFQLAgent,
     mfql=MFQLAgent,
+    sfql=SFQLAgent,
 )
