@@ -19,6 +19,11 @@ hyperparameters ={
         "dmfql":{
         "num_samples":4,
         },
+        "drebrac":{
+            "alpha_actor":0.003,
+            "alpha_critic":0.01,
+            "alpha":0.1,
+        },
     },
     "antmaze-giant-navigate-singletask-v0": {
         "iql": {
@@ -31,6 +36,11 @@ hyperparameters ={
         "alpha_actor": 10.0,
         "alpha":0.03,
         "num_samples":4,
+        "drebrac":{
+            "alpha_actor":0.003,
+            "alpha_critic":0.01,
+            "alpha":0.1,
+        },
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
         "iql": {
@@ -48,6 +58,11 @@ hyperparameters ={
         },
         "dmfql":{
         "num_samples":4,
+        },
+        "drebrac":{
+            "alpha_actor":0.01,
+            "alpha_critic":0.01,
+            "alpha":0.3,
         },
     },
     "humanoidmaze-large-navigate-singletask-v0": {
@@ -67,6 +82,11 @@ hyperparameters ={
         "dmfql":{
         "num_samples":4,
         },
+        "drebrac":{
+            "alpha_actor":0.01,
+            "alpha_critic":0.01,
+            "alpha":0.1,
+        },
     },
     "antsoccer-arena-navigate-singletask-v0": {
         "iql": {
@@ -84,6 +104,11 @@ hyperparameters ={
         },
         "dmfql":{
         "num_samples":4,
+        },
+        "drebrac":{
+            "alpha_actor":0.01,
+            "alpha_critic":0.01,
+            "alpha":0.1,
         },
     },
     "cube-single-play-singletask-v0": {
@@ -103,6 +128,11 @@ hyperparameters ={
         "dmfql":{
         "num_samples":4,
         },
+        "drebrac":{
+            "alpha_actor":1.0,
+            "alpha_critic":0.0,
+            "alpha":0.03,
+        },
     },
     "cube-double-play-singletask-v0": {
         "iql": {
@@ -121,6 +151,11 @@ hyperparameters ={
         "dmfql":{
         "num_samples":8,
         },
+        "drebrac":{
+            "alpha_actor":0.1,
+            "alpha_critic":0.0,
+            "alpha":0.1,
+        },
     },
     "scene-play-singletask-v0": {
         "iql": {
@@ -138,6 +173,11 @@ hyperparameters ={
         },
         "dmfql":{
         "num_samples":2,
+        },
+        "drebrac":{
+            "alpha_actor":0.1,
+            "alpha_critic":0.01,
+            "alpha":0.1,
         },
         
     },
@@ -158,6 +198,11 @@ hyperparameters ={
         "dmfql":{
         "num_samples":2,
         },
+        "drebrac":{
+            "alpha_actor":0.3,
+            "alpha_critic":0.01,
+            "alpha":0.1,
+        },
 
     },
     "puzzle-4x4-play-singletask-v0": {
@@ -176,6 +221,11 @@ hyperparameters ={
         },
         "dmfql":{
         "num_samples":8,
+        },
+        "drebrac":{
+            "alpha_actor":0.3,
+            "alpha_critic":0.01,
+            "alpha":0.1,
         },
     },
     "antmaze-umaze-v2": {
