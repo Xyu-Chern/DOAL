@@ -10,6 +10,9 @@ hyperparameters ={
         "dtrigflow": {
             "alpha" : 0.03,
         },
+        "dmfql": {
+            "num_samples" : 4,
+        },
         "alpha_actor": 10.0,
         "alpha":0.03,
         "num_samples":4,
@@ -41,6 +44,9 @@ hyperparameters ={
             "alpha_critic":0.01,
             "alpha":0.1,
         },
+        "dmfql": {
+            "num_samples" : 4,
+        },
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
         "iql": {
@@ -52,6 +58,9 @@ hyperparameters ={
         },
         "dtrigflow": {
             "alpha" : 0.1,
+        },
+        "dmfql": {
+            "num_samples" : 64,
         },
         "alpha_actor": 30.0,
         "alpha":0.1,
@@ -79,6 +88,9 @@ hyperparameters ={
         "dtrigflow": {
             "alpha" : 0.03,
         },
+        "dmfql": {
+            "num_samples" : 8,
+        },
         "alpha_actor": 30.0,
         "alpha":0.03,
         "num_samples":8,
@@ -97,6 +109,9 @@ hyperparameters ={
     "antsoccer-arena-navigate-singletask-v0": {
         "iql": {
             "alpha_actor": 1.0
+        },
+        "dmfql": {
+            "num_samples" : 16,
         },
         "diql": {
             "alpha_actor": 1.0,
@@ -123,6 +138,9 @@ hyperparameters ={
     "cube-single-play-singletask-v0": {
         "iql": {
             "alpha_actor": 1.0
+        },
+        "dmfql": {
+            "num_samples" : 4,
         },
         "diql": {
             "alpha_actor": 1.0,
@@ -154,6 +172,9 @@ hyperparameters ={
             "alpha_actor": 0.3,
             "alpha" : 0.1,
         },
+        "dmfql": {
+            "num_samples" : 4,
+        },
         "dtrigflow": {
             "alpha" : 0.1,
         },
@@ -180,6 +201,9 @@ hyperparameters ={
             "alpha_actor": 10.0,
             "alpha": 0.1,
         },
+        "dmfql": {
+            "num_samples" : 32,
+        },
         "dtrigflow": {
             "alpha" : 0.1,
         },
@@ -202,6 +226,9 @@ hyperparameters ={
     "puzzle-3x3-play-singletask-v0": {
         "iql": {
             "alpha_actor": 10.0
+        },
+        "dmfql": {
+            "num_samples" : 2,
         },
         "diql": {
             "alpha_actor": 10.0,
@@ -229,6 +256,9 @@ hyperparameters ={
     "puzzle-4x4-play-singletask-v0": {
         "iql": {
             "alpha_actor": 3.0
+        },
+        "dmfql": {
+            "num_samples" : 4,
         },
         "diql": {
             "alpha_actor": 3.0,
