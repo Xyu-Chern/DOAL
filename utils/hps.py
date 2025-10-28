@@ -1,5 +1,9 @@
 hyperparameters ={
     "antmaze-large-navigate-singletask-v0": {
+        "alpha_actor": 10.0,
+        "alpha":0.03,
+        "num_samples":4,
+
         "iql": {
             "alpha_actor": 10.0,
         },
@@ -8,19 +12,14 @@ hyperparameters ={
             "alpha" : 0.1,
         },
         "dtrigflow": {
-            "alpha" : 0.03,
+            "alpha" : 0.1,
         },
-        "dmfql": {
-            "num_samples" : 4,
-        },
-        "alpha_actor": 10.0,
-        "alpha":0.03,
-        "num_samples":4,
         "mfql":{
-        "num_samples":4,
+            "num_samples":4,
         },
         "dmfql":{
-        "num_samples":4,
+            "num_samples":4,
+            "alpha" : 0.03,
         },
         "drebrac":{
             "alpha_actor":0.003,
@@ -39,13 +38,17 @@ hyperparameters ={
         "alpha_actor": 10.0,
         "alpha":0.03,
         "num_samples":4,
+        "mfql":{
+            "num_samples":4,
+        },
+        "dmfql":{
+            "num_samples":4,
+            "alpha" : 0.1,
+        },
         "drebrac":{
             "alpha_actor":0.003,
             "alpha_critic":0.01,
             "alpha":0.1,
-        },
-        "dmfql": {
-            "num_samples" : 4,
         },
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
@@ -56,20 +59,16 @@ hyperparameters ={
             "alpha_actor": 10.0,
             "alpha" : 0.3,
         },
-        "dtrigflow": {
-            "alpha" : 0.1,
-        },
-        "dmfql": {
-            "num_samples" : 64,
-        },
         "alpha_actor": 30.0,
         "alpha":0.1,
         "num_samples":32,
+
         "mfql":{
-        "num_samples":4,
+            "num_samples":4,
         },
         "dmfql":{
-        "num_samples":4,
+            "num_samples":4,
+            "alpha" : 0.1,
         },
         "drebrac":{
             "alpha_actor":0.01,
@@ -85,20 +84,15 @@ hyperparameters ={
             "alpha_actor": 10.0,
             "alpha": 0.1,
         },
-        "dtrigflow": {
-            "alpha" : 0.03,
-        },
-        "dmfql": {
-            "num_samples" : 8,
-        },
         "alpha_actor": 30.0,
         "alpha":0.03,
         "num_samples":8,
         "mfql":{
-        "num_samples":4,
+            "num_samples":4,
         },
         "dmfql":{
-        "num_samples":4,
+            "num_samples":4,
+            "alpha" : 0.03,
         },
         "drebrac":{
             "alpha_actor":0.01,
@@ -110,24 +104,19 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 1.0
         },
-        "dmfql": {
-            "num_samples" : 16,
-        },
         "diql": {
             "alpha_actor": 1.0,
             "alpha" : 0.1
-        },
-        "dtrigflow": {
-            "alpha" : 0.1,
         },
          "alpha_actor": 10.0,
         "alpha":0.1,
         "num_samples":16,
         "mfql":{
-        "num_samples":4,
+            "num_samples":4,
         },
         "dmfql":{
-        "num_samples":4,
+            "num_samples":4,
+            "alpha" : 0.1,
         },
         "drebrac":{
             "alpha_actor":0.01,
@@ -139,24 +128,19 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 1.0
         },
-        "dmfql": {
-            "num_samples" : 4,
-        },
         "diql": {
             "alpha_actor": 1.0,
             "alpha":0.03,
-        },
-        "dtrigflow": {
-            "alpha" : 0.03,
         },
         "alpha_actor": 300.0,
         "alpha":0.03,
         "num_samples":32,
         "mfql":{
-        "num_samples":4,
+            "num_samples":4,
         },
         "dmfql":{
-        "num_samples":4,
+            "num_samples":4,
+            "alpha" : 0.03,
         },
         "drebrac":{
             "alpha_actor":1.0,
@@ -172,20 +156,15 @@ hyperparameters ={
             "alpha_actor": 0.3,
             "alpha" : 0.1,
         },
-        "dmfql": {
-            "num_samples" : 4,
-        },
-        "dtrigflow": {
-            "alpha" : 0.1,
-        },
         "alpha_actor": 300.0,
         "alpha":0.1,
         "num_samples":16,
         "mfql":{
-        "num_samples":8,
+            "num_samples":8,
         },
         "dmfql":{
-        "num_samples":8,
+            "num_samples":8,
+            "alpha" : 0.03,
         },
         "drebrac":{
             "alpha_actor":0.1,
@@ -201,12 +180,6 @@ hyperparameters ={
             "alpha_actor": 10.0,
             "alpha": 0.1,
         },
-        "dmfql": {
-            "num_samples" : 32,
-        },
-        "dtrigflow": {
-            "alpha" : 0.1,
-        },
         "alpha_actor": 300.0,
         "alpha":0.1,
         "num_samples":32,
@@ -215,6 +188,7 @@ hyperparameters ={
         },
         "dmfql":{
         "num_samples":2,
+        "alpha" : 0.1,
         },
         "drebrac":{
             "alpha_actor":0.1,
@@ -227,15 +201,9 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 10.0
         },
-        "dmfql": {
-            "num_samples" : 2,
-        },
         "diql": {
             "alpha_actor": 10.0,
             "alpha": 0.1,
-        },
-        "dtrigflow": {
-            "alpha" : 0.03,
         },
         "alpha_actor": 1000.0,
         "alpha":0.03,
@@ -245,6 +213,7 @@ hyperparameters ={
         },
         "dmfql":{
         "num_samples":2,
+        "alpha" : 0.03,
         },
         "drebrac":{
             "alpha_actor":0.3,
@@ -257,15 +226,9 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 3.0
         },
-        "dmfql": {
-            "num_samples" : 4,
-        },
         "diql": {
             "alpha_actor": 3.0,
             "alpha":0.1,
-        },
-        "dtrigflow": {
-            "alpha" : 0.03,
         },
         "alpha_actor": 1000.0,
         "alpha":0.03,
@@ -275,6 +238,7 @@ hyperparameters ={
         },
         "dmfql":{
         "num_samples":8,
+        "alpha" : 0.03,
         },
         "drebrac":{
             "alpha_actor":0.3,
