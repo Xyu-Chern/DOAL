@@ -320,6 +320,12 @@ hyperparameters ={
         },
         "alpha":0.03,
         "num_samples":64,
+        "mfql":{
+            "num_samples":32,
+        },
+        "dmfql":{
+            "num_samples":32,
+        },
     },
     "pen-human-v1": {
         "alpha_actor": 10000.0,
@@ -328,6 +334,12 @@ hyperparameters ={
         },
         "alpha":0.001,
         "num_samples":8,
+        "mfql":{
+            "num_samples":4,
+        },
+        "dmfql":{
+            "num_samples":4,
+        },
         
     },
     "pen-cloned-v1": {
@@ -337,6 +349,12 @@ hyperparameters ={
         },
         "alpha":0.003,
         "num_samples":16,
+        "mfql":{
+            "num_samples":32,
+        },
+        "dmfql":{
+            "num_samples":32,
+        },
         
     },
     "door-expert-v1": {
@@ -346,6 +364,13 @@ hyperparameters ={
         },
         "alpha":0.003,
         "num_samples":1,
+        "mfql":{
+            "num_samples":16,
+        },
+        "dmfql":{
+            "num_samples":16,
+        },
+
     },
     "door-cloned-v1": {
         "alpha_actor": 30000.0,
@@ -370,6 +395,12 @@ hyperparameters ={
         },
         "alpha":0.003,
         "num_samples":1,
+        "mfql":{
+            "num_samples":4,
+        },
+        "dmfql":{
+            "num_samples":4,
+        },
     },
     "hammer-cloned-v1": {
         "alpha_actor": 10000.0,
@@ -394,6 +425,13 @@ hyperparameters ={
         },    
         "alpha":0.01,
         "num_samples":2,
+        "mfql":{
+            "num_samples":4,
+        },
+        "dmfql":{
+            "num_samples":4,
+        },
+
     },
     "relocate-human-v1": {
         "alpha_actor": 10000.0,

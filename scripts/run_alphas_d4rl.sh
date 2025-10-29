@@ -14,14 +14,7 @@ fi
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
 # Check if a seed is provided as the second argument
-if [ -n "$2" ] ; then
-    seed=$2
-    # Shift arguments to handle the rest of the optional parameters
-    shift 2
-else
-    seed=$RANDOM
-    shift 1
-fi
+seed=$2
 
 # pen-expert-v1		
 # door-expert-v1		
@@ -33,7 +26,7 @@ fi
 env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1"  "door-expert-v1"  "hammer-expert-v1" "relocate-expert-v1"  )
 
 # Loop through all environments and alpha values
-alphas=( 0.000 0.0003 0.001 0.003)
+alphas=( 0.0001 0.0003 0.001 0.003)
 for env_name in "${env_names[@]}"; do
     # Loop through all alpha values
     for alpha in "${alphas[@]}"; do
