@@ -318,7 +318,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.03,
+        "alpha":0.3,
         "num_samples":64,
         "mfql":{
             "num_samples":32,
@@ -347,7 +347,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.003,
+        "alpha":0.0001,
         "num_samples":16,
         "mfql":{
             "num_samples":32,
@@ -393,7 +393,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },
-        "alpha":0.003,
+        "alpha":0.000003,
         "num_samples":1,
         "mfql":{
             "num_samples":4,
@@ -423,7 +423,7 @@ hyperparameters ={
         "iql": {
             "alpha_actor": 0.5
         },    
-        "alpha":0.01,
+        "alpha":0.0001,
         "num_samples":2,
         "mfql":{
             "num_samples":4,
