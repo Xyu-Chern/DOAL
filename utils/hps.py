@@ -64,10 +64,10 @@ hyperparameters ={
         "num_samples":32,
 
         "mfql":{
-            "num_samples":4,
+            "num_samples":32,
         },
         "dmfql":{
-            "num_samples":4,
+            "num_samples":32,
             "alpha" : 0.1,
         },
         "drebrac":{
@@ -88,10 +88,10 @@ hyperparameters ={
         "alpha":0.03,
         "num_samples":8,
         "mfql":{
-            "num_samples":4,
+            "num_samples":16,
         },
         "dmfql":{
-            "num_samples":4,
+            "num_samples":16,
             "alpha" : 0.03,
         },
         "drebrac":{
@@ -112,10 +112,10 @@ hyperparameters ={
         "alpha":0.1,
         "num_samples":16,
         "mfql":{
-            "num_samples":4,
+            "num_samples":16,
         },
         "dmfql":{
-            "num_samples":4,
+            "num_samples":16,
             "alpha" : 0.1,
         },
         "drebrac":{
@@ -136,10 +136,10 @@ hyperparameters ={
         "alpha":0.03,
         "num_samples":32,
         "mfql":{
-            "num_samples":4,
+            "num_samples":2,
         },
         "dmfql":{
-            "num_samples":4,
+            "num_samples":2,
             "alpha" : 0.03,
         },
         "drebrac":{
@@ -160,10 +160,10 @@ hyperparameters ={
         "alpha":0.1,
         "num_samples":16,
         "mfql":{
-            "num_samples":8,
+            "num_samples":4,
         },
         "dmfql":{
-            "num_samples":8,
+            "num_samples":4,
             "alpha" : 0.03,
         },
         "drebrac":{
@@ -184,10 +184,10 @@ hyperparameters ={
         "alpha":0.1,
         "num_samples":32,
         "mfql":{
-        "num_samples":2,
+        "num_samples":4,
         },
         "dmfql":{
-        "num_samples":2,
+        "num_samples":4,
         "alpha" : 0.1,
         },
         "drebrac":{
@@ -234,10 +234,10 @@ hyperparameters ={
         "alpha":0.03,
         "num_samples":64,
         "mfql":{
-        "num_samples":8,
+        "num_samples":4,
         },
         "dmfql":{
-        "num_samples":8,
+        "num_samples":4,
         "alpha" : 0.03,
         },
         "drebrac":{
