@@ -14,6 +14,9 @@ hyperparameters ={
         "dtrigflow": {
             "alpha" : 0.1,
         },
+        "dtrigql": {
+            "alpha" : 0.1,
+        },
         "mfql":{
             "num_samples":4,
         },
@@ -58,6 +61,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
             "alpha" : 0.3,
+        },        
+        "dtrigql": {
+            "alpha" : 0.1,
         },
         "alpha_actor": 30.0,
         "alpha":0.1,
@@ -84,6 +90,9 @@ hyperparameters ={
             "alpha_actor": 10.0,
             "alpha": 0.1,
         },
+        "dtrigql": {
+            "alpha" : 0.03,
+        },
         "alpha_actor": 30.0,
         "alpha":0.03,
         "num_samples":8,
@@ -107,6 +116,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 1.0,
             "alpha" : 0.1
+        },
+        "dtrigql": {
+            "alpha" : 0.1,
         },
          "alpha_actor": 10.0,
         "alpha":0.1,
@@ -132,6 +144,9 @@ hyperparameters ={
             "alpha_actor": 1.0,
             "alpha":0.03,
         },
+        "dtrigql": {
+            "alpha" : 0.03,
+        },
         "alpha_actor": 300.0,
         "alpha":0.03,
         "num_samples":32,
@@ -155,6 +170,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 0.3,
             "alpha" : 0.1,
+        },
+        "dtrigql": {
+            "alpha" : 0.03,
         },
         "alpha_actor": 300.0,
         "alpha":0.1,
@@ -180,6 +198,9 @@ hyperparameters ={
             "alpha_actor": 10.0,
             "alpha": 0.1,
         },
+        "dtrigql": {
+            "alpha" : 0.1,
+        },
         "alpha_actor": 300.0,
         "alpha":0.1,
         "num_samples":32,
@@ -204,6 +225,9 @@ hyperparameters ={
         "diql": {
             "alpha_actor": 10.0,
             "alpha": 0.1,
+        },
+        "dtrigql": {
+            "alpha" : 0.3,
         },
         "alpha_actor": 1000.0,
         "alpha":0.03,
@@ -235,6 +259,9 @@ hyperparameters ={
         "num_samples":64,
         "mfql":{
         "num_samples":4,
+        },
+        "dtrigql": {
+            "alpha" : 0.03,
         },
         "dmfql":{
         "num_samples":4,
