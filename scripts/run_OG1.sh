@@ -23,7 +23,7 @@ env_names=("antmaze-large-navigate-singletask-v0" 'humanoidmaze-medium-navigate-
 #env_names=("antmaze-large-navigate-singletask-v0" 'humanoidmaze-medium-navigate-singletask-v0' 'humanoidmaze-large-navigate-singletask-v0' "puzzle-3x3-play-singletask-v0" "puzzle-4x4-play-singletask-v0" )
 
 
-seeds=(111 222 333 444)
+seeds=(111 222)
 #env_names=("puzzle-3x3-play-singletask-v0" )
 
 # Loop through all environment names
