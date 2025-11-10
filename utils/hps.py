@@ -347,6 +347,9 @@ hyperparameters ={
         "diql": {
             "alpha": 0.3,
         },
+        "dtrigql": {
+            "alpha": 0.00003,
+        },
         "mfql":{
             "num_samples":32,
         },
@@ -361,6 +364,9 @@ hyperparameters ={
         "num_samples":8,
         "diql": {
             "alpha": 0.1,
+        },
+        "dtrigql": {
+            "alpha": 0.000001,
         },
         "mfql":{
             "num_samples":4,
@@ -377,6 +383,9 @@ hyperparameters ={
         "diql": {
             "alpha": 0.0001,
         },
+        "dtrigql": {
+            "alpha": 0.000001,
+        },
         "mfql":{
             "num_samples":32,
         },
@@ -392,6 +401,9 @@ hyperparameters ={
         "num_samples":1,
         "diql": {
             "alpha": 0.00003,
+        },
+        "dtrigql": {
+            "alpha": 0.000003,
         },
         "mfql":{
             "num_samples":16,
@@ -429,6 +441,9 @@ hyperparameters ={
         "mfql":{
             "num_samples":4,
         },
+        "dtrigql": {
+            "alpha": 0.1,
+        },
         "dmfql":{
             "num_samples":4,
             "alpha": 0.03,
@@ -464,6 +479,9 @@ hyperparameters ={
         "dmfql":{
             "num_samples":4,
             "alpha": 0.0001,
+        },
+        "dtrigql": {
+            "alpha": 0.01,
         },
 
     },
