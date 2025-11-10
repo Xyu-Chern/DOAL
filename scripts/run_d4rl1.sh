@@ -8,7 +8,7 @@ if [ "$#" -lt 1 ] ; then
 fi
 
 AGENT_NAME=$1
-seeds=(111 222 333 444 555 666 777 888)
+seeds=(111 222)
 
 env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1"  "door-expert-v1"  "hammer-expert-v1" "relocate-expert-v1"  )
 # Loop through all environments and alpha values
