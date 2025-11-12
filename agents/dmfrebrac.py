@@ -318,6 +318,7 @@ def get_config():
             tau=0.005,  # Target network update rate.
             tanh_squash=True,  # Whether to squash actions with tanh.
             num_samples = 4,
+            flow_steps=10,  # Number of flow steps.
             gn=100.0,
             actor_fc_scale=0.01,  # Final layer initialization scale for actor.
             alpha=0.0,  # Actor BC coefficient.
