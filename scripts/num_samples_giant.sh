@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 # This script runs a Python script with different 'alpha' values
 # while allowing the agent, a seed, and an optional experiment name
@@ -26,10 +25,8 @@ else
 fi
 
 # Define the list of environment names
+env_names=("antmaze-giant-navigate-singletask-v0" )
 
-# env_names=("antmaze-large-navigate-singletask-v0" 'humanoidmaze-medium-navigate-singletask-v0' "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0" "scene-play-singletask-v0"    )
-
-env_names=('humanoidmaze-medium-navigate-singletask-v0'  "puzzle-4x4-play-singletask-v0" "puzzle-3x3-play-singletask-v0" )
 
 # Loop through all environment names
 for env_name in "${env_names[@]}"; do
@@ -37,8 +34,8 @@ for env_name in "${env_names[@]}"; do
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --run_group nun_samples \
-        --retest \
+        --run_group nun_samples_og_v2 \
+        --retest  --offline_steps 1000000 \
         --seed "$seed" \
         "$@"
 done

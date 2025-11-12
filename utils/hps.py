@@ -24,6 +24,12 @@ hyperparameters ={
             "num_samples":4,
             "alpha" : 0.03,
         },
+        "dmfrebrac":{
+            "num_samples":4,
+            "alpha" : 0.03,
+            "alpha_actor":0.003,
+            "alpha_critic":0.01,
+        },
         "drebrac":{
             "alpha_actor":0.003,
             "alpha_critic":0.01,
@@ -47,6 +53,12 @@ hyperparameters ={
         "dmfql":{
             "num_samples":4,
             "alpha" : 0.1,
+        },
+        "dmfrebrac":{
+            "num_samples":4,
+            "alpha" : 0.1,
+            "alpha_actor":0.003,
+            "alpha_critic":0.01,
         },
         "drebrac":{
             "alpha_actor":0.003,
@@ -76,6 +88,12 @@ hyperparameters ={
             "num_samples":32,
             "alpha" : 0.1,
         },
+        "dmfrebrac":{
+            "num_samples":32,
+            "alpha" : 0.1,
+            "alpha_actor":0.01,
+            "alpha_critic":0.01,
+        },
         "drebrac":{
             "alpha_actor":0.01,
             "alpha_critic":0.01,
@@ -102,6 +120,12 @@ hyperparameters ={
         "dmfql":{
             "num_samples":16,
             "alpha" : 0.03,
+        },
+        "dmfrebrac":{
+            "num_samples":16,
+            "alpha" : 0.03,
+            "alpha_actor":0.01,
+            "alpha_critic":0.01,
         },
         "drebrac":{
             "alpha_actor":0.01,
@@ -130,6 +154,12 @@ hyperparameters ={
             "num_samples":16,
             "alpha" : 0.1,
         },
+        "dmfrebrac":{
+            "num_samples":16,
+            "alpha" : 0.1,
+            "alpha_actor":0.01,
+            "alpha_critic":0.01,
+        },
         "drebrac":{
             "alpha_actor":0.01,
             "alpha_critic":0.01,
@@ -156,6 +186,12 @@ hyperparameters ={
         "dmfql":{
             "num_samples":2,
             "alpha" : 0.03,
+        },
+        "dmfrebrac":{
+            "num_samples":2,
+            "alpha" : 0.03,
+            "alpha_actor":1.0,
+            "alpha_critic":0.0,
         },
         "drebrac":{
             "alpha_actor":1.0,
@@ -184,6 +220,12 @@ hyperparameters ={
             "num_samples":4,
             "alpha" : 0.03,
         },
+        "dmfrebrac":{
+            "num_samples":4,
+            "alpha" : 0.03,
+            "alpha_actor":0.1,
+            "alpha_critic":0.0,
+        },
         "drebrac":{
             "alpha_actor":0.1,
             "alpha_critic":0.0,
@@ -210,6 +252,12 @@ hyperparameters ={
         "dmfql":{
         "num_samples":4,
         "alpha" : 0.1,
+        },
+        "dmfrebrac":{
+        "num_samples":4,
+        "alpha" : 0.1,
+            "alpha_actor":0.1,
+            "alpha_critic":0.01,
         },
         "drebrac":{
             "alpha_actor":0.1,
@@ -239,6 +287,12 @@ hyperparameters ={
         "num_samples":2,
         "alpha" : 0.03,
         },
+        "dmfrebrac":{
+        "num_samples":2,
+        "alpha" : 0.03,
+            "alpha_actor":0.3,
+            "alpha_critic":0.01,
+        },
         "drebrac":{
             "alpha_actor":0.3,
             "alpha_critic":0.01,
@@ -266,6 +320,12 @@ hyperparameters ={
         "dmfql":{
         "num_samples":4,
         "alpha" : 0.03,
+        },
+        "dmfrebrac":{
+        "num_samples":4,
+        "alpha" : 0.03,
+            "alpha_actor":0.3,
+            "alpha_critic":0.01,
         },
         "drebrac":{
             "alpha_actor":0.3,

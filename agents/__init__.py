@@ -14,7 +14,7 @@ from agents.mfql import MFQLAgent
 from agents.sfql import SFQLAgent
 from agents.trigql import TrigQLAgent
 from agents.dtrigql import DTrigQLAgent
-
+from agents.dmfrebrac import DMFReBRACAgent
 agents = dict(
     iql=IQLAgent,
     diql=DIQLAgent,
@@ -31,5 +31,6 @@ agents = dict(
     mfql=MFQLAgent,
     sfql=SFQLAgent,
     trigql=TrigQLAgent,
-    dtrigql = DTrigQLAgent
+    dtrigql = DTrigQLAgent,
+    dmfrebrac = DMFReBRACAgent,
 )
