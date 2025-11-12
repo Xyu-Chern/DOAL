@@ -243,6 +243,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
 
         action_dim = ex_actions.shape[-1]
 
+        config['action_dim'] = action_dim
         ex_times = ex_actions[..., :1]
         # Define encoders.
         encoders = dict()
