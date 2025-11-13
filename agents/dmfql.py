@@ -40,11 +40,15 @@ class DMFQLAgent(MFQLAgent,DOALAgent):
         raw_actor_loss = (pred - vel) ** 2
         actor_loss =  jnp.mean(raw_actor_loss)
 
+        norm = jnp.linalg.norm(g,axis=-1,keepdims=True) + 1e-5
+        norm_mean = jnp.mean(norm)
+
         return actor_loss, {
             "raw_actor_loss":jnp.mean(raw_actor_loss),
             'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
             'adj': jnp.mean(jnp.abs(adjustment)),
             "q":jnp.mean(q),
+            "g_norm_mean":norm_mean,
             "hd": jnp.mean(hd),
             "hd_abs": jnp.mean(jnp.abs(hd)),
             "hd_std": jnp.std(hd),

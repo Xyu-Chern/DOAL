@@ -66,15 +66,19 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
     def critic_loss(self, batch, grad_params, rng):
         """Compute the ReBRAC critic loss."""
         rng, sample_rng = jax.random.split(rng)
-        next_dist = self.network.select('target_actor')(batch['next_observations'])
-        next_actions = next_dist.mode()
-        noise = jnp.clip(
-            (jax.random.normal(sample_rng, next_actions.shape) * self.config['actor_noise']),
-            -self.config['actor_noise_clip'],
-            self.config['actor_noise_clip'],
-        )
-        next_actions = jnp.clip(next_actions + noise, -1, 1)
 
+        if self.config["flow_only"] :
+            next_actions = self.sample_actions_simple(batch['next_observations'], seed=sample_rng)
+            next_actions = jnp.clip(next_actions, -1, 1)
+        else:
+            next_dist = self.network.select('target_actor')(batch['next_observations'])
+            next_actions = next_dist.mode()
+            noise = jnp.clip(
+                (jax.random.normal(sample_rng, next_actions.shape) * self.config['actor_noise']),
+                -self.config['actor_noise_clip'],
+                self.config['actor_noise_clip'],
+            )
+            next_actions = jnp.clip(next_actions + noise, -1, 1)
         next_qs = self.network.select('target_critic')(batch['next_observations'], actions=next_actions)
         next_q = next_qs.min(axis=0)
 
@@ -132,6 +136,41 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
             'mse': mse.mean(),
         }
 
+    @jax.jit
+    def sample_actions_simple(
+        self,
+        observations,
+        seed=None,
+    ):
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_flow_encoder')(observations)
+        action_seed, noise_seed = jax.random.split(seed)
+        num_samples = self.config["target_num_samples"]
+        # Sample `num_samples` noises and propagate them through the flow.
+        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), num_samples, axis=0)
+        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), num_samples, axis=0)
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *n_observations.shape[:-1],
+                self.config['action_dim'],
+            ),
+        )
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*n_observations.shape[:-1], 1), i / self.config['flow_steps'])
+            vels = self.network.select('actor_flow')(n_observations, actions, t, is_encoded=True)
+            actions = actions + vels / self.config['flow_steps']
+        actions = jnp.clip(actions, -1, 1)
+
+        # Pick the action with the highest Q-value.
+        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
+        if len(actions.shape) == 3:
+            b = orig_observations.shape[0]
+            actions = actions[jnp.argmax(q,axis=0),jnp.arange(b)]
+        else:
+            actions = actions[jnp.argmax(q)]
+        return actions
     @partial(jax.jit, static_argnames=('full_update',))
     def total_loss(self, batch, grad_params, full_update=True, rng=None):
         """Compute the total loss."""
@@ -147,7 +186,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         dmf_actor_loss, actor_info = self.dmf_actor_loss(batch, grad_params, actor_flow_rng,aux)
         for k, v in actor_info.items():
             info[f'dmf_actor/{k}'] = v
-        if full_update:
+        if full_update and not self.config["flow_only"]:
             # Update the actor.
             actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng,aux)
             for k, v in actor_info.items():
@@ -314,11 +353,13 @@ def get_config():
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
+            target_num_samples = 4,
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
             tanh_squash=True,  # Whether to squash actions with tanh.
             num_samples = 4,
             flow_steps=10,  # Number of flow steps.
+            flow_only=True,
             gn=100.0,
             actor_fc_scale=0.01,  # Final layer initialization scale for actor.
             alpha=0.0,  # Actor BC coefficient.
