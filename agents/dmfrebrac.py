@@ -144,7 +144,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         for k, v in critic_info.items():
             info[f'critic/{k}'] = v
 
-        dmf_actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_flow_rng,aux)
+        dmf_actor_loss, actor_info = self.dmf_actor_loss(batch, grad_params, actor_flow_rng,aux)
         for k, v in actor_info.items():
             info[f'dmf_actor/{k}'] = v
         if full_update:
