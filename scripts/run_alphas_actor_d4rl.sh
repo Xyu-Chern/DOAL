@@ -22,10 +22,10 @@ SEED=$2
 
 # Define the list of alpha parameters
 
-env_names=(  "relocate-expert-v1"  "door-expert-v1" "hammer-expert-v1"  )
+env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1"  "door-expert-v1"  "hammer-expert-v1" "relocate-expert-v1"  )
 
 # Loop through all environments and alpha values
-alphas=(  0.003 0.01 0.03)
+alphas=( 0.003  0.01  0.03  0.1  0.3  1 )
 for env_name in "${env_names[@]}"; do
     # Loop through all alpha values
     for alpha in "${alphas[@]}"; do
@@ -33,8 +33,8 @@ for env_name in "${env_names[@]}"; do
         python main.py \
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$env_name" \
-            --alpha "$alpha" \
-            --run_group alpha \
+            --alpha_actor "$alpha" \
+            --run_group alpha_actor \
             --noretest \
             --exp_name alpha_tune $3 $4 $5 $6 $7 \
             --seed "$SEED" --offline_steps 500000
