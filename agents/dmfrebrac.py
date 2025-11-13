@@ -322,6 +322,7 @@ def get_config():
             gn=100.0,
             actor_fc_scale=0.01,  # Final layer initialization scale for actor.
             alpha=0.0,  # Actor BC coefficient.
+            delta=2.0,  # Actor BC coefficient.
             alpha_actor=0.0,  # Actor BC coefficient.
             alpha_critic=0.0,  # Critic BC coefficient.
             actor_freq=2,  # Actor update frequency.
