@@ -245,7 +245,7 @@ def get_config():
             distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
-            tanh_squash=True,  # Whether to squash actions with tanh.
+            tanh_squash=False,  # Whether to squash actions with tanh.
             gn=100.0,
             actor_fc_scale=0.01,  # Final layer initialization scale for actor.
             alpha=0.0,  # Actor BC coefficient.
