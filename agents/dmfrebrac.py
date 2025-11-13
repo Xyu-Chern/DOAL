@@ -323,8 +323,10 @@ def get_config():
             actor_fc_scale=0.01,  # Final layer initialization scale for actor.
             alpha=0.0,  # Actor BC coefficient.
             delta=2.0,  # Actor BC coefficient.
+            solver="auto",  # Actor BC coefficient.
             alpha_actor=0.0,  # Actor BC coefficient.
             alpha_critic=0.0,  # Critic BC coefficient.
+            clip=True,
             actor_freq=2,  # Actor update frequency.
             actor_noise=0.2,  # Actor noise scale.
             actor_noise_clip=0.5,  # Actor noise clipping threshold.
