@@ -38,7 +38,7 @@ class DMFQLAgent(MFQLAgent,DOALAgent):
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
 
         raw_actor_loss = (pred - vel) ** 2
-        actor_loss =  jnp.mean(raw_actor_loss)
+        actor_loss =  jnp.mean(raw_actor_loss) * self.config['alpha_actor']
 
         norm = jnp.linalg.norm(g,axis=-1,keepdims=True) + 1e-5
         norm_mean = jnp.mean(norm)
