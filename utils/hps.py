@@ -413,6 +413,14 @@ hyperparameters ={
         "mfql":{
             "num_samples":32,
         },
+        "dmfrebrac":{
+        "num_samples":32,
+            "alpha_critic":0.01,
+        },
+        "rebrac":{
+            "alpha_critic":0.01,
+            "alpha_actor":0.03,
+        },
         "dmfql":{
             "num_samples":32,
             "alpha":0.03,
@@ -431,9 +439,17 @@ hyperparameters ={
         "mfql":{
             "num_samples":4,
         },
+        "dmfrebrac":{
+        "num_samples":4,
+            "alpha_critic":0.5,
+        },
         "dmfql":{
             "num_samples":4,
             "alpha": 0.00003,
+        },
+        "rebrac":{
+            "alpha_critic":0.5,
+            "alpha_actor":0.3,
         },
     },
     "pen-cloned-v1": {
@@ -448,6 +464,14 @@ hyperparameters ={
         },
         "mfql":{
             "num_samples":32,
+        },
+        "dmfrebrac":{
+        "num_samples":32,
+            "alpha_critic":0.5,
+        },
+        "rebrac":{
+            "alpha_critic":0.5,
+            "alpha_actor":0.03,
         },
         "dmfql":{
             "num_samples":32,
@@ -468,6 +492,14 @@ hyperparameters ={
         "mfql":{
             "num_samples":16,
         },
+        "dmfrebrac":{
+        "num_samples":16,
+            "alpha_critic":0.01,
+        },
+        "rebrac":{
+            "alpha_critic":0.01,
+            "alpha_actor":0.1,
+        },
         "dmfql":{
             "num_samples":16,
             "alpha": 0.0001,
@@ -481,12 +513,20 @@ hyperparameters ={
         },  
         "alpha":0.003,
         "num_samples":64,
+        "dmfrebrac":{
+        "num_samples":64,
+            "alpha_critic":0.1,
+        },
     },
     "door-human-v1": {
         "alpha_actor": 30000.0,
         "iql": {
             "alpha_actor": 0.5
         },  
+        "dmfrebrac":{
+        "num_samples":2,
+            "alpha_critic":0.1,
+        },
         "alpha":0.03,
         "num_samples":2,
     },
@@ -498,11 +538,19 @@ hyperparameters ={
         "diql": {
             "alpha": 0.03,
         },
+        "rebrac":{
+            "alpha_critic":0.01,
+            "alpha_actor":0.03,
+        },
         "mfql":{
             "num_samples":4,
         },
         "dtrigql": {
             "alpha": 0.1,
+        },
+        "dmfrebrac":{
+        "num_samples":4,
+            "alpha_critic":0.01,
         },
         "dmfql":{
             "num_samples":4,
@@ -539,6 +587,14 @@ hyperparameters ={
         "dmfql":{
             "num_samples":4,
             "alpha": 0.0001,
+        },
+        "rebrac":{
+            "alpha_critic":0.01,
+            "alpha_actor":1.0,
+        },
+        "dmfrebrac":{
+        "num_samples":4,
+            "alpha_critic":0.01,
         },
         "dtrigql": {
             "alpha": 0.01,
