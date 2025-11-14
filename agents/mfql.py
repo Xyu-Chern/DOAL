@@ -51,7 +51,7 @@ class MFQLAgent(DOALAgent):
     def actor_loss(self, batch, grad_params, rng):
         """Compute the FQL actor loss."""
         batch_size, action_dim = batch['actions'].shape
-        rng, x_rng, t_rng = jax.random.split(rng, 3)
+        rng, x_rng, t_rng,sample_rng = jax.random.split(rng, 4)
 
         # BC flow loss.
         x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
@@ -66,7 +66,20 @@ class MFQLAgent(DOALAgent):
         # Total loss.
         actor_loss = self.config["alpha_actor"]*bc_flow_loss 
 
-        return actor_loss, {
+        if self.config["bptt"]:
+            pred_actions = self.sample_actions_bptt(batch['observations'], seed=sample_rng, params=grad_params)
+            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+            if self.config['q_agg'] == 'min':
+                q = jnp.min(qs, axis=0)
+            else:
+                q = jnp.mean(qs, axis=0)
+
+            q_loss = -q.mean()
+            # Total loss.
+            total_loss = actor_loss + q_loss * self.config["alpha"] #call alpha_q
+        else:
+            total_loss = actor_loss
+        return total_loss, {
                     'actor_loss': actor_loss,
                     'bc_flow_loss': bc_flow_loss,
                 }
@@ -115,6 +128,31 @@ class MFQLAgent(DOALAgent):
         return self.replace(network=new_network, rng=new_rng), info
 
 
+    @jax.jit
+    def sample_actions_bptt(
+        self,
+        observations,
+        seed=None,
+        params=None,
+    ):
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_flow_encoder')(observations,params=params)
+        action_seed, noise_seed = jax.random.split(seed)
+
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[:-1],
+                self.config['action_dim'],
+            ),
+        )
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*observations.shape[:-1], 1), i / self.config['flow_steps'])
+            vels = self.network.select('actor_flow')(observations, actions, t, is_encoded=True,params=params)
+            actions = actions + vels / self.config['flow_steps']
+        actions = jnp.clip(actions, -1, 1)
+        return actions
     @jax.jit
     def sample_actions_simple(
         self,
@@ -281,6 +319,7 @@ def get_config():
             delta=1.0,
             clip=True,
             normalize_q_loss=False,  # Whether to normalize the Q loss.
+            bptt=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )

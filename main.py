@@ -214,6 +214,8 @@ def main(_):   #num_samples
     pbar = tqdm.tqdm(range(1, num_epochs + 1), smoothing=0.1, dynamic_ncols=True)
     #for i in tqdm.tqdm(range(1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
     rng = jax.random.PRNGKey(FLAGS.seed)
+
+    train_time = 0
     for i in pbar:
         # Generate new random key for shuffling
         rng, subkey = jax.random.split(rng)
@@ -235,6 +237,7 @@ def main(_):   #num_samples
             batches
         )
         # Log metrics.
+        train_time = train_time + time.time() - after_shuffle
 
         if i % log_interval == 0 or i == num_epochs:
             eval_metrics = {}
@@ -269,6 +272,7 @@ def main(_):   #num_samples
             )
             train_metrics = {f'training/{k}': v for k, v in update_info.items()}
             train_metrics['time/data_time'] = after_shuffle- before_shuffle
+            train_metrics['time/train_time'] = train_time
             train_metrics['time/compute_time'] = time.time() - after_shuffle
             train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
             last_time = time.time()

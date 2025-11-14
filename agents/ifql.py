@@ -23,7 +23,7 @@ class IFQLAgent(IQLAgent):
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
         """Compute the behavioral flow-matching actor loss."""
         batch_size, action_dim = batch['actions'].shape
-        rng, x_rng, t_rng = jax.random.split(rng, 3)
+        rng, x_rng, t_rng,sample_rng = jax.random.split(rng, 4)
 
         x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
         x_1 = batch['actions']
@@ -33,25 +33,26 @@ class IFQLAgent(IQLAgent):
 
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
         raw_actor_loss = (pred - vel) ** 2
-        if self.config["time_weight"]:
-            time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
 
-            weight = jnp.exp(time_weight_logits) / action_dim
-            time_weight_logits = time_weight_logits - jax.lax.stop_gradient(time_weight_logits)
-            bc_flow_loss = ( weight*  raw_actor_loss -time_weight_logits).mean()   
-            actor_loss = self.config['alpha_actor'] * bc_flow_loss
+        actor_loss = self.config['alpha_actor'] *  jnp.mean(raw_actor_loss)
 
-            return actor_loss, {
-                "weight":weight.mean(),
-                'actor_loss': actor_loss,
-            }
+        if self.config["bptt"]:
+            pred_actions = self.sample_actions_bptt(batch['observations'], seed=sample_rng, params=grad_params)
+            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+            if self.config['q_agg'] == 'min':
+                q = jnp.min(qs, axis=0)
+            else:
+                q = jnp.mean(qs, axis=0)
 
+            q_loss = -q.mean()
+            # Total loss.
+            total_loss = actor_loss + q_loss * self.config["alpha"] #call alpha_q
         else:
-            actor_loss = self.config['alpha_actor'] *  jnp.mean(raw_actor_loss)
+            total_loss = actor_loss
+        return total_loss, {
+                    'actor_loss': actor_loss,
+                }
 
-            return actor_loss, {
-                'actor_loss': actor_loss,
-            }
 
 
     @jax.jit
@@ -228,6 +229,7 @@ def get_config():
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
+            q_agg='mean',  # Aggregation method for target Q values.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             discount=0.99,  # Discount factor.
@@ -239,6 +241,7 @@ def get_config():
             expectile=0.9,  # IQL expectile.
             gn=200.0,
             num_samples=8,  # Number of action samples for rejection sampling.
+            bptt=False,  # Whether to normalize the Q loss.
             flow_steps=10,  # Number of flow steps.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )

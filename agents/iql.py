@@ -129,6 +129,31 @@ class IQLAgent(flax.struct.PyTreeNode):
             raise ValueError(f'Unsupported actor loss: {self.config["actor_loss"]}')
 
     @jax.jit
+    def sample_actions_bptt(
+        self,
+        observations,
+        seed=None,
+        params=None,
+    ):
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_flow_encoder')(observations,params=params)
+        action_seed, noise_seed = jax.random.split(seed)
+
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[:-1],
+                self.config['action_dim'],
+            ),
+        )
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*observations.shape[:-1], 1), i / self.config['flow_steps'])
+            vels = self.network.select('actor_flow')(observations, actions, t, is_encoded=True,params=params)
+            actions = actions + vels / self.config['flow_steps']
+        actions = jnp.clip(actions, -1, 1)
+        return actions
+    @jax.jit
     def total_loss(self, batch, grad_params, rng=None):
         """Compute the total loss."""
         info = {}
