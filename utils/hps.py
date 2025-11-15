@@ -9,21 +9,8 @@ hyperparameters ={
         },
         "diql": {
             "alpha_actor": 10.0,
-            "alpha" : 0.1,
         },
-        "dtrigflow": {
-            "alpha" : 0.1,
-        },
-        "dtrigql": {
-            "alpha" : 0.1,
-        },
-        "mfql":{
-            "num_samples":4,
-        },
-        "dmfql":{
-            "num_samples":4,
-            "alpha" : 0.03,
-        },
+        
         "dmfrebrac":{
             "num_samples":4,
             "alpha" : 0.03,
@@ -52,12 +39,9 @@ hyperparameters ={
         },
         "dmfql":{
             "num_samples":4,
-            "alpha" : 0.1,
-        },
+                   },
         "dmfrebrac":{
             "num_samples":4,
-            "alpha" : 0.1,
-            "alpha_actor":0.003,
             "alpha_critic":0.01,
         },
         "drebrac":{
@@ -212,7 +196,7 @@ hyperparameters ={
         },
         "alpha_actor": 300.0,
         "alpha":0.1,
-        "num_samples":16,
+        "num_samples":4,
         "mfql":{
             "num_samples":4,
         },
@@ -245,7 +229,7 @@ hyperparameters ={
         },
         "alpha_actor": 300.0,
         "alpha":0.1,
-        "num_samples":32,
+        "num_samples":4,
         "mfql":{
         "num_samples":4,
         },
@@ -402,8 +386,8 @@ hyperparameters ={
     },
     "pen-expert-v1": {
         "alpha_actor": 3000.0,
-        "alpha":0.3,
-        "num_samples":64,
+        "alpha":0.001,
+        "num_samples":32,
         "diql": {
             "alpha": 0.3,
         },
@@ -428,8 +412,8 @@ hyperparameters ={
     },
     "pen-human-v1": {
         "alpha_actor": 10000.0,
-        "alpha":0.001,
-        "num_samples":8,
+        "alpha":0.0001,
+        "num_samples":4,
         "diql": {
             "alpha": 0.1,
         },
@@ -463,10 +447,10 @@ hyperparameters ={
             "alpha": 0.000001,
         },
         "mfql":{
-            "num_samples":32,
+            "num_samples":16,
         },
         "dmfrebrac":{
-        "num_samples":32,
+        "num_samples":16,
             "alpha_critic":0.5,
         },
         "rebrac":{
@@ -481,7 +465,7 @@ hyperparameters ={
     },
     "door-expert-v1": {
         "alpha_actor": 30000.0,
-        "alpha":0.003,
+        "alpha":0.0001,
         "num_samples":1,
         "diql": {
             "alpha": 0.00003,
@@ -533,7 +517,7 @@ hyperparameters ={
 
     "hammer-expert-v1": {
         "alpha_actor": 30000.0,
-        "alpha":0.000003,
+        "alpha":0.0001,
         "num_samples":1,
         "diql": {
             "alpha": 0.03,
