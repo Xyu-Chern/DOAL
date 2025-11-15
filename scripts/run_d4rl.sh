@@ -21,6 +21,6 @@ for seed in "${seeds[@]}"; do
             --run_group submit_d4rl  \
                 --noretest \
             --offline_steps 500000 \
-            --seed "$seed" 
+            --seed "$seed" "$@"
     done
 done

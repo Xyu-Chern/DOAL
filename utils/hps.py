@@ -441,25 +441,15 @@ hyperparameters ={
         "num_samples":16,
         "alpha_actor": 10000.0,
         "diql": {
+            "alpha_actor": 10.0,
             "alpha": 0.0001,
         },
-        "dtrigql": {
-            "alpha": 0.000001,
-        },
-        "mfql":{
-            "num_samples":16,
-        },
         "dmfrebrac":{
-        "num_samples":16,
             "alpha_critic":0.5,
         },
         "rebrac":{
             "alpha_critic":0.5,
             "alpha_actor":0.03,
-        },
-        "dmfql":{
-            "num_samples":32,
-            "alpha": 0.000003,
         },
         
     },
@@ -467,9 +457,6 @@ hyperparameters ={
         "alpha_actor": 30000.0,
         "alpha":0.0001,
         "num_samples":1,
-        "diql": {
-            "alpha": 0.00003,
-        },
         "dtrigql": {
             "alpha": 0.000003,
         },
