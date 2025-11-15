@@ -20,19 +20,17 @@ AGENT_NAME=$1
 env_names=("antmaze-giant-navigate-singletask-v0"  )
 
 
-seeds=(111 222 333 444)
+seed=$2
 
 
 # Loop through all environment names
-for seed in "${seeds[@]}"; do
-    for env_name in "${env_names[@]}"; do
-        echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $seed, Additional Args: $@"
-        python main.py \
-            --agent "agents/$AGENT_NAME.py" \
-            --env_name "$env_name" \
-            --run_group submit_OG_bptt \
-                --noretest \
-            --seed "$seed" \
-            "$@"
-    done
+for env_name in "${env_names[@]}"; do
+    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $seed, Additional Args: $@"
+    python main.py \
+        --agent "agents/$AGENT_NAME.py" \
+        --env_name "$env_name" \
+        --run_group submit_OG_bptt \
+            --noretest \
+        --seed "$seed" \
+        "$@"
 done
