@@ -8,7 +8,7 @@ if [ "$#" -lt 1 ] ; then
 fi
 
 AGENT_NAME=$1
-seeds=(111)
+seeds=$2
 
 env_names=("pen-human-v1" "pen-cloned-v1" "pen-expert-v1"  "door-expert-v1"  "hammer-expert-v1" "relocate-expert-v1"  )
 # Loop through all environments and alpha values
@@ -18,9 +18,9 @@ for seed in "${seeds[@]}"; do
         python main.py \
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$env_name" \
-            --run_group submit_d4rl_v3 \
+            --run_group submit_OG_target1 --agent.target_num_samples 1 \
                 --noretest \
             --offline_steps 500000 \
-            --seed "$seed" "$@"
+            --seed "$seed" 
     done
 done

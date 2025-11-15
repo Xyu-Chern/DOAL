@@ -30,7 +30,7 @@ for seed in "${seeds[@]}"; do
         python main.py \
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$env_name" \
-            --run_group submit_OG_target1 \
+            --run_group submit_OG_bptt \
                 --noretest \
             --seed "$seed" \
             "$@"

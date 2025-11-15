@@ -18,7 +18,7 @@ for seed in "${seeds[@]}"; do
         python main.py \
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$env_name" \
-            --run_group submit_d4rl_v3 \
+            --run_group submit_OG_target1 \
                 --noretest \
             --offline_steps 500000 \
             --seed "$seed" "$@"

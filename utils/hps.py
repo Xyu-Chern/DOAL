@@ -440,7 +440,7 @@ hyperparameters ={
             "num_samples":4,
         },
         "dmfrebrac":{
-        "num_samples":4,
+            "num_samples":4,
             "alpha_critic":0.5,
         },
         "dmfql":{
