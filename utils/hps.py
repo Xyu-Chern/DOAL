@@ -15,7 +15,6 @@ hyperparameters ={
             "alpha_critic":0.01,
         },
         "drebrac":{
-            "alpha_actor":0.003,
             "alpha_critic":0.01,
             "alpha":0.1,
         },
@@ -31,12 +30,6 @@ hyperparameters ={
         "alpha_actor": 10.0,
         "alpha":0.03,
         "num_samples":4,
-        "mfql":{
-            "num_samples":4,
-        },
-        "dmfql":{
-            "num_samples":4,
-                   },
         "dmfrebrac":{
             "num_samples":4,
             "alpha_critic":0.01,
