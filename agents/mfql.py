@@ -94,9 +94,12 @@ class MFQLAgent(DOALAgent):
 
         rng, actor_rng, critic_rng = jax.random.split(rng, 3)
 
-        critic_loss, critic_info = self.critic_loss(batch, grad_params, critic_rng)
-        for k, v in critic_info.items():
-            info[f'critic/{k}'] = v
+        if not self.config["bc_only"]:
+            critic_loss, critic_info = self.critic_loss(batch, grad_params, critic_rng)
+            for k, v in critic_info.items():
+                info[f'critic/{k}'] = v
+        else:
+            critic_loss = 0
 
         actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng)
         for k, v in actor_info.items():
@@ -196,6 +199,9 @@ class MFQLAgent(DOALAgent):
         temperature=1.0,
     ):
         """Sample actions from the actor."""
+
+        if self.config["bc_only"]:
+            return self.sample_actions_bptt(observations,seed)
         orig_observations = observations
         if self.config['encoder'] is not None:
             observations = self.network.select('actor_flow_encoder')(observations)
@@ -318,6 +324,7 @@ def get_config():
             flow_steps=10,  # Number of flow steps.
             delta=1.0,
             clip=True,
+            bc_only=False,
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             bptt=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
