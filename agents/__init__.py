@@ -15,6 +15,8 @@ from agents.sfql import SFQLAgent
 from agents.trigql import TrigQLAgent
 from agents.dtrigql import DTrigQLAgent
 from agents.dmfrebrac import DMFReBRACAgent
+from agents.fac import FACAgent
+
 agents = dict(
     iql=IQLAgent,
     diql=DIQLAgent,
@@ -23,6 +25,7 @@ agents = dict(
     trigflow = TrigFQLAgent,
     dtrigflow = DTrigFQLAgent,
     fql=FQLAgent,
+    fac=FACAgent,
     rebrac=ReBRACAgent,
     drebrac=DReBRACAgent,
     retrigflow=ReTrigFQLAgent,
