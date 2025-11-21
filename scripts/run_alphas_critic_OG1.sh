@@ -25,7 +25,7 @@ SEED=$2
 
 env_names=("antmaze-large-navigate-singletask-v0" "antmaze-giant-navigate-singletask-v0"  'humanoidmaze-medium-navigate-singletask-v0' "humanoidmaze-large-navigate-singletask-v0" "antsoccer-arena-navigate-singletask-v0"   )
 # Loop through all environments and alpha values
-alphas=(  0.001 0.003 0.01 )
+alphas=(0  0.001 0.003 0.01 )
 for env_name in "${env_names[@]}"; do
     # Loop through all alpha values
     for alpha in "${alphas[@]}"; do

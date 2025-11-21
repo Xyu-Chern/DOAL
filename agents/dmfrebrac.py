@@ -44,7 +44,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
 
         raw_actor_loss = (pred - vel) ** 2
-        actor_loss =  jnp.mean(raw_actor_loss)
+        actor_loss =  jnp.mean(raw_actor_loss) * self.config['alpha_actor']
 
         return actor_loss, {
             "raw_actor_loss":jnp.mean(raw_actor_loss),
@@ -171,6 +171,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         else:
             actions = actions[jnp.argmax(q)]
         return actions
+        
     @partial(jax.jit, static_argnames=('full_update',))
     def total_loss(self, batch, grad_params, full_update=True, rng=None):
         """Compute the total loss."""

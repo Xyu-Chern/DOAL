@@ -1,92 +1,71 @@
 hyperparameters ={
     "antmaze-large-navigate-singletask-v0": {
         "alpha_actor": 10.0,
-        "alpha":0.03,
+        "alpha" : 0.1,
         "num_samples":4,
 
-        "iql": {
-            "alpha_actor": 10.0,
+        "mfql":{
+            "num_samples":4,
         },
-        "diql": {
-            "alpha_actor": 10.0,
+        "dmfql":{
+            "alpha" : 0.03,
+            "num_samples":4,
         },
-        
         "dmfrebrac":{
+            "alpha": 0.03,
             "alpha_critic":0.01,
-        },
-        "drebrac":{
-            "alpha_critic":0.01,
-            "alpha":0.1,
+            "num_samples":4,
         },
     },
     "antmaze-giant-navigate-singletask-v0": {
-        "iql": {
-            "alpha_actor": 10.0,
-        },
-        "diql": {
-            "alpha_actor": 10.0,
-            "alpha" : 0.1,
-        },
         "alpha_actor": 10.0,
-        "alpha":0.03,
-        "num_samples":4,
-        "dmfrebrac":{
+        "alpha" : 0.1,
+        "num_samples": 4,
+
+        "mfql":{
             "num_samples":4,
-            "alpha_critic":0.01,
         },
-        "drebrac":{
-            "alpha_actor":0.003,
+        "dmfql":{
+            "alpha" : 0.1,
+            "num_samples":4,
+        },
+        "dmfrebrac":{
+            "alpha": 0.1,
             "alpha_critic":0.01,
-            "alpha":0.1,
+            "num_samples":4,
         },
     },
     "humanoidmaze-medium-navigate-singletask-v0": {
-        "iql": {
-            "alpha_actor": 10.0,
-        },
-        "diql": {
-            "alpha_actor": 10.0,
-            "alpha" : 0.3,
-        },        
-        "dtrigql": {
-            "alpha" : 0.1,
-        },
         "alpha_actor": 30.0,
-        "alpha":0.1,
+        "alpha" : 0.1,
         "num_samples":32,
 
+        "diql": {
+            "alpha" : 0.3,
+            "alpha_actor": 10.0,
+        },        
         "mfql":{
             "num_samples":32,
         },
         "dmfql":{
-            "num_samples":32,
             "alpha" : 0.1,
+            "num_samples":32,
         },
         "dmfrebrac":{
-            "num_samples":32,
-            "alpha" : 0.1,
+            "alpha": 0.1,
             "alpha_critic":0.01,
-        },
-        "drebrac":{
-            "alpha_actor":0.01,
-            "alpha_critic":0.01,
-            "alpha":0.3,
+            "num_samples": 32,
         },
     },
     "humanoidmaze-large-navigate-singletask-v0": {
-        "iql": {
-            "alpha_actor": 10.0,
-        },
+        "alpha_actor": 30.0,
+        "alpha":0.03,
+        "num_samples":8,
+
         "diql": {
             "alpha_actor": 10.0,
             "alpha": 0.1,
         },
-        "dtrigql": {
-            "alpha" : 0.03,
-        },
-        "alpha_actor": 30.0,
-        "alpha":0.03,
-        "num_samples":8,
         "mfql":{
             "num_samples":16,
         },
@@ -95,30 +74,20 @@ hyperparameters ={
             "alpha" : 0.03,
         },
         "dmfrebrac":{
-            "num_samples":16,
-            "alpha" : 0.03,
+            "alpha": 0.03,
             "alpha_critic":0.01,
-        },
-        "drebrac":{
-            "alpha_actor":0.01,
-            "alpha_critic":0.01,
-            "alpha":0.1,
+            "num_samples": 16,
         },
     },
     "antsoccer-arena-navigate-singletask-v0": {
-        "iql": {
-            "alpha_actor": 1.0
-        },
+        "alpha_actor": 10.0,
+        "alpha":0.1,
+        "num_samples":16,
+
         "diql": {
             "alpha_actor": 1.0,
             "alpha" : 0.1
         },
-        "dtrigql": {
-            "alpha" : 0.1,
-        },
-         "alpha_actor": 10.0,
-        "alpha":0.1,
-        "num_samples":16,
         "mfql":{
             "num_samples":16,
         },
@@ -127,30 +96,21 @@ hyperparameters ={
             "alpha" : 0.1,
         },
         "dmfrebrac":{
-            "num_samples":16,
-            "alpha" : 0.1,
+            "alpha": 0.1,
             "alpha_critic":0.01,
-        },
-        "drebrac":{
-            "alpha_actor":0.01,
-            "alpha_critic":0.01,
-            "alpha":0.1,
+            "num_samples": 16,
         },
     },
     "cube-single-play-singletask-v0": {
-        "iql": {
-            "alpha_actor": 1.0
-        },
+        "alpha_actor": 300.0,
+        "alpha":0.03,
+        "num_samples":32,
+
+
         "diql": {
             "alpha_actor": 1.0,
             "alpha":0.03,
         },
-        "dtrigql": {
-            "alpha" : 0.03,
-        },
-        "alpha_actor": 300.0,
-        "alpha":0.03,
-        "num_samples":32,
         "mfql":{
             "num_samples":2,
         },
@@ -159,31 +119,20 @@ hyperparameters ={
             "alpha" : 0.03,
         },
         "dmfrebrac":{
-            "num_samples":2,
-            "alpha" : 0.03,
-            "alpha_actor":1.0,
+            "alpha": 0.03,
             "alpha_critic":0.01,
-        },
-        "drebrac":{
-            "alpha_actor":1.0,
-            "alpha_critic":0.0,
-            "alpha":0.03,
+            "num_samples": 2,
         },
     },
     "cube-double-play-singletask-v0": {
-        "iql": {
-            "alpha_actor": 0.3
-        },
+        "alpha_actor": 300.0,
+        "alpha":0.1,
+        "num_samples":16,
+
         "diql": {
             "alpha_actor": 0.3,
             "alpha" : 0.1,
         },
-        "dtrigql": {
-            "alpha" : 0.03,
-        },
-        "alpha_actor": 300.0,
-        "alpha":0.1,
-        "num_samples":4,
         "mfql":{
             "num_samples":4,
         },
@@ -192,232 +141,132 @@ hyperparameters ={
             "alpha" : 0.03,
         },
         "dmfrebrac":{
-            "num_samples":4,
-            "alpha" : 0.03,
-            "alpha_actor":0.1,
-            "alpha_critic":0.0,
-        },
-        "drebrac":{
-            "alpha_actor":0.1,
-            "alpha_critic":0.0,
-            "alpha":0.1,
+            "alpha": 0.03,
+            "alpha_critic":0.01,
+            "num_samples": 4,
         },
     },
     "scene-play-singletask-v0": {
-        "iql": {
-            "alpha_actor": 10.0
-        },
-        "diql": {
-            "alpha_actor": 10.0,
-            "alpha": 0.1,
-        },
-        "dtrigql": {
-            "alpha" : 0.1,
-        },
         "alpha_actor": 300.0,
         "alpha":0.1,
-        "num_samples":4,
-        "mfql":{
-        "num_samples":4,
-        },
-        "dmfql":{
-        "num_samples":4,
-        "alpha" : 0.1,
-        },
-        "dmfrebrac":{
-        "num_samples":4,
-        "alpha" : 0.1,
-            "alpha_actor":0.1,
-            "alpha_critic":0.01,
-        },
-        "drebrac":{
-            "alpha_actor":0.1,
-            "alpha_critic":0.01,
-            "alpha":0.1,
-        },
-        
-    },
-    "puzzle-3x3-play-singletask-v0": {
-        "iql": {
-            "alpha_actor": 10.0
-        },
+        "num_samples":32,
+
         "diql": {
             "alpha_actor": 10.0,
             "alpha": 0.1,
         },
-        "dtrigql": {
-            "alpha" : 0.3,
+        "mfql":{
+            "num_samples":4,
         },
+        "dmfql":{
+            "num_samples":4,
+            "alpha" : 0.1,
+        },
+        "dmfrebrac":{
+            "alpha": 0.1,
+            "alpha_critic":0.01,
+            "num_samples": 4,
+        },
+    },
+    "puzzle-3x3-play-singletask-v0": {
         "alpha_actor": 1000.0,
         "alpha":0.03,
         "num_samples":4,
+
+        "diql": {
+            "alpha_actor": 10.0,
+            "alpha": 0.1,
+        },
         "mfql":{
-        "num_samples":2,
+            "num_samples":2,
         },
         "dmfql":{
-        "num_samples":2,
-        "alpha" : 0.03,
+            "num_samples":2,
+            "alpha" : 0.03,
         },
         "dmfrebrac":{
-        "num_samples":2,
-        "alpha" : 0.03,
-            "alpha_actor":0.3,
+            "alpha": 0.03,
             "alpha_critic":0.01,
+            "num_samples": 2,
         },
-        "drebrac":{
-            "alpha_actor":0.3,
-            "alpha_critic":0.01,
-            "alpha":0.1,
-        },
-
     },
     "puzzle-4x4-play-singletask-v0": {
-        "iql": {
-            "alpha_actor": 3.0
-        },
+        "alpha_actor": 1000.0,
+        "alpha":0.03,
+        "num_samples":64,
+
         "diql": {
             "alpha_actor": 3.0,
             "alpha":0.1,
         },
-        "alpha_actor": 1000.0,
-        "alpha":0.03,
-        "num_samples":64,
         "mfql":{
-        "num_samples":4,
-        },
-        "dtrigql": {
-            "alpha" : 0.03,
+            "num_samples":4,
         },
         "dmfql":{
-        "num_samples":4,
-        "alpha" : 0.03,
+            "num_samples":4,
+            "alpha" : 0.03,
         },
         "dmfrebrac":{
-        "num_samples":4,
-        "alpha" : 0.03,
-            "alpha_actor":0.3,
+            "alpha": 0.03,
             "alpha_critic":0.01,
+            "num_samples": 4,
         },
-        "drebrac":{
-            "alpha_actor":0.3,
-            "alpha_critic":0.01,
-            "alpha":0.1,
-        },
-    },
-    "antmaze-umaze-v2": {
-        "fql": {
-            "alpha_actor": 10.0
-        },
-        "trigflow": {
-            "alpha_actor": 10.0
-        },
-        "rebrac": {
-            "alpha_actor": 0.003
-        },
-        "alpha_critic": 0.002,
-        
-        "drebrac": {
-            "alpha_actor": 0.003,
-            "alpha_critic": 0.002
-        }
-    },
-    "antmaze-umaze-diverse-v2": {
-        "fql": {
-            "alpha_actor": 10.0
-        },
-        "trigflow": {
-            "alpha_actor": 10.0
-        },
-        "rebrac": {
-            "alpha_actor": 0.003
-        },
-        "alpha_critic": 0.001,
-        
-        "drebrac": {
-            "alpha_actor": 0.003,
-            "alpha_critic": 0.001
-        }
-    },
-    "antmaze-medium-play-v2": {
-        "fql": {
-            "alpha_actor": 10.0
-        },
-        "trigflow": {
-            "alpha_actor": 10.0
-        },
-        "rebrac": {
-            "alpha_actor": 0.001
-        },
-        "alpha_critic": 0.0005,
-        
-        "drebrac": {
-            "alpha_actor": 0.001,
-            "alpha_critic": 0.0005
-        }
-    },
-    "antmaze-medium-diverse-v2": {
-        "fql": {
-            "alpha_actor": 10.0
-        },
-        "trigflow": {
-            "alpha_actor": 10.0
-        },
-        "rebrac": {
-            "alpha_actor": 0.001
-        },
-        "alpha_critic": 0.0,
-        "drebrac": {
-            "alpha_actor": 0.001,
-            "alpha_critic": 0.0
-        }
     },
     "pen-expert-v1": {
         "alpha_actor": 3000.0,
-        "alpha":0.0003,
-        "num_samples":32,
+        "alpha":0.3,
+        "num_samples":64,
         "diql": {
             "alpha": 0.3,
         },
         "mfql":{
             "num_samples":32,
         },
-        "dmfrebrac":{
-            "alpha_critic":0.01,
+        "dmfql":{
+            "num_samples":32,
+            "alpha":0.03,
         },
-        "rebrac":{
+        "dmfrebrac":{
+            "num_samples":32,
             "alpha_critic":0.01,
-            "alpha_actor":0.03,
         },
     },
     "pen-human-v1": {
         "alpha_actor": 10000.0,
-        "alpha":0.0003,
-        "num_samples":4,
+        "alpha":0.001,
+        "num_samples":8,
         "diql": {
             "alpha": 0.1,
         },
-        "dmfrebrac":{
-            "alpha_critic":0.5,
+        "mfql":{
+            "num_samples":4,
         },
-        "rebrac":{
-            "alpha_critic":0.5,
-            "alpha_actor":0.3,
+        "dmfql":{
+            "num_samples":4,
+            "alpha": 0.00003,
+        },
+        "dmfrebrac":{
+            "num_samples":4,
+            "alpha_critic":0.01,
         },
     },
     "pen-cloned-v1": {
-        "alpha":0.0003,
+        "alpha":0.0001,
         "num_samples":16,
         "alpha_actor": 10000.0,
         "diql": {
-            "alpha_actor": 10.0,
             "alpha": 0.0001,
         },
-        "dmfrebrac":{
-            "alpha_critic":0.5,
+        "mfql":{
+            "num_samples":32,
         },
-        "rebrac":{
-            "alpha_critic":0.5,
-            "alpha_actor":0.03,
+        "dmfql":{
+            "num_samples":32,
+            "alpha": 0.000003,
+        },
+        "dmfrebrac":{
+            "num_samples":32,
+            "alpha_critic":0.01,
         },
         
     },
@@ -425,96 +274,44 @@ hyperparameters ={
         "alpha_actor": 30000.0,
         "alpha":0.003,
         "num_samples":1,
-        "dtrigql": {
-            "alpha": 0.000003,
+        "diql": {
+            "alpha": 0.00003,
         },
         "mfql":{
             "num_samples":16,
-        },
-        "dmfrebrac":{
-        "num_samples":16,
-            "alpha_critic":0.01,
-        },
-        "rebrac":{
-            "alpha_critic":0.01,
-            "alpha_actor":0.1,
         },
         "dmfql":{
             "num_samples":16,
             "alpha": 0.0001,
         },
+        "dmfrebrac":{
+            "num_samples":16,
+            "alpha_critic":0.01,
+        },
 
     },
-    "door-cloned-v1": {
-        "alpha_actor": 30000.0,
-        "iql": {
-            "alpha_actor": 0.5
-        },  
-        "alpha":0.003,
-        "num_samples":64,
-        "dmfrebrac":{
-        "num_samples":64,
-            "alpha_critic":0.1,
-        },
-    },
-    "door-human-v1": {
-        "alpha_actor": 30000.0,
-        "iql": {
-            "alpha_actor": 0.5
-        },  
-        "dmfrebrac":{
-        "num_samples":2,
-            "alpha_critic":0.1,
-        },
-        "alpha":0.03,
-        "num_samples":2,
-    },
-
     "hammer-expert-v1": {
         "alpha_actor": 30000.0,
-        "alpha":0.003,
+        "alpha":0.000003,
         "num_samples":1,
         "diql": {
             "alpha": 0.03,
         },
-        "rebrac":{
-            "alpha_critic":0.01,
-            "alpha_actor":0.03,
-        },
         "mfql":{
             "num_samples":4,
-        },
-        "dtrigql": {
-            "alpha": 0.1,
-        },
-        "dmfrebrac":{
-        "num_samples":4,
-            "alpha_critic":0.01,
         },
         "dmfql":{
             "num_samples":4,
             "alpha": 0.03,
         },
-    },
-    "hammer-cloned-v1": {
-        "alpha_actor": 10000.0,
-        "iql": {
-            "alpha_actor": 0.5
-        },  
-        "alpha":0.3,
-        "num_samples":8,
-    },
-    "hammer-human-v1": {
-        "alpha_actor": 30000.0,
-        "iql": {
-            "alpha_actor": 0.5
-        },      
-        "alpha":0.03,
-        "num_samples":4,
+        "dmfrebrac":{
+            "num_samples":4,
+            "alpha_critic":0.01,
+        },
     },
     "relocate-expert-v1": {
         "alpha_actor": 30000.0,
-        "alpha":0.003,
+        "alpha":0.0001,
         "num_samples":2,
 
         "diql": {
@@ -525,35 +322,12 @@ hyperparameters ={
         },
         "dmfql":{
             "num_samples":4,
-        },
-        "rebrac":{
-            "alpha_critic":0.01,
-            "alpha_actor":1.0,
+            "alpha": 0.0001,
         },
         "dmfrebrac":{
-        "num_samples":4,
+            "num_samples":4,
             "alpha_critic":0.01,
         },
-        "dtrigql": {
-            "alpha": 0.01,
-        },
-
-    },
-    "relocate-human-v1": {
-        "alpha_actor": 10000.0,
-        "iql": {
-            "alpha_actor": 0.5
-        },
-        "alpha":0.1,
-        "num_samples":32,
-    },
-    "relocate-cloned-v1": {    
-        "alpha_actor": 30000.0,
-        "iql": {
-            "alpha_actor": 0.5
-        },
-        "alpha":0.1,
-        "num_samples":128,
     },
 
 }
