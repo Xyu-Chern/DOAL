@@ -34,6 +34,7 @@ for env_name in "${env_names[@]}"; do
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$env_name" \
             --alpha_critic "$alpha" \
+            --alpha 0 \
             --run_group og_alpha_critic \
             --noretest $3 $4 $5 $6 $7 \
             --seed "$SEED" --offline_steps 1000000 
