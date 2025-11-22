@@ -14,6 +14,7 @@ fi
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
 SEED=$2
+alpha_critic=$3
 
 
 # Define the list of environment names
@@ -22,13 +23,12 @@ SEED=$2
 env_names=( 'humanoidmaze-medium-navigate-singletask-v0' "antsoccer-arena-navigate-singletask-v0"  "puzzle-3x3-play-singletask-v0"  )
 
 for env_name in "${env_names[@]}"; do
-    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $SEED, Additional Args: $@"
+    echo "Running with Agent: $AGENT_NAME, Env: $ENV_NAME, Alpha: $alpha, ExpName: "
     python main.py \
         --agent "agents/$AGENT_NAME.py" \
         --env_name "$env_name" \
-        --run_group submit_OG_bptt \
-            --noretest \
-        --alpha_critic 0 \
-        --seed "$SEED" \
-        "$@"
+        --alpha_critic "$alpha_critic" \
+        --run_group og_alpha_critic \
+        --noretest $3 $4 $5 $6 $7 \
+        --seed "$SEED" --offline_steps 1000000 
 done

@@ -23,9 +23,9 @@ SEED=$2
 # Define the list of alpha parameters
 
 
-env_names=("antmaze-large-navigate-singletask-v0" "antmaze-giant-navigate-singletask-v0"  'humanoidmaze-medium-navigate-singletask-v0' "humanoidmaze-large-navigate-singletask-v0" "antsoccer-arena-navigate-singletask-v0"   )
-# Loop through all environments and alpha values
-alphas=(0  0.001 0.003 0.01 )
+env_names=( 'humanoidmaze-medium-navigate-singletask-v0' "antsoccer-arena-navigate-singletask-v0"  "puzzle-3x3-play-singletask-v0"  )
+
+alphas=(0.01  0.1 )
 for env_name in "${env_names[@]}"; do
     # Loop through all alpha values
     for alpha in "${alphas[@]}"; do
@@ -34,7 +34,7 @@ for env_name in "${env_names[@]}"; do
             --agent "agents/$AGENT_NAME.py" \
             --env_name "$env_name" \
             --alpha_critic "$alpha" \
-            --run_group alpha_critic \
+            --run_group og_alpha_critic \
             --noretest $3 $4 $5 $6 $7 \
             --seed "$SEED" --offline_steps 1000000 
 
