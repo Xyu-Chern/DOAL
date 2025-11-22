@@ -123,7 +123,6 @@ class FACAgent(flax.struct.PyTreeNode):
         """Compute the FAC critic loss with OOD penalization."""
         rng, actor_sample_rng = jax.random.split(rng)
         
-        # ... (actor_actions 采样不变) ...
         batch_size = batch['observations'].shape[0]
         noises = jax.random.normal(actor_sample_rng, (batch_size, self.config['action_dim']))
         actor_actions = self.network.select('actor_onestep_flow')(batch['observations'], noises, 
@@ -131,23 +130,15 @@ class FACAgent(flax.struct.PyTreeNode):
         actor_actions = jnp.clip(actor_actions, -1, 1)
         
         # =================================================================
-        # ✨ 停止行为代理（behavior_proxy）的梯度（逻辑保持正确）
+        # ✅ 正确方法：只对最终的 policy_weights 停止梯度
         # =================================================================
-        psi_params_key = 'modules_behavior_proxy'
         
-        stopped_psi_params = jax.tree_util.tree_map(
-            jax.lax.stop_gradient,
-            grad_params[psi_params_key]
-        )
-        
-        # 2. 构造用于计算密度的参数字典 (density_params)
-        density_params = dict(grad_params) 
-        density_params[psi_params_key] = stopped_psi_params
-        
-        # 3. 计算置信权重，使用停止梯度后的参数
-        # policy_weights 将不依赖于 psi 的梯度
+        # 1. 正常计算置信权重（不停止任何梯度）
         policy_weights, epsilon = self.compute_confidence_weights(
-            batch['observations'], actor_actions, density_params) 
+            batch['observations'], actor_actions, grad_params) 
+        
+        # 2. 只对权重应用 stop_gradient
+        policy_weights = jax.lax.stop_gradient(policy_weights)
         
         # ... (Standard TD loss 不变) ...
         rng, next_sample_rng = jax.random.split(rng)
@@ -170,24 +161,23 @@ class FACAgent(flax.struct.PyTreeNode):
         td_loss = jnp.square(q - target_q).mean()
         
         # Critic penalization term (FAC innovation)
-        # policy_qs 必须使用 grad_params，确保 Qϕ 接收到惩罚项的梯度
         policy_qs = self.network.select('critic')(batch['observations'], 
                                                 actions=actor_actions, 
                                                 params=grad_params)
         policy_q = policy_qs.mean(axis=0)
         
         # penalty_loss: w(s,a) * Q(s,a)
+        # 现在 policy_weights 不参与梯度计算，但 behavior_proxy 仍然可以正常训练
         penalty_loss = self.config['alpha_critic'] * jnp.mean(policy_weights * policy_q)
         
         total_critic_loss = td_loss + penalty_loss
 
-        # ... [Return] ...
         return total_critic_loss, {
             'critic_loss': total_critic_loss,
             'td_loss': td_loss,
             'penalty_loss': penalty_loss,
             'q_mean': q.mean(),
-            'policy_weights_mean': policy_weights.mean(),
+            'policy_weights_mean': policy_weights.mean(),  # 这里已经是 stop_gradient 的了
             'epsilon': epsilon,
         }
 

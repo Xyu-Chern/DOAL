@@ -82,6 +82,7 @@ def get_config():
             alpha=10.0,  # BC coefficient (need to be tuned for each environment).
             flow_steps=10,  # Number of flow steps.
             delta=2.0,
+            bc_only=False,
             clip=True,
             normalize_q_loss=False,  # Whether to normalize the Q loss.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).

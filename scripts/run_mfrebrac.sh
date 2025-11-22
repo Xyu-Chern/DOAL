@@ -13,28 +13,21 @@ fi
 
 # Assign command-line arguments to variables for clarity
 AGENT_NAME=$1
-
+SEED=$2
 
 
 # Define the list of environment names
 env_names=("antmaze-large-navigate-singletask-v0" 'humanoidmaze-medium-navigate-singletask-v0' "antsoccer-arena-navigate-singletask-v0" "cube-single-play-singletask-v0" "scene-play-singletask-v0"  'humanoidmaze-large-navigate-singletask-v0' "cube-double-play-singletask-v0" "puzzle-3x3-play-singletask-v0" "puzzle-4x4-play-singletask-v0" )
 
 
-# env_names=( 'humanoidmaze-medium-navigate-singletask-v0' "antsoccer-arena-navigate-singletask-v0"  "puzzle-3x3-play-singletask-v0"  )
-seeds=(888)
-
-
-
-# Loop through all environment names
-for seed in "${seeds[@]}"; do
-    for env_name in "${env_names[@]}"; do
-        echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $seed, Additional Args: $@"
-        python main.py \
-            --agent "agents/$AGENT_NAME.py" \
-            --env_name "$env_name" \
-            --run_group submit_OG_bptt \
-                --noretest \
-            --seed "$seed" \
-            "$@"
-    done
+for env_name in "${env_names[@]}"; do
+    echo "Running with Agent: $AGENT_NAME, Env: $env_name, Seed: $SEED, Additional Args: $@"
+    python main.py \
+        --agent "agents/$AGENT_NAME.py" \
+        --env_name "$env_name" \
+        --run_group submit_OG_bptt \
+            --noretest \
+        --alpha 0 \
+        --seed "$SEED" \
+        "$@"
 done
