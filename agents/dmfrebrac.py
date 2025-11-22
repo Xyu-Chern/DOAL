@@ -79,8 +79,9 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
                 self.config['actor_noise_clip'],
             )
             next_actions = jnp.clip(next_actions + noise, -1, 1)
+
         next_qs = self.network.select('target_critic')(batch['next_observations'], actions=next_actions)
-        next_q = next_qs.min(axis=0)
+        next_q = next_qs.mean(axis=0)
 
         mse = jnp.square(next_actions - batch['next_actions']).sum(axis=-1)
         next_q = next_q - self.config['alpha_critic'] * mse
@@ -100,41 +101,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
             'q_mean': q.mean(),
             'q_max': q.max(),
             'q_min': q.min(),
-        },aux
-
-    def actor_loss(self, batch, grad_params, rng,aux={}):
-        """Compute the ReBRAC actor loss."""
-        dist = self.network.select('actor')(batch['observations'], params=grad_params)
-        actions = dist.mode()
-
-        # Q loss.
-        if self.config["distill_from_target"]:
-            qs = self.network.select('target_critic')(batch['observations'], actions=actions)
-        else:
-            qs = self.network.select('critic')(batch['observations'], actions=actions)
-        q = jnp.min(qs, axis=0)
-
-        # BC loss.
-        mse = jnp.square(actions - batch['actions']).sum(axis=-1)
-
-        # Normalize Q values by the absolute mean to make the loss scale invariant.
-        actor_loss = -(aux["lam"] * q).mean()
-        bc_loss = (self.config['alpha_actor'] * mse).mean()
-
-        total_loss = actor_loss + bc_loss
-
-        if self.config['tanh_squash']:
-            action_std = dist._distribution.stddev()
-        else:
-            action_std = dist.stddev().mean()
-
-        return total_loss, {
-            'total_loss': total_loss,
-            'actor_loss': actor_loss,
-            'bc_loss': bc_loss,
-            'std': action_std.mean(),
-            'mse': mse.mean(),
-        }
+        }, aux
 
     @jax.jit
     def sample_actions_simple(
@@ -187,16 +154,8 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         dmf_actor_loss, actor_info = self.dmf_actor_loss(batch, grad_params, actor_flow_rng,aux)
         for k, v in actor_info.items():
             info[f'dmf_actor/{k}'] = v
-        if full_update and not self.config["flow_only"]:
-            # Update the actor.
-            actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_rng,aux)
-            for k, v in actor_info.items():
-                info[f'actor/{k}'] = v
-        else:
-            # Skip actor update.
-            actor_loss = 0.0
 
-        loss = critic_loss + actor_loss + dmf_actor_loss
+        loss = critic_loss + dmf_actor_loss
         return loss, info
 
     def target_update(self, network, module_name):
