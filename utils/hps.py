@@ -75,7 +75,7 @@ hyperparameters ={
         },
         "dmfrebrac":{
             "alpha": 0.03,
-            "alpha_critic":0.01,
+            "alpha_critic":0.001,
             "num_samples": 16,
         },
     },
@@ -97,7 +97,7 @@ hyperparameters ={
         },
         "dmfrebrac":{
             "alpha": 0.1,
-            "alpha_critic":0.01,
+            "alpha_critic":0.1,
             "num_samples": 16,
         },
     },
@@ -142,7 +142,7 @@ hyperparameters ={
         },
         "dmfrebrac":{
             "alpha": 0.03,
-            "alpha_critic":0.01,
+            "alpha_critic":0.1,
             "num_samples": 4,
         },
     },
