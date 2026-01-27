@@ -7,6 +7,11 @@ from flax import struct
 from flax.training.train_state import TrainState
 from jax import numpy as jnp
 
+from typing import Sequence, Callable
+
+# 或者使用 Python 3.9+ 的语法
+# from collections.abc import Sequence, Callable
+
 from rejax.algos.algorithm import Algorithm, register_init
 from rejax.algos.mixins import (
     NormalizeObservationsMixin,
