@@ -9,7 +9,7 @@ print("初始化算法...")
 algo = DOAL.create(
     env="Pendulum-v1", 
     learning_rate=0.001,
-    total_timesteps=50_000,  # 先小规模测试
+    total_timesteps=200,  # 先小规模测试
     batch_size=256,
     gamma=0.99,
     eval_freq=10_000,
