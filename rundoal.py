@@ -3,7 +3,7 @@ from doal import DOAL
 
 
 # Get train function and initialize config for training
-algo = DOAL.create(env="CartPole-v1", learning_rate=0.001)
+algo = DOAL.create(env="Pendulum-v1", learning_rate=0.001)
 
 # Jit the training function
 train_fn = jax.jit(algo.train)
