@@ -26,14 +26,10 @@ class FlowMLP(nn.Module):
     action_dim: int
     hidden_layer_sizes: Sequence[int]
     activation: Callable
+    action_range: tuple = None  # 添加这个字段
 
     @nn.compact
     def __call__(self, obs, x, t):
-        # Flatten obs if needed, but usually it's already flat or we handle it.
-        # Concatenate inputs: obs, x (action), t (time)
-        # inputs can have arbitrary leading dimensions (batch, samples, etc.)
-        # so we concat along the last dimension.
-        
         if t.ndim == x.ndim - 1:
             t = t[..., None]
             
@@ -45,6 +41,8 @@ class FlowMLP(nn.Module):
             y = self.activation(y)
         
         return nn.Dense(self.action_dim)(y)
+    
+
 
 from rejax.networks import  QNetwork
 
@@ -82,27 +80,28 @@ class DOAL(
     policy_delay: int = struct.field(pytree_node=False, default=2)
 
     @jax.jit
-    def auto(self,ts, minibatch):
-
+    def auto(self, ts, minibatch):
         def bc_loss_wrt_q_action(q_action):
             qs = self.vmap_critic(ts.critic_ts.params, minibatch.obs, q_action)
-            q = jnp.mean(qs,axis=0)
-            return  jnp.sum(q) 
+            q = jnp.mean(qs, axis=0)
+            return jnp.sum(q)
 
-    
         v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
         q, g = v_grad_q(minibatch.action)
 
-        norm = jnp.linalg.norm(g,axis=-1,keepdims=True) + 1e-5
+        norm = jnp.linalg.norm(g, axis=-1, keepdims=True) + 1e-5
         norm_mean = jnp.mean(norm)
         norm_std = jnp.std(norm)
         norm_up = norm_mean + self.delta * norm_std
 
-        clipped_g = jnp.where(norm > norm_up,  g * norm_up / norm,   g)
-        dx =   (self.alpha / norm_mean ) * clipped_g 
+        clipped_g = jnp.where(norm > norm_up, g * norm_up / norm, g)
+        dx = (self.alpha / norm_mean) * clipped_g 
         adjusted_actions = minibatch.action + dx
-        adjusted_actions = jnp.clip(adjusted_actions, self.actor.action_range[0], self.actor.action_range[1])
-            
+        
+        # 使用 self.action_space.low/high 而不是 self.actor.action_range
+        low, high = self.action_space.low, self.action_space.high
+        adjusted_actions = jnp.clip(adjusted_actions, low, high)
+        
         adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
         return adjusted_actions
 
@@ -174,15 +173,17 @@ class DOAL(
         actor_kwargs = config.pop("actor_kwargs", {})
         activation = actor_kwargs.pop("activation", "swish")
         actor_kwargs["activation"] = getattr(nn, activation)
-        action_range = (
-            env.action_space(env_params).low,
-            env.action_space(env_params).high,
-        )
-        action_dim = np.prod(env.action_space(env_params).shape)
+        
+        action_space = env.action_space(env_params)
+        action_dim = np.prod(action_space.shape)
+        action_range = (action_space.low, action_space.high)
         
         # Use FlowMLP instead of DeterministicPolicy
         actor = FlowMLP(
-            action_dim, hidden_layer_sizes=(64, 64), **actor_kwargs
+            action_dim=action_dim, 
+            hidden_layer_sizes=(64, 64), 
+            action_range=action_range,  # 传递动作范围
+            **actor_kwargs
         )
 
         critic_kwargs = config.pop("critic_kwargs", {})
@@ -191,6 +192,7 @@ class DOAL(
         critic = QNetwork(hidden_layer_sizes=(64, 64), **critic_kwargs)
 
         return {"actor": actor, "critic": critic}
+    
 
     @register_init
     def initialize_network_params(self, rng):
