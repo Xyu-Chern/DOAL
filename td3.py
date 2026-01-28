@@ -13,3 +13,5 @@ vmapped_train_fn = jax.vmap(train_fn)
 # Train 300 agents!
 keys = jax.random.split(jax.random.PRNGKey(0), 300)
 train_state, evaluation = vmapped_train_fn(keys)
+
+print(evaluation)
