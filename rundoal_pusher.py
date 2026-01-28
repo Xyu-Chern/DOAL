@@ -608,7 +608,7 @@ def custom_eval_callback(algo, train_state, rng):
     return returns, lengths
 
 
-env_name = "brax/humanoidstandup"
+env_name = "brax/pusher"
 # ========== 初始化WandB ==========
 wandb.init(
     project="doal-integrated",
