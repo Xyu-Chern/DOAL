@@ -555,45 +555,57 @@ class DOAL(
 import jax
 # 在你的主训练脚本中添加这个函数来替换默认的评估
 def custom_eval_callback(algo, train_state, rng):
-    """自定义评估函数，确保正确计算奖励"""
+    """JAX 友好的评估函数，解决 Tracer 错误"""
     env = algo.env
     env_params = algo.env_params
-    max_episode_steps = 200  # Pendulum-v1的最大步数
+    max_episode_steps = 200  # Pendulum-v1 的步数
+    num_eval_episodes = 10   # 评估 10 个 episodes
     
-    def evaluate_episode(rng):
-        # 重置环境
-        rng, reset_rng = jax.random.split(rng)
-        obs, state = env.reset(reset_rng, env_params)
+    # 获取 act 函数 (闭包)
+    act_fn = algo.make_act(train_state)
+
+    def single_step(carry, _):
+        # carry 存储在步骤之间传递的状态
+        obs, state, done, cumulative_reward, step_rng = carry
         
-        done = False
-        total_reward = 0.0
-        steps = 0
+        # 即使已经 done，为了保持 JAX 数组形状一致，我们依然执行计算，但会通过 mask 屏蔽结果
+        step_rng, action_rng, env_rng = jax.random.split(step_rng, 3)
         
-        while not done and steps < max_episode_steps:
-            # 选择动作
-            rng, action_rng = jax.random.split(rng)
-            action = algo.make_act(train_state)(obs, action_rng)
-            
-            # 执行一步
-            rng, step_rng = jax.random.split(rng)
-            next_obs, next_state, reward, done, _ = env.step(
-                step_rng, state, action, env_params
-            )
-            
-            total_reward += reward
-            steps += 1
-            obs = next_obs
-            state = next_state
+        # 选择动作
+        action = act_fn(obs, action_rng)
         
-        return total_reward, steps
-    
-    # 评估多个episodes
-    num_eval_episodes = 10  # 评估10个episodes
+        # 执行环境步
+        next_obs, next_state, reward, next_done, _ = env.step(
+            env_rng, state, action, env_params
+        )
+        
+        # 如果当前已经 done，则不增加奖励
+        new_done = jnp.logical_or(done, next_done)
+        new_reward = cumulative_reward + reward * (1.0 - done.astype(jnp.float32))
+        
+        return (next_obs, next_state, new_done, new_reward, step_rng), None
+
+    def evaluate_episode(episode_rng):
+        # 初始化环境
+        rng_reset, rng_run = jax.random.split(episode_rng)
+        obs, state = env.reset(rng_reset, env_params)
+        
+        # 初始化 carry: (obs, state, done, reward, rng)
+        init_carry = (obs, state, jnp.array(False), jnp.array(0.0), rng_run)
+        
+        # 使用 jax.lax.scan 替代 Python while 循环
+        final_carry, _ = jax.lax.scan(
+            single_step, init_carry, None, length=max_episode_steps
+        )
+        
+        final_reward = final_carry[3]
+        return final_reward, jnp.array(max_episode_steps)
+
+    # 并行评估多个 Episode
     rngs = jax.random.split(rng, num_eval_episodes)
     returns, lengths = jax.vmap(evaluate_episode)(rngs)
     
     return returns, lengths
-
 
 
 
