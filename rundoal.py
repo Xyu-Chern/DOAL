@@ -104,8 +104,8 @@ DOAL.train = train_with_wandb
 # 创建并训练算法
 algo = DOAL.create(
     env="Pendulum-v1",
-    total_timesteps=1000,
-    eval_freq=100,
+    total_timesteps=1000000,
+    eval_freq=5000,
     num_envs=1,
 )
 
