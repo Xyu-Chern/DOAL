@@ -1,12 +1,10 @@
-import os
-os.environ['JAX_PLATFORMS'] = 'cpu'
 
 import jax
 import jax.numpy as jnp
 import wandb
+import numpy as np
 from doal import DOAL
 
-# 初始化WandB
 wandb.init(
     project="doal-training",
     config={"env": "Pendulum-v1"},
@@ -24,14 +22,6 @@ def train_with_wandb(self, rng=None, train_state=None):
 
     if not self.skip_initial_evaluation:
         initial_evaluation = self.eval_callback(self, ts, ts.rng)
-        # 记录初始评估
-        if initial_evaluation is not None and len(initial_evaluation) >= 2:
-            returns = initial_evaluation[0]
-            if returns.size > 0:
-                wandb.log({
-                    "eval/return": float(jnp.mean(returns)),
-                    "eval/step": 0
-                }, step=0)
 
     def eval_iteration(ts, eval_idx):
         # Run a few training iterations
@@ -47,27 +37,57 @@ def train_with_wandb(self, rng=None, train_state=None):
         # Run evaluation
         eval_result = self.eval_callback(self, ts, ts.rng)
         
-        # 记录到WandB
-        if eval_result is not None and len(eval_result) >= 2:
-            returns, lengths = eval_result[0], eval_result[1]
-            if returns.size > 0:
-                step = int(ts.global_step)
-                wandb.log({
-                    "eval/return": float(jnp.mean(returns)),
-                    "eval/length": float(jnp.mean(lengths)),
-                    "train/step": step
-                }, step=step)
-                print(f"[Step {step}] Return: {float(jnp.mean(returns)):.2f}")
-        
-        return ts, eval_result
+        return ts, (eval_result, ts.global_step)  # 返回global_step
 
-    import numpy as np
-    ts, evaluation = jax.lax.scan(
+    ts, results = jax.lax.scan(
         eval_iteration,
         ts,
         jnp.arange(np.ceil(self.total_timesteps / self.eval_freq).astype(int)),
         np.ceil(self.total_timesteps / self.eval_freq).astype(int),
     )
+    
+    # 分离评估结果和步骤
+    evaluation, steps = results
+    
+    # ========== 在scan外部处理WandB日志 ==========
+    # 这是一个关键修复：在JAX扫描外部处理日志
+    def process_logs(eval_batch, step_batch):
+        """处理一批评估结果并记录到WandB"""
+        eval_batch = jax.device_get(eval_batch)  # 从设备获取数据
+        step_batch = jax.device_get(step_batch)
+        
+        for i in range(len(step_batch)):
+            eval_result = jax.tree.map(lambda x: x[i], eval_batch)
+            step = step_batch[i]
+            
+            if eval_result is not None and len(eval_result) >= 2:
+                returns, lengths = eval_result[0], eval_result[1]
+                if returns.size > 0:
+                    # 转换为Python原生类型
+                    step_int = int(step)
+                    mean_return = float(jnp.mean(returns))
+                    mean_length = float(jnp.mean(lengths))
+                    
+                    wandb.log({
+                        "eval/return": mean_return,
+                        "eval/length": mean_length,
+                        "train/step": step_int
+                    }, step=step_int)
+                    print(f"[Step {step_int}] Return: {mean_return:.2f}")
+
+    # 处理所有评估结果
+    process_logs(evaluation, steps)
+    
+    # 处理初始评估
+    if not self.skip_initial_evaluation and initial_evaluation is not None:
+        if len(initial_evaluation) >= 2:
+            returns, lengths = initial_evaluation[0], initial_evaluation[1]
+            if returns.size > 0:
+                wandb.log({
+                    "eval/return": float(jnp.mean(returns)),
+                    "eval/length": float(jnp.mean(lengths)),
+                    "train/step": 0
+                }, step=0)
 
     if not self.skip_initial_evaluation:
         evaluation = jax.tree.map(
