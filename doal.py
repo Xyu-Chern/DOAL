@@ -6,11 +6,11 @@ from flax import linen as nn
 from flax import struct
 from flax.training.train_state import TrainState
 from jax import numpy as jnp
+from jax.experimental import host_callback as hcb
+import wandb  # 添加WandB导入
 
 from typing import Sequence, Callable
 
-# 或者使用 Python 3.9+ 的语法
-# from collections.abc import Sequence, Callable
 
 from rejax.algos.algorithm import Algorithm, register_init
 from rejax.algos.mixins import (
@@ -43,20 +43,7 @@ class FlowMLP(nn.Module):
         return nn.Dense(self.action_dim)(y)
     
 
-
 from rejax.networks import  QNetwork
-
-
-# Algorithm outline
-# num_eval_iterations = total_timesteps / eval_freq
-# num_train_iterations = eval_freq / (num_envs * policy_delay)
-# for _ in range(num_eval_iterations):
-#   for _ in range(num_train_iterations):
-#     for _ in range(policy_delay):
-#       M = collect num_gradient_steps minibatches
-#       update critic using M
-#     update actor using M
-#     update target networks
 
 
 class DOAL(
@@ -233,9 +220,24 @@ class DOAL(
 
         if not self.skip_initial_evaluation:
             initial_evaluation = self.eval_callback(self, ts, ts.rng)
+            
+            # ====== 添加：记录初始评估到WandB ======
+            if initial_evaluation is not None and len(initial_evaluation) >= 2:
+                def log_initial(returns, lengths):
+                    if returns.size > 0:
+                        wandb.log({
+                            "eval/return": float(np.mean(returns)),
+                            "eval/length": float(np.mean(lengths)),
+                            "train/step": 0
+                        }, step=0)
+                        print(f"[Step 0] Initial eval: return={np.mean(returns):.2f}")
+                
+                returns, lengths = initial_evaluation[0], initial_evaluation[1]
+                hcb.call(log_initial, (returns, lengths))
+            # ====== 结束添加 ======
 
         def eval_iteration(ts, unused):
-            # Run a few trainig iterations
+            # Run a few training iterations
             steps_per_train_it = self.num_envs * self.policy_delay
             num_train_its = np.ceil(self.eval_freq / steps_per_train_it).astype(int)
             ts = jax.lax.fori_loop(
@@ -246,7 +248,25 @@ class DOAL(
             )
 
             # Run evaluation
-            return ts, self.eval_callback(self, ts, ts.rng)
+            eval_result = self.eval_callback(self, ts, ts.rng)
+            
+            # ====== 添加：记录评估结果到WandB ======
+            if eval_result is not None and len(eval_result) >= 2:
+                def log_to_wandb(args):
+                    step, returns, lengths = args
+                    if returns.size > 0:
+                        wandb.log({
+                            "eval/return": float(np.mean(returns)),
+                            "eval/length": float(np.mean(lengths)),
+                            "train/step": int(step)
+                        }, step=int(step))
+                        print(f"[Step {int(step)}] Eval: return={np.mean(returns):.2f}")
+                
+                returns, lengths = eval_result[0], eval_result[1]
+                hcb.call(log_to_wandb, (ts.global_step, returns, lengths))
+            # ====== 结束添加 ======
+            
+            return ts, eval_result
 
         ts, evaluation = jax.lax.scan(
             eval_iteration,
@@ -261,9 +281,29 @@ class DOAL(
                 initial_evaluation,
                 evaluation,
             )
+        
+        # ====== 添加：记录最终结果到WandB ======
+        if evaluation is not None and len(evaluation) >= 2:
+            def log_final(returns, lengths):
+                if returns.size > 0:
+                    final_return = float(np.mean(returns))
+                    wandb.log({
+                        "final/return": final_return,
+                        "final/length": float(np.mean(lengths))
+                    })
+                    wandb.summary["final_return"] = final_return
+                    print(f"Final evaluation: return={final_return:.2f}")
+            
+            # 取最后一次评估的结果
+            if evaluation[0].shape[0] > 0:
+                final_returns = evaluation[0][-1] if len(evaluation[0].shape) > 1 else evaluation[0]
+                final_lengths = evaluation[1][-1] if len(evaluation[1].shape) > 1 else evaluation[1]
+                hcb.call(log_final, (final_returns, final_lengths))
+        # ====== 结束添加 ======
 
         return ts, evaluation
 
+    # ... 后面的方法保持不变 ...
     def train_iteration(self, ts):
         old_global_step = ts.global_step
         placeholder_minibatch = jax.tree.map(
@@ -478,4 +518,3 @@ class DOAL(
         grads = jax.grad(actor_loss_fn)(ts.actor_ts.params, rng_loss)
         ts = ts.replace(actor_ts=ts.actor_ts.apply_gradients(grads=grads))
         return ts
-
