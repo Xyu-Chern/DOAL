@@ -7,8 +7,8 @@ from flax import struct
 from flax.training.train_state import TrainState
 from jax import numpy as jnp
 import wandb
-
-from typing import Sequence, Callable
+from typing import NamedTuple, Union, Sequence, Callable
+from gymnax.environments import spaces
 
 from rejax.algos.algorithm import Algorithm, register_init
 from rejax.algos.mixins import (
@@ -18,23 +18,9 @@ from rejax.algos.mixins import (
     ReplayBufferMixin,
     TargetNetworkMixin,
 )
-
-from rejax.buffers import Minibatch
-from functools import partial
-
-import chex
-import jax
-import numpy as np
-from flax import struct
-from jax import numpy as jnp
-from optax import linear_schedule
-
-from rejax.algos.algorithm import register_init
 from rejax.buffers import ReplayBuffer
+from rejax.networks import DeterministicPolicy, QNetwork
 
-from typing import NamedTuple, Union
-
-from gymnax.environments import spaces
 class SarsaMinibatch(NamedTuple):
     obs: chex.Array
     action: chex.Array
@@ -81,7 +67,6 @@ class SarsaReplayBuffer(ReplayBuffer):
         return cls(size=size, data=data, index=0, full=False)
 
 
-
 class SarsaReplayBufferMixin(ReplayBufferMixin):
 
     @register_init
@@ -90,31 +75,7 @@ class SarsaReplayBufferMixin(ReplayBufferMixin):
         return {"replay_buffer": buf}
 
 
-class FlowMLP(nn.Module):
-    action_dim: int
-    hidden_layer_sizes: Sequence[int]
-    activation: Callable
-    action_range: tuple = None  # 添加这个字段
-
-    @nn.compact
-    def __call__(self, obs, x, t):
-        if t.ndim == x.ndim - 1:
-            t = t[..., None]
-            
-        inputs = jnp.concatenate([obs, x, t], axis=-1)
-        
-        y = inputs
-        for size in self.hidden_layer_sizes:
-            y = nn.Dense(size)(y)
-            y = self.activation(y)
-        
-        return nn.Dense(self.action_dim)(y)
-    
-
-from rejax.networks import QNetwork
-
-
-class DOALSARSA(
+class SARSA(
     SarsaReplayBufferMixin,
     TargetNetworkMixin,
     NormalizeObservationsMixin,
@@ -128,98 +89,16 @@ class DOALSARSA(
     exploration_noise: chex.Scalar = struct.field(pytree_node=True, default=0.3)
     target_noise: chex.Scalar = struct.field(pytree_node=True, default=0.2)
     target_noise_clip: chex.Scalar = struct.field(pytree_node=True, default=0.5)
-    alpha: chex.Scalar = struct.field(pytree_node=True, default=0.2)
-    delta: chex.Scalar = struct.field(pytree_node=True, default=2.0)
-    flow_steps: int = struct.field(pytree_node=False, default=10)
-    max_q_samples: int = struct.field(pytree_node=False, default=4)
     policy_delay: int = struct.field(pytree_node=False, default=2)
-
-    @jax.jit
-    def auto(self, ts, minibatch):
-        def bc_loss_wrt_q_action(q_action):
-            qs = self.vmap_critic(ts.critic_ts.params, minibatch.obs, q_action)
-            q = jnp.mean(qs, axis=0)
-            return jnp.sum(q)
-
-        v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
-        q, g = v_grad_q(minibatch.action)
-
-        norm = jnp.linalg.norm(g, axis=-1, keepdims=True) + 1e-5
-        norm_mean = jnp.mean(norm)
-        norm_std = jnp.std(norm)
-        norm_up = norm_mean + self.delta * norm_std
-
-        clipped_g = jnp.where(norm > norm_up, g * norm_up / norm, g)
-        dx = (self.alpha / norm_mean) * clipped_g 
-        adjusted_actions = minibatch.action + dx
-        
-        # 使用 self.action_space.low/high 而不是 self.actor.action_range
-        low, high = self.action_space.low, self.action_space.high
-        adjusted_actions = jnp.clip(adjusted_actions, low, high)
-        
-        adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
-        return adjusted_actions
-
-    def _sample_actions(self, params, obs, rng, num_samples=1):
-        batch_size = obs.shape[0]
-        action_dim = self.actor.action_dim
-        
-        # Initial noise
-        rng, key_x0 = jax.random.split(rng)
-        x = jax.random.normal(key_x0, (batch_size, num_samples, action_dim))
-        
-        # Expand obs: (batch, obs_dim) -> (batch, num_samples, obs_dim)
-        obs_expanded = jnp.repeat(obs[:, None, :], num_samples, axis=1)
-        
-        dt = 1.0 / self.flow_steps
-        
-        def body_fn(i, x):
-            t_val = i / self.flow_steps
-            t = jnp.full((batch_size, num_samples, 1), t_val)
-            vel = self.actor.apply(params, obs_expanded, x, t)
-            return x + vel * dt
-
-        x = jax.lax.fori_loop(0, self.flow_steps, body_fn, x)
-        
-        # Clip to action range
-        low, high = self.action_space.low, self.action_space.high
-        x = jnp.clip(x, low, high)
-        return x
 
     def make_act(self, ts):
         def act(obs, rng):
             if self.normalize_observations:
                 obs = self.normalize_obs(ts.obs_rms_state, obs)
 
-            # obs is (obs_dim,), expand to (1, obs_dim)
             obs = jnp.expand_dims(obs, 0)
-            
-            # Sample multiple actions using flow
-            # (1, num_samples, action_dim)
-            actions = self._sample_actions(ts.actor_ts.params, obs, rng, num_samples=self.max_q_samples)
-            
-            # Score actions with critic
-            # Critic expects (batch, obs_dim) and (batch, action_dim)
-            # We have (1, num_samples, action_dim).
-            # Expand obs to (1, num_samples, obs_dim)
-            obs_expanded = jnp.repeat(obs[:, None, :], self.max_q_samples, axis=1)
-            
-            # Flatten for critic: (num_samples, obs_dim)
-            obs_flat = obs_expanded.reshape(-1, obs.shape[-1])
-            actions_flat = actions.reshape(-1, actions.shape[-1])
-            
-            # Evaluate Q-values
-            qs = self.vmap_critic(ts.critic_ts.params, obs_flat, actions_flat)
-            # qs is (num_critics, num_samples)
-            
-            # Min over critics
-            q_min = jnp.min(qs, axis=0) # (num_samples,)
-            
-            # Pick best action
-            best_idx = jnp.argmax(q_min)
-            best_action = actions_flat[best_idx]
-            
-            return best_action
+            action = self.actor.apply(ts.actor_ts.params, obs)
+            return jnp.squeeze(action)
 
         return act
 
@@ -228,17 +107,13 @@ class DOALSARSA(
         actor_kwargs = config.pop("actor_kwargs", {})
         activation = actor_kwargs.pop("activation", "swish")
         actor_kwargs["activation"] = getattr(nn, activation)
-        
-        action_space = env.action_space(env_params)
-        action_dim = np.prod(action_space.shape)
-        action_range = (action_space.low, action_space.high)
-        
-        # Use FlowMLP instead of DeterministicPolicy
-        actor = FlowMLP(
-            action_dim=action_dim, 
-            hidden_layer_sizes=(64, 64), 
-            action_range=action_range,  # 传递动作范围
-            **actor_kwargs
+        action_range = (
+            env.action_space(env_params).low,
+            env.action_space(env_params).high,
+        )
+        action_dim = np.prod(env.action_space(env_params).shape)
+        actor = DeterministicPolicy(
+            action_dim, action_range, hidden_layer_sizes=(64, 64), **actor_kwargs
         )
 
         critic_kwargs = config.pop("critic_kwargs", {})
@@ -247,7 +122,6 @@ class DOALSARSA(
         critic = QNetwork(hidden_layer_sizes=(64, 64), **critic_kwargs)
 
         return {"actor": actor, "critic": critic}
-    
 
     @register_init
     def initialize_env_state(self, rng):
@@ -267,15 +141,13 @@ class DOALSARSA(
         rng_critic = jax.random.split(rng_critic, self.num_critics)
         obs_ph = jnp.empty((1, *self.env.observation_space(self.env_params).shape))
         action_ph = jnp.empty((1, *self.env.action_space(self.env_params).shape))
-        t_ph = jnp.empty((1, 1))
 
         tx = optax.chain(
             optax.clip(self.max_grad_norm),
             optax.adam(learning_rate=self.learning_rate),
         )
 
-        # Initialize FlowMLP with (obs, x, t)
-        actor_params = self.actor.init(rng_actor, obs_ph, action_ph, t_ph)
+        actor_params = self.actor.init(rng_actor, obs_ph)
         actor_ts = TrainState.create(apply_fn=(), params=actor_params, tx=tx)
 
         vmap_init = jax.vmap(self.critic.init, in_axes=(0, None, None))
@@ -298,7 +170,6 @@ class DOALSARSA(
 
         ts = train_state or self.init_state(rng)
 
-        # 使用JAX的调试工具来处理日志
         if not self.skip_initial_evaluation:
             initial_evaluation = self.eval_callback(self, ts, ts.rng)
             
@@ -313,7 +184,7 @@ class DOALSARSA(
                 )
 
         def eval_iteration(ts, unused):
-            # Run a few training iterations
+            # Run a few trainig iterations
             steps_per_train_it = self.num_envs * self.policy_delay
             num_train_its = np.ceil(self.eval_freq / steps_per_train_it).astype(int)
             ts = jax.lax.fori_loop(
@@ -366,9 +237,6 @@ class DOALSARSA(
 
         return ts, evaluation
 
-
-
-
     def _log_final_results(self, returns, lengths):
         """记录最终结果到WandB"""
         if returns.size > 0:
@@ -417,7 +285,6 @@ class DOALSARSA(
             }, step=int(step))
             print(f"[Step {int(step)}] Eval: return={mean_return:.2f}, length={mean_length:.2f}")
 
-    # ... 后面的方法保持不变 ...
     def train_iteration(self, ts):
         old_global_step = ts.global_step
         placeholder_minibatch = jax.tree.map(
@@ -545,12 +412,7 @@ class DOALSARSA(
             else:
                 curr_obs = next_obs
 
-            # Use flow sampling
-            # (batch, 1, action_dim)
-            actions = self._sample_actions(ts.actor_ts.params, curr_obs, rng, num_samples=1)
-            actions = actions.squeeze(1)
-            
-            # Add exploration noise
+            actions = self.actor.apply(ts.actor_ts.params, curr_obs)
             noise = self.exploration_noise * jax.random.normal(rng, actions.shape)
             action_low, action_high = self.action_space.low, self.action_space.high
             return jnp.clip(actions + noise, action_low, action_high)
@@ -579,14 +441,14 @@ class DOALSARSA(
     def update_critic(self, ts, minibatch):
         rng, rng_sample = jax.random.split(ts.rng)
         ts = ts.replace(rng=rng)
-        
+
         def critic_loss_fn(params):
-            # Sample next action from target actor
-            # (batch, 1, action_dim)
+            # Use stored next action from SARSA buffer
             action = minibatch.next_action
             
+            # Apply target noise (smoothing) as in original code logic
             noise = jnp.clip(
-                self.target_noise * jax.random.normal(rng_sample, action.shape), 
+                self.target_noise * jax.random.normal(rng_sample, action.shape),
                 -self.target_noise_clip,
                 self.target_noise_clip,
             )
@@ -609,42 +471,21 @@ class DOALSARSA(
         return ts
 
     def update_actor(self, ts, minibatch):
-        adjusted_actions = self.auto(ts, minibatch)
-        
-        rng, rng_loss = jax.random.split(ts.rng)
-        ts = ts.replace(rng=rng)
-        
-        def actor_loss_fn(params, rng):
-            # Flow matching loss
-            batch_size, action_dim = minibatch.action.shape
-            
-            rng, x_rng, t_rng = jax.random.split(rng, 3)
-            
-            x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
-            x_1 = adjusted_actions # Target
-            
-            t = jax.random.uniform(t_rng, (batch_size, 1))
-            x_t = (1 - t) * x_0 + t * x_1
-            vel_target = x_1 - x_0
-            
-            # Predict velocity
-            vel_pred = self.actor.apply(params, minibatch.obs, x_t, t)
-            
-            raw_loss = (vel_pred - vel_target) ** 2
-            return jnp.mean(raw_loss)
+        def actor_loss_fn(params):
+            action = self.actor.apply(params, minibatch.obs)
+            q = self.vmap_critic(ts.critic_ts.params, minibatch.obs, action)
+            return -q.mean()
 
-        grads = jax.grad(actor_loss_fn)(ts.actor_ts.params, rng_loss)
+        grads = jax.grad(actor_loss_fn)(ts.actor_ts.params)
         ts = ts.replace(actor_ts=ts.actor_ts.apply_gradients(grads=grads))
         return ts
 
-
-import jax
 # 在你的主训练脚本中添加这个函数来替换默认的评估
 def custom_eval_callback(algo, train_state, rng):
     """JAX 友好的评估函数，解决 Tracer 错误"""
     env = algo.env
     env_params = algo.env_params
-    max_episode_steps = 200  # Pendulum-v1 的步数
+    max_episode_steps = 200  # Pendulum-v1 的步数 (对于 Brax/Hopper 应该是 1000)
     num_eval_episodes = 10   # 评估 10 个 episodes
     
     # 获取 act 函数 (闭包)
@@ -697,59 +538,37 @@ def custom_eval_callback(algo, train_state, rng):
 
 # ========== 初始化WandB ==========
 wandb.init(
-    project="doal-integrated",
+    project="sarsa-integrated",
     config={
-        "env": "Pendulum-v1",
-        "total_timesteps": 50000,
+        "env": "brax/hopper",
+        "total_timesteps": 1000000,
         "eval_freq": 5000,
         "num_envs": 1,
     },
-    name="doal-pendulum-fixed",
+    name="sarsa-hopper-standalone",
 )
 
-print("使用修复后的DOAL训练")
+print("使用 standalone SARSA 训练")
 
 # ========== 创建并训练算法 ==========
-# algo = DOAL.create(
-#     env="Pendulum-v1",
-#     total_timesteps=50000,
-#     eval_freq=5000,
-#     num_envs=1,
-#     learning_rate=0.001,
-#     batch_size=256,
-#     gamma=0.99,
-#     fill_buffer=1000,
-#     flow_steps=10,
-#     max_q_samples=4,
-#     policy_delay=2,
-#     alpha=0.2,
-#     delta=2.0,
-#     exploration_noise=0.1,
-#     target_noise=0.2,
-#     target_noise_clip=0.5,
-# )
-
-algo = DOALSARSA.create(
+algo = SARSA.create(
     env="brax/hopper",
     total_timesteps=1000000,
     eval_freq=5000,
     num_envs=1,
-    learning_rate=0.00018789,
+    learning_rate=3e-4,
     batch_size=256,
     gamma=0.99,
-    fill_buffer=1000,
-    flow_steps=10,
-    max_q_samples=4,
-    policy_delay=3,
-    alpha=0.2,
-    delta=2.0,
+    fill_buffer=10000,
     exploration_noise=0.1,
     target_noise=0.2,
     target_noise_clip=0.5,
+    policy_delay=2,
 )
 
 # Instead of: algo.eval_callback = custom_eval_callback
 algo = algo.replace(eval_callback=custom_eval_callback)
+
 
 # ========== 批量训练版本 ==========
 print("\n现在批量训练多个智能体...")
@@ -792,4 +611,3 @@ if evaluations is not None and len(evaluations) >= 2:
 # ========== 完成 ==========
 wandb.finish()
 print("\n所有训练完成!")
-
