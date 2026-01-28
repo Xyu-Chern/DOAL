@@ -182,7 +182,7 @@ algo = WandBTD3.create(
     learning_rate=0.001,
 )
 
-algo = base_algo.replace(eval_callback=custom_eval_callback)
+algo = algo.replace(eval_callback=custom_eval_callback)
 
 # Jit 并训练
 print("开始训练 TD3...")
