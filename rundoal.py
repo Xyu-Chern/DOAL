@@ -284,30 +284,8 @@ class DOAL(
 
         return ts, evaluation
 
-    # WandB日志记录方法
-    def _log_initial_eval(self, returns, lengths, step):
-        """记录初始评估到WandB"""
-        if returns.size > 0:
-            mean_return = float(np.mean(returns))
-            mean_length = float(np.mean(lengths))
-            wandb.log({
-                "eval/return": mean_return,
-                "eval/length": mean_length,
-                "train/step": step
-            }, step=step)
-            print(f"[Step {step}] Initial eval: return={mean_return:.2f}")
 
-    def _log_eval_to_wandb(self, step, returns, lengths):
-        """记录评估结果到WandB"""
-        if returns.size > 0:
-            mean_return = float(np.mean(returns))
-            mean_length = float(np.mean(lengths))
-            wandb.log({
-                "eval/return": mean_return,
-                "eval/length": mean_length,
-                "train/step": int(step)
-            }, step=int(step))
-            print(f"[Step {int(step)}] Eval: return={mean_return:.2f}")
+
 
     def _log_final_results(self, returns, lengths):
         """记录最终结果到WandB"""
@@ -320,6 +298,42 @@ class DOAL(
             })
             wandb.summary["final_return"] = final_return
             print(f"Final evaluation: return={final_return:.2f}")
+
+    def _log_initial_eval(self, returns, lengths, step):
+        """记录初始评估到WandB"""
+        if returns.size > 0:
+            # 添加调试信息
+            print(f"[DEBUG] Initial eval at step {step}:")
+            print(f"  Returns array shape: {returns.shape}")
+            print(f"  Returns values: {returns}")
+            print(f"  Lengths values: {lengths}")
+            
+            mean_return = float(np.mean(returns))
+            mean_length = float(np.mean(lengths))
+            wandb.log({
+                "eval/return": mean_return,
+                "eval/length": mean_length,
+                "train/step": step
+            }, step=step)
+            print(f"[Step {step}] Initial eval: return={mean_return:.2f}, length={mean_length:.2f}")
+
+    def _log_eval_to_wandb(self, step, returns, lengths):
+        """记录评估结果到WandB"""
+        if returns.size > 0:
+            # 添加调试信息
+            print(f"[DEBUG] Eval at step {int(step)}:")
+            print(f"  Returns array shape: {returns.shape}")
+            print(f"  Returns values: {returns}")
+            print(f"  Lengths values: {lengths}")
+            
+            mean_return = float(np.mean(returns))
+            mean_length = float(np.mean(lengths))
+            wandb.log({
+                "eval/return": mean_return,
+                "eval/length": mean_length,
+                "train/step": int(step)
+            }, step=int(step))
+            print(f"[Step {int(step)}] Eval: return={mean_return:.2f}, length={mean_length:.2f}")
 
     # ... 后面的方法保持不变 ...
     def train_iteration(self, ts):
@@ -539,8 +553,49 @@ class DOAL(
 
 
 import jax
-import wandb
-import numpy as np
+# 在你的主训练脚本中添加这个函数来替换默认的评估
+def custom_eval_callback(algo, train_state, rng):
+    """自定义评估函数，确保正确计算奖励"""
+    env = algo.env
+    env_params = algo.env_params
+    max_episode_steps = 200  # Pendulum-v1的最大步数
+    
+    def evaluate_episode(rng):
+        # 重置环境
+        rng, reset_rng = jax.random.split(rng)
+        obs, state = env.reset(reset_rng, env_params)
+        
+        done = False
+        total_reward = 0.0
+        steps = 0
+        
+        while not done and steps < max_episode_steps:
+            # 选择动作
+            rng, action_rng = jax.random.split(rng)
+            action = algo.make_act(train_state)(obs, action_rng)
+            
+            # 执行一步
+            rng, step_rng = jax.random.split(rng)
+            next_obs, next_state, reward, done, _ = env.step(
+                step_rng, state, action, env_params
+            )
+            
+            total_reward += reward
+            steps += 1
+            obs = next_obs
+            state = next_state
+        
+        return total_reward, steps
+    
+    # 评估多个episodes
+    num_eval_episodes = 10  # 评估10个episodes
+    rngs = jax.random.split(rng, num_eval_episodes)
+    returns, lengths = jax.vmap(evaluate_episode)(rngs)
+    
+    return returns, lengths
+
+
+
 
 # ========== 初始化WandB ==========
 wandb.init(
@@ -575,6 +630,8 @@ algo = DOAL.create(
     target_noise=0.2,
     target_noise_clip=0.5,
 )
+
+algo.eval_callback = custom_eval_callback
 
 # 训练单个智能体
 print("开始训练单个智能体...")
