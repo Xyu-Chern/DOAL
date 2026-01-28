@@ -188,25 +188,31 @@ from flax import linen as nn
 
 algo_init = WandBTD3.create(
     env="brax/hopper",
-    actor_kwargs={"activation": "tanh"},   # 修改这里：使用字符串 "tanh"
-    critic_kwargs={"activation": "tanh"},  # 修改这里：使用字符串 "tanh"
+    # 1. 激活函数必须是字符串，因为源码内部使用了 getattr(nn, activation)
+    actor_kwargs={"activation": "tanh"}, 
+    critic_kwargs={"activation": "tanh"},
+    
+    # 2. 目标网络更新系数在 rejax 中叫 polyak (对应通常的 1-tau 或 tau)
+    # 如果你的 tuned 参数 tau=0.95 是指保留旧参数的比例，那么 polyak=0.95 是正确的
+    polyak=0.95, 
+    
+    # 3. 算法特定参数 (对应源码中的字段)
+    exploration_noise=0.5,
+    target_noise=0.8,
+    target_noise_clip=0.5,
+    policy_delay=3,
+    
+    # 4. 训练规模参数
     total_timesteps=1_000_000,
-    eval_freq=50000,  # 建议先调小一点，方便观察 WandB
+    eval_freq=50000,
     num_envs=128,
     learning_rate=0.00018789,
     batch_size=256,
     buffer_size=1_000_000,
     fill_buffer=8192,
-    gamma=0.995,
-    tau=0.95, 
-    exploration_noise=0.5,
-    target_noise=0.8,
-    target_noise_clip=0.5,
-    policy_delay=3,
     max_grad_norm=2.0,
     normalize_observations=True,
 )
-
 algo = algo.replace(eval_callback=custom_eval_callback)
 
 # Jit 并训练
