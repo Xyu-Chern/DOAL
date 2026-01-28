@@ -173,7 +173,7 @@ def custom_eval_callback(algo, train_state, rng):
 wandb.init(
     project="doal-integrated", # 保持和 DOAL 一样
     name="td3-pendulum-baseline",
-    config={"algo": "TD3", "env": "Pendulum-v1"}
+    config={"algo": "TD3", "env": "brax/halfcheetah"}
 )
 
 # 使用我们重写后的 WandBTD3
@@ -186,33 +186,79 @@ wandb.init(
 
 from flax import linen as nn
 
+# algo = WandBTD3.create(
+#     env="brax/hopper",
+#     # 1. 激活函数必须是字符串，因为源码内部使用了 getattr(nn, activation)
+#     actor_kwargs={"activation": "tanh"}, 
+#     critic_kwargs={"activation": "tanh"},
+    
+#     # 2. 目标网络更新系数在 rejax 中叫 polyak (对应通常的 1-tau 或 tau)
+#     # 如果你的 tuned 参数 tau=0.95 是指保留旧参数的比例，那么 polyak=0.95 是正确的
+#     polyak=0.95, 
+    
+#     # 3. 算法特定参数 (对应源码中的字段)
+#     exploration_noise=0.5,
+#     target_noise=0.8,
+#     target_noise_clip=0.5,
+#     policy_delay=3,
+    
+#     # 4. 训练规模参数
+#     total_timesteps=1_000_000,
+#     eval_freq=50000,
+#     num_envs=128,
+#     learning_rate=0.00018789,
+#     batch_size=256,
+#     buffer_size=1_000_000,
+#     fill_buffer=8192,
+#     max_grad_norm=2.0,
+#     normalize_observations=True,
+# )
+
+
 algo = WandBTD3.create(
-    env="brax/hopper",
-    # 1. 激活函数必须是字符串，因为源码内部使用了 getattr(nn, activation)
-    actor_kwargs={"activation": "tanh"}, 
+    # 环境设置（选择其中一个）
+    env="brax/halfcheetah",  # 或 "brax/hopper"
+    
+    # 网络结构参数
+    actor_kwargs={"activation": "tanh"},
     critic_kwargs={"activation": "tanh"},
     
-    # 2. 目标网络更新系数在 rejax 中叫 polyak (对应通常的 1-tau 或 tau)
-    # 如果你的 tuned 参数 tau=0.95 是指保留旧参数的比例，那么 polyak=0.95 是正确的
-    polyak=0.95, 
-    
-    # 3. 算法特定参数 (对应源码中的字段)
-    exploration_noise=0.5,
+    # TD3特定参数
+    exploration_noise=0.3,
     target_noise=0.8,
-    target_noise_clip=0.5,
-    policy_delay=3,
+    target_noise_clip=0.6,
+    policy_delay=1,  # halfcheetah使用1，hopper使用3
     
-    # 4. 训练规模参数
-    total_timesteps=1_000_000,
-    eval_freq=50000,
+    # 训练参数
     num_envs=128,
-    learning_rate=0.00018789,
-    batch_size=256,
-    buffer_size=1_000_000,
+    learning_rate=0.0001199272452295516,  # halfcheetah的学习率
+    # learning_rate=0.00018789,  # hopper的学习率
+    
+    # 缓冲区参数
+    buffer_size=1048576,  # 1M
     fill_buffer=8192,
-    max_grad_norm=2.0,
+    batch_size=512,  # halfcheetah的batch_size
+    # batch_size=256,  # hopper的batch_size
+    
+    # 优化参数
+    num_epochs=128,
+    total_timesteps=5242880,  # 5.24M steps
+    eval_freq=262144,
+    
+    # 算法核心参数
+    gamma=0.99,
+    polyak=0.99,  # halfcheetah的polyak
+    # polyak=0.95,  # hopper的polyak
+    
+    # 训练稳定性
+    max_grad_norm=5.0,
     normalize_observations=True,
+    
+    # 可选：wandb日志设置
+    # project="td3-brax",
+    # group="halfcheetah"  # 或 "hopper"
 )
+
 algo = algo.replace(eval_callback=custom_eval_callback)
 
 # Jit 并训练

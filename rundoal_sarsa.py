@@ -14,10 +14,80 @@ from rejax.algos.algorithm import Algorithm, register_init
 from rejax.algos.mixins import (
     NormalizeObservationsMixin,
     NormalizeRewardsMixin,
+    VectorizedEnvMixin,
     ReplayBufferMixin,
     TargetNetworkMixin,
 )
+
 from rejax.buffers import Minibatch
+from functools import partial
+
+import chex
+import jax
+import numpy as np
+from flax import struct
+from jax import numpy as jnp
+from optax import linear_schedule
+
+from rejax.algos.algorithm import register_init
+from rejax.buffers import ReplayBuffer
+
+from typing import NamedTuple, Union
+
+from gymnax.environments import spaces
+class SarsaMinibatch(NamedTuple):
+    obs: chex.Array
+    action: chex.Array
+    reward: chex.Array
+    done: chex.Array
+    next_obs: chex.Array
+    next_action: chex.Array
+
+
+class SarsaReplayBuffer(ReplayBuffer):
+    """
+    Circular buffer for storing transitions. Implements appending and sampling
+    while being `jit`-able.
+    """
+
+    data: SarsaMinibatch
+
+    @classmethod
+    def empty(
+        cls,
+        size: int,
+        obs_space: Union[spaces.Discrete, spaces.Box],
+        action_space: Union[spaces.Discrete, spaces.Box],
+    ) -> "SarsaReplayBuffer":
+        """Returns an empty replay buffer with the given size and shapes.
+
+        Args:
+            size (int): Maximum number of transitions to store.
+            obs_shape (chex.Shape): Shape of the observations.
+            action_shape (chex.Shape): Shape of the actions.
+
+        Returns:
+            ReplayBuffer: The initialized replay buffer.
+        """
+        # Skip checking sizes as we know they are correct here
+        data = Minibatch(
+            obs=jnp.empty((size, *obs_space.shape)).astype(obs_space.dtype),
+            action=jnp.empty((size, *action_space.shape)).astype(action_space.dtype),
+            reward=jnp.empty(size),
+            done=jnp.empty(size).astype(bool),
+            next_obs=jnp.empty((size, *obs_space.shape)).astype(obs_space.dtype),
+            next_action=jnp.empty((size, *action_space.shape)).astype(action_space.dtype),
+        )
+        return cls(size=size, data=data, index=0, full=False)
+
+
+
+class SarsaReplayBufferMixin(ReplayBufferMixin):
+
+    @register_init
+    def initialize_replay_buffer(self, rng):
+        buf = SarsaReplayBuffer.empty(self.buffer_size, self.obs_space, self.action_space)
+        return {"replay_buffer": buf}
 
 
 class FlowMLP(nn.Module):
@@ -45,7 +115,7 @@ from rejax.networks import QNetwork
 
 
 class DOAL(
-    ReplayBufferMixin,
+    SarsaReplayBufferMixin,
     TargetNetworkMixin,
     NormalizeObservationsMixin,
     NormalizeRewardsMixin,
@@ -608,12 +678,12 @@ def custom_eval_callback(algo, train_state, rng):
     return returns, lengths
 
 
-env_name = "brax/hopper"
+
 # ========== 初始化WandB ==========
 wandb.init(
     project="doal-integrated",
     config={
-        "env": env_name,
+        "env": "Pendulum-v1",
         "total_timesteps": 50000,
         "eval_freq": 5000,
         "num_envs": 1,
@@ -644,7 +714,7 @@ print("使用修复后的DOAL训练")
 # )
 
 algo = DOAL.create(
-    env= env_name,
+    env="brax/hopper",
     total_timesteps=1000000,
     eval_freq=5000,
     num_envs=1,
