@@ -184,6 +184,8 @@ wandb.init(
 #     learning_rate=0.001,
 # )
 
+from flax import linen as nn
+
 algo = WandBTD3.create(
     env="brax/hopper",
     actor_kwargs={"activation": nn.tanh},
