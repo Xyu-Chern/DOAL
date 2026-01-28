@@ -166,3 +166,26 @@ def custom_eval_callback(algo, train_state, rng):
     returns, lengths = jax.vmap(evaluate_episode)(jax.random.split(rng, num_episodes))
     return returns, lengths
 
+
+# 初始化 WandB
+wandb.init(
+    project="doal-integrated", # 保持和 DOAL 一样
+    name="td3-pendulum-baseline",
+    config={"algo": "TD3", "env": "Pendulum-v1"}
+)
+
+# 使用我们重写后的 WandBTD3
+algo = WandBTD3.create(
+    env="Pendulum-v1",
+    total_timesteps=50000,
+    eval_freq=5000,
+    learning_rate=0.001,
+    eval_callback=custom_eval_callback # 注入评估函数
+)
+
+# Jit 并训练
+print("开始训练 TD3...")
+rng = jax.random.PRNGKey(0)
+train_state, evaluation = jax.jit(algo.train)(rng=rng)
+
+wandb.finish()
