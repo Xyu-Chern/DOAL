@@ -180,8 +180,9 @@ algo = WandBTD3.create(
     total_timesteps=50000,
     eval_freq=5000,
     learning_rate=0.001,
-    eval_callback=custom_eval_callback # 注入评估函数
 )
+
+algo = base_algo.replace(eval_callback=custom_eval_callback)
 
 # Jit 并训练
 print("开始训练 TD3...")
