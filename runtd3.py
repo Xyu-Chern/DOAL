@@ -177,12 +177,34 @@ wandb.init(
 )
 
 # 使用我们重写后的 WandBTD3
+# algo = WandBTD3.create(
+#     env="Pendulum-v1",
+#     total_timesteps=50000,
+#     eval_freq=5000,
+#     learning_rate=0.001,
+# )
+
 algo = WandBTD3.create(
-    env="Pendulum-v1",
-    total_timesteps=50000,
-    eval_freq=5000,
-    learning_rate=0.001,
+    env="brax/hopper",
+    actor_kwargs={"activation": nn.tanh},
+    critic_kwargs={"activation": nn.tanh},
+    total_timesteps=1_000_000,
+    eval_freq=262144,
+    num_envs=128,
+    learning_rate=0.00018789,
+    batch_size=256,
+    buffer_size=1_000_000,
+    fill_buffer=8192,
+    gamma=0.995,
+    tau=0.95,
+    exploration_noise=0.5,
+    target_noise=0.8,
+    target_noise_clip=0.5,
+    policy_delay=3,
+    max_grad_norm=2.0,
+    normalize_observations=True,
 )
+
 
 algo = algo.replace(eval_callback=custom_eval_callback)
 
