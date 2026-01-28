@@ -1,136 +1,96 @@
+import os
+os.environ['JAX_PLATFORMS'] = 'cpu'
 
 import jax
 import jax.numpy as jnp
 import wandb
 from doal import DOAL
 
-# 初始化WandB（在线模式）
+# 初始化WandB
 wandb.init(
-    project="my-daal-project", 
+    project="doal-training",
     config={"env": "Pendulum-v1"},
-    # 添加重试设置
-    settings=wandb.Settings(
-        start_method="thread",
-        _disable_stats=True,
-        _disable_meta=True,
-        _disable_viewer=True
-    )
 )
 
-print(f"WandB在线运行: {wandb.run.url if wandb.run else '离线'}")
+# 保存原始的train方法
+original_train = DOAL.train
 
-# ==================== 修复回调函数 ====================
-# 保存原始评估回调
-original_eval_callback = DOAL.eval_callback
+def train_with_wandb(self, rng=None, train_state=None):
+    """添加WandB日志的train方法"""
+    if train_state is None and rng is None:
+        raise ValueError("Either train_state or rng must be provided")
 
-def safe_sync_callback(algo, ts, rng):
-    """安全的同步回调函数，完全避免异步问题"""
-    try:
-        # 运行原始评估
-        if original_eval_callback is None:
-            # 如果没有回调，返回空结果
-            class EmptyResult:
-                episode_returns = jnp.array([])
-                episode_lengths = jnp.array([])
-            return EmptyResult()
-        
-        result = original_eval_callback(algo, ts, rng)
-        
-        # 同步记录到WandB - 直接调用，不使用任何异步
-        try:
-            step = 0
-            if hasattr(ts, 'global_step'):
-                if hasattr(ts.global_step, 'item'):
-                    step = int(ts.global_step.item())
-                elif isinstance(ts.global_step, (int, float)):
-                    step = int(ts.global_step)
-            
-            log_data = {"train/step": step}
-            
-            # 检查结果并记录
-            if hasattr(result, 'episode_returns') and result.episode_returns.size > 0:
-                returns = result.episode_returns
-                avg_return = float(jnp.mean(returns))
-                log_data["eval/return_mean"] = avg_return
-                log_data["eval/return_std"] = float(jnp.std(returns))
-                
-                # 打印到控制台
-                print(f"Step {step}: Return = {avg_return:.2f} ± {float(jnp.std(returns)):.2f}")
-            
-            if hasattr(result, 'episode_lengths') and result.episode_lengths.size > 0:
-                lengths = result.episode_lengths
-                log_data["eval/length_mean"] = float(jnp.mean(lengths))
-            
-            # 同步记录 - 这是关键，完全同步
-            wandb.log(log_data, step=step)
-            
-        except Exception as log_error:
-            print(f"WandB日志错误（非致命）: {log_error}")
-            # 本地备份
-            try:
-                with open("wandb_backup.log", "a") as f:
-                    f.write(f"Step {step}: {log_data}, Error: {log_error}\n")
-            except:
-                pass
-        
-        return result
-        
-    except Exception as e:
-        print(f"回调函数错误: {e}")
-        # 返回一个空结果以避免中断训练
-        class EmptyResult:
-            episode_returns = jnp.array([])
-            episode_lengths = jnp.array([])
-        return EmptyResult()
+    ts = train_state or self.init_state(rng)
 
-# 替换DOAL的回调函数
-DOAL.eval_callback = safe_sync_callback
+    if not self.skip_initial_evaluation:
+        initial_evaluation = self.eval_callback(self, ts, ts.rng)
+        # 记录初始评估
+        if initial_evaluation is not None and len(initial_evaluation) >= 2:
+            returns = initial_evaluation[0]
+            if returns.size > 0:
+                wandb.log({
+                    "eval/return": float(jnp.mean(returns)),
+                    "eval/step": 0
+                }, step=0)
 
-# ==================== 创建并训练算法 ====================
-print("创建DOAL算法...")
-try:
-    algo = DOAL.create(
-        env="Pendulum-v1",
-        total_timesteps=1000,  # 增加一点步数以看到更多日志
-        eval_freq=100,  # 每100步评估一次
-        num_envs=1,
-        learning_rate=0.001,
-        batch_size=32,
-        gamma=0.99,
-        max_grad_norm=1.0,
-        fill_buffer=100,
-        flow_steps=10,
-        max_q_samples=4,
-        policy_delay=2,
-        alpha=0.2,
-        delta=2.0,
-        exploration_noise=0.1,
-        target_noise=0.2,
-        target_noise_clip=0.5,
+    def eval_iteration(ts, eval_idx):
+        # Run a few training iterations
+        steps_per_train_it = self.num_envs * self.policy_delay
+        num_train_its = np.ceil(self.eval_freq / steps_per_train_it).astype(int)
+        ts = jax.lax.fori_loop(
+            0,
+            num_train_its,
+            lambda _, ts: self.train_iteration(ts),
+            ts,
+        )
+
+        # Run evaluation
+        eval_result = self.eval_callback(self, ts, ts.rng)
+        
+        # 记录到WandB
+        if eval_result is not None and len(eval_result) >= 2:
+            returns, lengths = eval_result[0], eval_result[1]
+            if returns.size > 0:
+                step = int(ts.global_step)
+                wandb.log({
+                    "eval/return": float(jnp.mean(returns)),
+                    "eval/length": float(jnp.mean(lengths)),
+                    "train/step": step
+                }, step=step)
+                print(f"[Step {step}] Return: {float(jnp.mean(returns)):.2f}")
+        
+        return ts, eval_result
+
+    import numpy as np
+    ts, evaluation = jax.lax.scan(
+        eval_iteration,
+        ts,
+        jnp.arange(np.ceil(self.total_timesteps / self.eval_freq).astype(int)),
+        np.ceil(self.total_timesteps / self.eval_freq).astype(int),
     )
-    
-    print("开始训练...")
-    rng = jax.random.PRNGKey(42)
-    train_state, eval_result = algo.train(rng=rng)
-    
-    print("训练完成！")
-    
-    # 记录最终结果
-    if eval_result is not None and hasattr(eval_result, 'episode_returns'):
-        final_return = float(jnp.mean(eval_result.episode_returns))
-        wandb.log({"final/return": final_return})
-        print(f"最终评估回报: {final_return:.2f}")
-    
-except Exception as e:
-    print(f"训练过程中出错: {e}")
-    import traceback
-    traceback.print_exc()
 
-# ==================== 确保WandB正确结束 ====================
-try:
-    wandb.finish()
-    print("WandB会话已结束")
-except Exception as e:
-    print(f"WandB结束错误: {e}")
+    if not self.skip_initial_evaluation:
+        evaluation = jax.tree.map(
+            lambda i, ev: jnp.concatenate((jnp.expand_dims(i, 0), ev)),
+            initial_evaluation,
+            evaluation,
+        )
 
-print("程序执行完毕！")
+    return ts, evaluation
+
+# 替换train方法
+DOAL.train = train_with_wandb
+
+# 创建并训练算法
+algo = DOAL.create(
+    env="Pendulum-v1",
+    total_timesteps=1000,
+    eval_freq=100,
+    num_envs=1,
+)
+
+rng = jax.random.PRNGKey(42)
+train_state, evaluation = algo.train(rng=rng)
+
+wandb.finish()
+print("训练完成!")
