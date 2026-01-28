@@ -70,7 +70,7 @@ class SarsaReplayBuffer(ReplayBuffer):
             ReplayBuffer: The initialized replay buffer.
         """
         # Skip checking sizes as we know they are correct here
-        data = Minibatch(
+        data = SarsaMinibatch(
             obs=jnp.empty((size, *obs_space.shape)).astype(obs_space.dtype),
             action=jnp.empty((size, *action_space.shape)).astype(action_space.dtype),
             reward=jnp.empty(size),
@@ -114,7 +114,7 @@ class FlowMLP(nn.Module):
 from rejax.networks import QNetwork
 
 
-class DOAL(
+class DOALSARSA(
     SarsaReplayBufferMixin,
     TargetNetworkMixin,
     NormalizeObservationsMixin,
@@ -248,6 +248,18 @@ class DOAL(
 
         return {"actor": actor, "critic": critic}
     
+
+    @register_init
+    def initialize_env_state(self, rng):
+        rng, rng_action = jax.random.split(rng)
+        state = super().initialize_env_state(rng)
+        
+        # Initialize last_action
+        sample_fn = self.env.action_space(self.env_params).sample
+        last_action = jax.vmap(sample_fn)(jax.random.split(rng_action, self.num_envs))
+        
+        state["last_action"] = last_action
+        return state
 
     @register_init
     def initialize_network_params(self, rng):
@@ -499,40 +511,15 @@ class DOAL(
         return ts
 
     def collect_transitions(self, ts, uniform=False):
-        # Sample actions
-        rng, rng_action = jax.random.split(ts.rng)
-        ts = ts.replace(rng=rng)
-
-        def sample_uniform(rng):
-            sample_fn = self.env.action_space(self.env_params).sample
-            return jax.vmap(sample_fn)(jax.random.split(rng, self.num_envs))
-
-        def sample_policy(rng):
-            if self.normalize_observations:
-                last_obs = self.normalize_obs(ts.obs_rms_state, ts.last_obs)
-            else:
-                last_obs = ts.last_obs
-
-            # Use flow sampling
-            # (batch, 1, action_dim)
-            actions = self._sample_actions(ts.actor_ts.params, last_obs, rng, num_samples=1)
-            actions = actions.squeeze(1)
-            
-            # Should we add exploration noise? 
-            # Flow policies are stochastic, but adding noise might still be useful or expected.
-            # DOAL defaults: exploration_noise=0.3
-            noise = self.exploration_noise * jax.random.normal(rng, actions.shape)
-            action_low, action_high = self.action_space.low, self.action_space.high
-            return jnp.clip(actions + noise, action_low, action_high)
-
-        actions = jax.lax.cond(uniform, sample_uniform, sample_policy, rng_action)
+        # Use stored last_action
+        action = ts.last_action
 
         # Step environment
         rng, rng_steps = jax.random.split(ts.rng)
         ts = ts.replace(rng=rng)
         rng_steps = jax.random.split(rng_steps, self.num_envs)
         next_obs, env_state, rewards, dones, _ = self.vmap_step(
-            rng_steps, ts.env_state, actions, self.env_params
+            rng_steps, ts.env_state, action, self.env_params
         )
 
         if self.normalize_observations:
@@ -544,19 +531,49 @@ class DOAL(
                 rew_rms_state=self.update_rew_rms(ts.rew_rms_state, rewards, dones)
             )
 
+        # Sample next action
+        rng, rng_action = jax.random.split(ts.rng)
+        ts = ts.replace(rng=rng)
+
+        def sample_uniform(rng):
+            sample_fn = self.env.action_space(self.env_params).sample
+            return jax.vmap(sample_fn)(jax.random.split(rng, self.num_envs))
+
+        def sample_policy(rng):
+            if self.normalize_observations:
+                curr_obs = self.normalize_obs(ts.obs_rms_state, next_obs)
+            else:
+                curr_obs = next_obs
+
+            # Use flow sampling
+            # (batch, 1, action_dim)
+            actions = self._sample_actions(ts.actor_ts.params, curr_obs, rng, num_samples=1)
+            actions = actions.squeeze(1)
+            
+            # Add exploration noise
+            noise = self.exploration_noise * jax.random.normal(rng, actions.shape)
+            action_low, action_high = self.action_space.low, self.action_space.high
+            return jnp.clip(actions + noise, action_low, action_high)
+
+        next_action = jax.lax.cond(uniform, sample_uniform, sample_policy, rng_action)
+
         # Return minibatch and updated train state
-        minibatch = Minibatch(
+        minibatch = SarsaMinibatch(
             obs=ts.last_obs,
-            action=actions,
+            action=action,
             reward=rewards,
-            next_obs=next_obs,
             done=dones,
+            next_obs=next_obs,
+            next_action=next_action,
         )
+
         ts = ts.replace(
-            last_obs=next_obs,
             env_state=env_state,
+            last_obs=next_obs,
+            last_action=next_action,
             global_step=ts.global_step + self.num_envs,
         )
+
         return ts, minibatch
 
     def update_critic(self, ts, minibatch):
@@ -566,8 +583,7 @@ class DOAL(
         def critic_loss_fn(params):
             # Sample next action from target actor
             # (batch, 1, action_dim)
-            next_actions = self._sample_actions(ts.actor_target_params, minibatch.next_obs, rng_sample, num_samples=1)
-            action = next_actions.squeeze(1)
+            action = minibatch.next_action
             
             noise = jnp.clip(
                 self.target_noise * jax.random.normal(rng_sample, action.shape), 
@@ -713,7 +729,7 @@ print("使用修复后的DOAL训练")
 #     target_noise_clip=0.5,
 # )
 
-algo = DOAL.create(
+algo = DOALSARSA.create(
     env="brax/hopper",
     total_timesteps=1000000,
     eval_freq=5000,
@@ -744,7 +760,7 @@ print(f"训练完成！最终步数: {train_state.global_step}")
 
 # ========== 批量训练版本 ==========
 print("\n现在批量训练多个智能体...")
-num_seeds = 3
+num_seeds = 16
 
 # 准备随机种子
 keys = jax.random.split(jax.random.PRNGKey(0), num_seeds)
