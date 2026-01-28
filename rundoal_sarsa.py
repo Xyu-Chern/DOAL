@@ -753,7 +753,7 @@ algo = algo.replace(eval_callback=custom_eval_callback)
 
 # ========== 批量训练版本 ==========
 print("\n现在批量训练多个智能体...")
-num_seeds = 16
+num_seeds = 128
 
 # 准备随机种子
 keys = jax.random.split(jax.random.PRNGKey(0), num_seeds)
