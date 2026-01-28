@@ -133,10 +133,12 @@ class WandBTD3(TD3):
         return ts, evaluation
 
     def _log_to_wandb(self, step, returns, lengths, prefix="eval"):
-        """此函数在 CPU/Python 侧运行"""
+        """This function runs on the CPU/Python side"""
+        # Safety check: If wandb isn't initialized in this process, skip or init
+        if wandb.run is None:
+            return 
+
         mean_return = float(np.mean(returns))
-        # 只有在单种子训练时记录 wandb，或者只记录第一个种子，避免多进程冲突
-        # 这里我们假设您是逐个种子训练或监控总平均值
         wandb.log({
             f"{prefix}/return": mean_return,
             f"{prefix}/length": float(np.mean(lengths)),
@@ -187,6 +189,16 @@ algo = algo.replace(eval_callback=custom_eval_callback)
 # Jit 并训练
 print("开始训练 TD3...")
 rng = jax.random.PRNGKey(0)
+# Outside the class/JIT
 train_state, evaluation = jax.jit(algo.train)(rng=rng)
+
+# Log the results collected during the scan
+returns, lengths = evaluation
+for i, (r, l) in enumerate(zip(returns, lengths)):
+    step = (i + 1) * algo.eval_freq
+    wandb.log({
+        "eval/return": np.mean(r),
+        "eval/length": np.mean(l),
+    }, step=step)
 
 wandb.finish()
