@@ -186,19 +186,19 @@ wandb.init(
 
 from flax import linen as nn
 
-algo = WandBTD3.create(
+algo_init = WandBTD3.create(
     env="brax/hopper",
-    actor_kwargs={"activation": nn.tanh},
-    critic_kwargs={"activation": nn.tanh},
+    actor_kwargs={"activation": "tanh"},   # 修改这里：使用字符串 "tanh"
+    critic_kwargs={"activation": "tanh"},  # 修改这里：使用字符串 "tanh"
     total_timesteps=1_000_000,
-    eval_freq=262144,
+    eval_freq=50000,  # 建议先调小一点，方便观察 WandB
     num_envs=128,
     learning_rate=0.00018789,
     batch_size=256,
     buffer_size=1_000_000,
     fill_buffer=8192,
     gamma=0.995,
-    tau=0.95,
+    tau=0.95, 
     exploration_noise=0.5,
     target_noise=0.8,
     target_noise_clip=0.5,
@@ -206,7 +206,6 @@ algo = WandBTD3.create(
     max_grad_norm=2.0,
     normalize_observations=True,
 )
-
 
 algo = algo.replace(eval_callback=custom_eval_callback)
 
