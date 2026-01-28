@@ -624,18 +624,37 @@ wandb.init(
 print("使用修复后的DOAL训练")
 
 # ========== 创建并训练算法 ==========
+# algo = DOAL.create(
+#     env="Pendulum-v1",
+#     total_timesteps=50000,
+#     eval_freq=5000,
+#     num_envs=1,
+#     learning_rate=0.001,
+#     batch_size=256,
+#     gamma=0.99,
+#     fill_buffer=1000,
+#     flow_steps=10,
+#     max_q_samples=4,
+#     policy_delay=2,
+#     alpha=0.2,
+#     delta=2.0,
+#     exploration_noise=0.1,
+#     target_noise=0.2,
+#     target_noise_clip=0.5,
+# )
+
 algo = DOAL.create(
-    env="Pendulum-v1",
-    total_timesteps=50000,
+    env="brax/hopper",
+    total_timesteps=1000000,
     eval_freq=5000,
     num_envs=1,
-    learning_rate=0.001,
+    learning_rate=0.00018789,
     batch_size=256,
     gamma=0.99,
     fill_buffer=1000,
     flow_steps=10,
     max_q_samples=4,
-    policy_delay=2,
+    policy_delay=3,
     alpha=0.2,
     delta=2.0,
     exploration_noise=0.1,
