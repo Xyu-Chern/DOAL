@@ -1,5 +1,3 @@
-import os
-os.environ['JAX_PLATFORMS'] = 'cpu'
 
 import jax
 import jax.numpy as jnp
@@ -14,7 +12,7 @@ wandb.init(
 )
 
 print("=" * 50)
-print("开始训练，使用修复版本")
+print("开始训练DOAL算法")
 print("=" * 50)
 
 # 保存原始的train方法
@@ -122,7 +120,6 @@ algo = DOAL.create(
     learning_rate=0.001,
     batch_size=32,          # 小批量
     fill_buffer=100,        # 小的填充缓冲区
-    # 添加更多参数以确保正确初始化
     flow_steps=10,
     max_q_samples=4,
     policy_delay=2,
@@ -134,9 +131,9 @@ algo = DOAL.create(
 )
 
 print("算法配置:")
-print(f"  环境: {algo.env.__name__ if hasattr(algo.env, '__name__') else algo.env}")
-print(f"  动作空间: {algo.action_space}")
-print(f"  观察空间: {algo.observation_space}")
+print(f"  环境: Pendulum-v1")
+print(f"  总步数: {algo.total_timesteps}")
+print(f"  评估频率: {algo.eval_freq}")
 
 rng = jax.random.PRNGKey(42)
 print("\n开始训练...")
@@ -149,7 +146,7 @@ try:
     print(f"\n训练完成！总用时: {total_time:.1f}秒")
     
     if evaluation is not None:
-        print(f"评估结果形状: {jax.tree.map(lambda x: x.shape, evaluation)}")
+        print(f"评估结果: {evaluation}")
         
 finally:
     wandb.finish()
