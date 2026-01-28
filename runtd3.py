@@ -186,7 +186,7 @@ wandb.init(
 
 from flax import linen as nn
 
-algo_init = WandBTD3.create(
+algo = WandBTD3.create(
     env="brax/hopper",
     # 1. 激活函数必须是字符串，因为源码内部使用了 getattr(nn, activation)
     actor_kwargs={"activation": "tanh"}, 
