@@ -631,7 +631,8 @@ algo = DOAL.create(
     target_noise_clip=0.5,
 )
 
-algo.eval_callback = custom_eval_callback
+# Instead of: algo.eval_callback = custom_eval_callback
+algo = algo.replace(eval_callback=custom_eval_callback)
 
 # 训练单个智能体
 print("开始训练单个智能体...")
