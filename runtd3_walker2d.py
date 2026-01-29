@@ -213,8 +213,8 @@ algo = WandBTD3.create(
     
     # 训练循环参数
     num_epochs=128,
-    total_timesteps=5242880,  # 5,242,880 steps
-    eval_freq=262144,  # 每262,144 steps评估一次
+    total_timesteps=1000000,  # 5,242,880 steps
+    eval_freq=32768,  # 每262,144 steps评估一次
     
     # RL核心参数
     gamma=0.995,  # 折扣因子
