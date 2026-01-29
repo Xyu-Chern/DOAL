@@ -2,6 +2,7 @@ import chex
 import jax
 import numpy as np
 import optax
+import dataclasses
 from flax import linen as nn
 from flax import struct
 from flax.training.train_state import TrainState
@@ -308,8 +309,8 @@ class DOALSARSA(
                 
                 # 记录初始评估
                 jax.debug.callback(
-                    lambda r, l: self._log_initial_eval(r, l, 0),
-                    returns, lengths
+                    lambda r, l, a: self._log_initial_eval(r, l, 0, a),
+                    returns, lengths, self.alpha
                 )
 
         def eval_iteration(ts, unused):
@@ -332,8 +333,8 @@ class DOALSARSA(
                 current_step = ts.global_step
                 
                 jax.debug.callback(
-                    lambda step, r, l: self._log_eval_to_wandb(step, r, l),
-                    current_step, returns, lengths
+                    lambda step, r, l, a: self._log_eval_to_wandb(step, r, l, a),
+                    current_step, returns, lengths, self.alpha
                 )
             
             return ts, eval_result
@@ -360,8 +361,8 @@ class DOALSARSA(
                 final_lengths = evaluation[1][-1] if len(evaluation[1].shape) > 1 else evaluation[1]
                 
                 jax.debug.callback(
-                    lambda r, l: self._log_final_results(r, l),
-                    final_returns, final_lengths
+                    lambda r, l, a: self._log_final_results(r, l, a),
+                    final_returns, final_lengths, self.alpha
                 )
 
         return ts, evaluation
@@ -369,53 +370,107 @@ class DOALSARSA(
 
 
 
-    def _log_final_results(self, returns, lengths):
+    def _log_final_results(self, returns, lengths, alpha=None):
         """记录最终结果到WandB"""
         if returns.size > 0:
-            final_return = float(np.mean(returns))
-            final_length = float(np.mean(lengths))
-            wandb.log({
-                "final/return": final_return,
-                "final/length": final_length
-            })
-            wandb.summary["final_return"] = final_return
-            print(f"Final evaluation: return={final_return:.2f}")
+            if returns.ndim > 1: # Batched / Tuning case
+                # returns: (num_alphas, num_seeds, num_episodes) or (num_seeds, num_episodes)
+                # alpha: (num_alphas, num_seeds) or similar
+                
+                # Check if alpha is batched
+                alpha = np.array(alpha)
+                if alpha.ndim > 0:
+                    # Assume we are tuning multiple alphas
+                    # If double vmap: alpha shape (num_alphas, num_seeds)
+                    # returns shape (num_alphas, num_seeds, num_episodes)
+                    
+                    # We want to iterate over the FIRST dimension (alphas)
+                    # But if we have (num_alphas, num_seeds), alpha[i,0] is the alpha value
+                    
+                    # Handle case where returns is (num_alphas, num_seeds, num_episodes)
+                    if returns.ndim == 3:
+                        num_alphas = returns.shape[0]
+                        for i in range(num_alphas):
+                            curr_alpha = float(alpha[i].flat[0]) # Take first seed's alpha
+                            alpha_returns = returns[i] # (num_seeds, num_episodes)
+                            
+                            # Mean over episodes first
+                            episode_means = np.mean(alpha_returns, axis=-1) # (num_seeds,)
+                            
+                            final_return = float(np.mean(episode_means))
+                            
+                            print(f"Final evaluation (alpha={curr_alpha}): return={final_return:.2f}")
+                            # Final logs are handled by main script analysis usually, but we can log here too
+                    else:
+                        # Maybe just seeds vmap?
+                        pass
+                
+            else:
+                final_return = float(np.mean(returns))
+                final_length = float(np.mean(lengths))
+                wandb.log({
+                    "final/return": final_return,
+                    "final/length": final_length
+                })
+                wandb.summary["final_return"] = final_return
+                print(f"Final evaluation: return={final_return:.2f}")
 
-    def _log_initial_eval(self, returns, lengths, step):
+    def _log_initial_eval(self, returns, lengths, step, alpha=None):
         """记录初始评估到WandB"""
-        if returns.size > 0:
-            # 添加调试信息
-            print(f"[DEBUG] Initial eval at step {step}:")
-            print(f"  Returns array shape: {returns.shape}")
-            print(f"  Returns values: {returns}")
-            print(f"  Lengths values: {lengths}")
-            
-            mean_return = float(np.mean(returns))
-            mean_length = float(np.mean(lengths))
-            wandb.log({
-                "eval/return": mean_return,
-                "eval/length": mean_length,
-                "train/step": step
-            }, step=step)
-            print(f"[Step {step}] Initial eval: return={mean_return:.2f}, length={mean_length:.2f}")
+        self._log_eval_to_wandb(step, returns, lengths, alpha, prefix="initial")
 
-    def _log_eval_to_wandb(self, step, returns, lengths):
+    def _log_eval_to_wandb(self, step, returns, lengths, alpha=None, prefix="eval"):
         """记录评估结果到WandB"""
         if returns.size > 0:
-            # 添加调试信息
-            print(f"[DEBUG] Eval at step {int(step)}:")
-            print(f"  Returns array shape: {returns.shape}")
-            print(f"  Returns values: {returns}")
-            print(f"  Lengths values: {lengths}")
+            # Handle step
+            current_step = int(np.mean(step)) if np.ndim(step) > 0 else int(step)
             
-            mean_return = float(np.mean(returns))
-            mean_length = float(np.mean(lengths))
-            wandb.log({
-                "eval/return": mean_return,
-                "eval/length": mean_length,
-                "train/step": int(step)
-            }, step=int(step))
-            print(f"[Step {int(step)}] Eval: return={mean_return:.2f}, length={mean_length:.2f}")
+            # Check if batched (Tuning case)
+            if returns.ndim >= 3: # (num_alphas, num_seeds, num_episodes)
+                # alpha should be (num_alphas, num_seeds)
+                alpha = np.array(alpha)
+                
+                num_alphas = returns.shape[0]
+                for i in range(num_alphas):
+                    # Get alpha value for this batch
+                    curr_alpha_val = float(alpha[i].flat[0])
+                    
+                    # Get returns for this alpha: (num_seeds, num_episodes)
+                    alpha_returns = returns[i]
+                    alpha_lengths = lengths[i]
+                    
+                    # Calculate stats across seeds
+                    # First mean over episodes for each seed
+                    seed_returns = np.mean(alpha_returns, axis=-1) # (num_seeds,)
+                    seed_lengths = np.mean(alpha_lengths, axis=-1)
+                    
+                    mean_return = float(np.mean(seed_returns))
+                    std_return = float(np.std(seed_returns))
+                    mean_length = float(np.mean(seed_lengths))
+                    
+                    wandb.log({
+                        f"tuning/alpha_{curr_alpha_val}_mean": mean_return,
+                        f"tuning/alpha_{curr_alpha_val}_std": std_return,
+                        f"tuning/alpha_{curr_alpha_val}_length": mean_length,
+                        "train/step": current_step
+                    }, step=current_step)
+                    
+                if current_step % 20000 == 0: # Print occasionally to avoid flooding
+                    print(f"[Step {current_step}] Logged tuning stats for {num_alphas} alphas")
+                    
+            elif returns.ndim == 2: # Maybe just seeds vmap? (num_seeds, num_episodes)
+                 # Treat as single alpha if alpha is scalar or uniform
+                 pass # Logic for single alpha batch
+                 
+            else: # Single run
+                mean_return = float(np.mean(returns))
+                mean_length = float(np.mean(lengths))
+                wandb.log({
+                    f"{prefix}/return": mean_return,
+                    f"{prefix}/length": mean_length,
+                    "train/step": current_step
+                }, step=current_step)
+                print(f"[Step {current_step}] {prefix}: return={mean_return:.2f}, length={mean_length:.2f}")
 
     # ... 后面的方法保持不变 ...
     def train_iteration(self, ts):
@@ -695,44 +750,13 @@ def custom_eval_callback(algo, train_state, rng):
 
 
 
-# ========== 初始化WandB ==========
-wandb.init(
-    project="doal-integrated",
-    config={
-        "env": "Pendulum-v1",
-        "total_timesteps": 50000,
-        "eval_freq": 5000,
-        "num_envs": 1,
-    },
-    name="doal-pendulum-fixed",
-)
-
-print("使用修复后的DOAL训练")
 
 # ========== 创建并训练算法 ==========
-# algo = DOAL.create(
-#     env="Pendulum-v1",
-#     total_timesteps=50000,
-#     eval_freq=5000,
-#     num_envs=1,
-#     learning_rate=0.001,
-#     batch_size=256,
-#     gamma=0.99,
-#     fill_buffer=1000,
-#     flow_steps=10,
-#     max_q_samples=4,
-#     policy_delay=2,
-#     alpha=0.2,
-#     delta=2.0,
-#     exploration_noise=0.1,
-#     target_noise=0.2,
-#     target_noise_clip=0.5,
-# )
 
 algo = DOALSARSA.create(
     env="brax/hopper",
-    total_timesteps=10000,
-    eval_freq=5000,
+    total_timesteps=2000,
+    eval_freq=500,
     num_envs=1,
     learning_rate=0.00018789,
     batch_size=256,
@@ -748,13 +772,42 @@ algo = DOALSARSA.create(
     target_noise_clip=0.5,
 )
 
+# ========== 初始化WandB ==========
+# Extract configuration from algo for logging
+config_dict = {
+    "env": "brax/hopper",
+}
+
+# Programmatically extract all scalar fields from the algorithm
+if dataclasses.is_dataclass(algo):
+    for field in dataclasses.fields(algo):
+        val = getattr(algo, field.name)
+        
+        # Handle JAX/Numpy types
+        if isinstance(val, (jnp.ndarray, np.ndarray)):
+            if val.ndim == 0:
+                val = val.item()
+            else:
+                continue # Skip non-scalar arrays (like params, buffers)
+        
+        # Only log scalar types
+        if isinstance(val, (int, float, str, bool)):
+            config_dict[field.name] = val
+
+wandb.init(
+    project="doal-integrated",
+    config=config_dict,
+    name="doal-tune",
+)
+
+print("使用修复后的DOAL训练")
 # Instead of: algo.eval_callback = custom_eval_callback
 algo = algo.replace(eval_callback=custom_eval_callback)
 
 # ========== Hyperparameter Tuning for Alpha ==========
 print("\nStarting Alpha Tuning with Vmap...")
 alphas = jnp.array([0.01, 0.03, 0.1, 0.2])
-num_seeds_per_alpha = 16  # Keeping the same number of seeds for statistical significance
+num_seeds_per_alpha = 4  # Keeping the same number of seeds for statistical significance
 
 # Total runs = 4 alphas * 16 seeds = 64 runs
 
@@ -799,6 +852,55 @@ if tuning_evaluations is not None and len(tuning_evaluations) >= 2:
     # Take mean over evaluation episodes (E)
     mean_returns_traj = jnp.mean(all_returns, axis=-1) # (A, S, T)
     
+    # Log full history to WandB
+    num_alphas, num_seeds, num_steps = mean_returns_traj.shape
+    print(f"\nLogging full training history ({num_steps} steps) to WandB...")
+    
+    for t in range(num_steps):
+        # Calculate step number
+        # Assuming skip_initial_evaluation=False, index 0 is step 0
+        current_step = t * algo.eval_freq
+        
+        log_dict = {"train/step": current_step}
+        # Build a single dict for wandb.plot.line to draw all alphas on one chart
+        line_series = {}
+        for i, alpha_val in enumerate(alphas):
+            step_returns = mean_returns_traj[i, :, t]
+            mean_ret = float(np.mean(step_returns))
+            std_ret  = float(np.std(step_returns))
+            # Store mean and std for this alpha
+            line_series[f"alpha_{alpha_val:.2f}"] = [mean_ret, std_ret]
+
+        # Log one table that contains every alpha so they appear on the same chart
+        wandb.log({
+            "tuning/mean_return": wandb.plot.line(
+                table=wandb.Table(
+                    columns=["step", "alpha", "mean_return"],
+                    data=[
+                        [current_step, a, line_series[f"alpha_{a:.2f}"][0]]
+                        for a in alphas
+                    ]
+                ),
+                x="step",
+                y="mean_return",
+                stroke="alpha",
+                title="Mean Return vs. Step for different α"
+            ),
+            "tuning/std_return": wandb.plot.line(
+                table=wandb.Table(
+                    columns=["step", "alpha", "std_return"],
+                    data=[
+                        [current_step, a, line_series[f"alpha_{a:.2f}"][1]]
+                        for a in alphas
+                    ]
+                ),
+                x="step",
+                y="std_return",
+                stroke="alpha",
+                title="Return Std vs. Step for different α"
+            ),
+            "train/step": current_step
+        }, step=current_step)
     # Take the last evaluation step (final performance)
     # Check if we have steps
     if mean_returns_traj.shape[-1] > 0:
@@ -811,17 +913,8 @@ if tuning_evaluations is not None and len(tuning_evaluations) >= 2:
             std_perf = float(jnp.std(alpha_returns))
             print(f"Alpha {alpha:.2f}: Mean Return = {mean_perf:.2f} ± {std_perf:.2f}")
             
-            # Log to wandb
-            wandb.log({
-                f"tuning/alpha_{alpha}_mean": mean_perf,
-                f"tuning/alpha_{alpha}_std": std_perf,
-            })
-            
-            # Log all seeds for this alpha (optional, can be noisy)
-            # for s in range(num_seeds_per_alpha):
-            #      wandb.log({
-            #         f"tuning/alpha_{alpha}_seed_{s}": float(alpha_returns[s])
-            #     })
+            # (Optional) Log final summary metrics if not already covered by step logging
+            # wandb.log(...)
 
         # Find best alpha
         mean_perfs = jnp.mean(final_returns, axis=1)
