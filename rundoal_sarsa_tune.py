@@ -856,51 +856,73 @@ if tuning_evaluations is not None and len(tuning_evaluations) >= 2:
     num_alphas, num_seeds, num_steps = mean_returns_traj.shape
     print(f"\nLogging full training history ({num_steps} steps) to WandB...")
     
+    # Collect all data first
+    table_data = []
+    
+    # Define columns: step, then (mean, std) for each alpha
+    columns = ["step"]
+    for alpha_val in alphas:
+        columns.append(f"alpha_{alpha_val:.2f}_mean")
+        columns.append(f"alpha_{alpha_val:.2f}_std")
+    
     for t in range(num_steps):
-        # Calculate step number
-        # Assuming skip_initial_evaluation=False, index 0 is step 0
         current_step = t * algo.eval_freq
+        row = [current_step]
         
-        log_dict = {"train/step": current_step}
-        # Build a single dict for wandb.plot.line to draw all alphas on one chart
-        line_series = {}
         for i, alpha_val in enumerate(alphas):
             step_returns = mean_returns_traj[i, :, t]
             mean_ret = float(np.mean(step_returns))
             std_ret  = float(np.std(step_returns))
-            # Store mean and std for this alpha
-            line_series[f"alpha_{alpha_val:.2f}"] = [mean_ret, std_ret]
+            
+            row.append(mean_ret)
+            row.append(std_ret)
+            
+        table_data.append(row)
 
-        # Log one table that contains every alpha so they appear on the same chart
-        wandb.log({
-            "tuning/mean_return": wandb.plot.line(
-                table=wandb.Table(
-                    columns=["step", "alpha", "mean_return"],
-                    data=[
-                        [current_step, a, line_series[f"alpha_{a:.2f}"][0]]
-                        for a in alphas
-                    ]
-                ),
-                x="step",
-                y="mean_return",
-                stroke="alpha",
-                title="Mean Return vs. Step for different α"
-            ),
-            "tuning/std_return": wandb.plot.line(
-                table=wandb.Table(
-                    columns=["step", "alpha", "std_return"],
-                    data=[
-                        [current_step, a, line_series[f"alpha_{a:.2f}"][1]]
-                        for a in alphas
-                    ]
-                ),
-                x="step",
-                y="std_return",
-                stroke="alpha",
-                title="Return Std vs. Step for different α"
-            ),
-            "train/step": current_step
-        }, step=current_step)
+    # Create table once
+    tuning_table = wandb.Table(columns=columns, data=table_data)
+
+    # Log plots using custom chart (line_series) which works with this wide format
+    # Or simply log the table and let user use custom charts
+    
+    # Construct arguments for line_series
+    # We want to plot all means
+    xs = [row[0] for row in table_data] # steps
+    ys_means = []
+    keys_means = []
+    ys_stds = []
+    keys_stds = []
+    
+    for i, alpha_val in enumerate(alphas):
+        # mean is at index 1 + 2*i
+        # std is at index 1 + 2*i + 1
+        mean_idx = 1 + 2*i
+        std_idx = 2 + 2*i
+        
+        ys_means.append([row[mean_idx] for row in table_data])
+        keys_means.append(f"alpha_{alpha_val:.2f}")
+        
+        ys_stds.append([row[std_idx] for row in table_data])
+        keys_stds.append(f"alpha_{alpha_val:.2f}")
+
+    wandb.log({
+        "tuning/mean_return_plot": wandb.plot.line_series(
+            xs=xs,
+            ys=ys_means,
+            keys=keys_means,
+            title="Mean Return vs. Step",
+            xname="step"
+        ),
+        "tuning/std_return_plot": wandb.plot.line_series(
+            xs=xs,
+            ys=ys_stds,
+            keys=keys_stds,
+            title="Return Std vs. Step",
+            xname="step"
+        ),
+        # Also log the raw table for inspection
+        "tuning/full_results_table": tuning_table
+    })
     # Take the last evaluation step (final performance)
     # Check if we have steps
     if mean_returns_traj.shape[-1] > 0:
