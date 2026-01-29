@@ -206,7 +206,7 @@ algo = WandBTD3.create(
     
     # 训练循环参数
     num_epochs=128,
-    total_timesteps=5242880,      # 5.24M steps
+    total_timesteps=1000000,      # 5.24M steps
     eval_freq=32768,              # 每32k steps评估一次
     
     # RL核心参数
