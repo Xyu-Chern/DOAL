@@ -173,23 +173,15 @@ def custom_eval_callback(algo, train_state, rng):
 wandb.init(
     project="doal-integrated", # 保持和 DOAL 一样
     name="td3-pendulum-baseline",
-    config={"algo": "TD3", "env": "brax/hopper"}
+    config={"algo": "TD3", "env": "brax/halfcheetah"}
 )
-
-# 使用我们重写后的 WandBTD3
-# algo = WandBTD3.create(
-#     env="Pendulum-v1",
-#     total_timesteps=50000,
-#     eval_freq=5000,
-#     learning_rate=0.001,
-# )
 
 from flax import linen as nn
 
 # 针对Hopper的进一步优化配置
 algo = WandBTD3.create(
     # 环境设置
-    env="brax/hopper",
+    env="brax/halfcheetah",
     
     # 网络结构参数
     actor_kwargs={"activation": "tanh"},
