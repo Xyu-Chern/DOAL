@@ -775,7 +775,7 @@ algo = DOALSARSA.create(
 # ========== 初始化WandB ==========
 # Extract configuration from algo for logging
 config_dict = {
-    "env": "brax/hopper",
+    "env": "brax/ant",
 }
 
 # Programmatically extract all scalar fields from the algorithm
@@ -806,7 +806,7 @@ algo = algo.replace(eval_callback=custom_eval_callback)
 
 # ========== Hyperparameter Tuning for Alpha ==========
 print("\nStarting Alpha Tuning with Vmap...")
-alphas = jnp.array([0.01, 0.03, 0.1, 0.2])
+alphas = jnp.array([0.01, 0.03, 0.1, 0.3])
 num_seeds_per_alpha = 4  # Keeping the same number of seeds for statistical significance
 
 # Total runs = 4 alphas * 16 seeds = 64 runs
