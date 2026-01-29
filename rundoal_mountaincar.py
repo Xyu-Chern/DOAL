@@ -608,7 +608,7 @@ def custom_eval_callback(algo, train_state, rng):
     return returns, lengths
 
 
-env_name = "Pendulum-v1"
+env_name = "MountainCarContinuous-v0"
 # ========== 初始化WandB ==========
 wandb.init(
     project="doal-integrated",
@@ -629,7 +629,7 @@ algo = DOAL.create(
     total_timesteps=1000000,
     eval_freq=50000,
     num_envs=1,
-    learning_rate= 0.00018789279685460533,
+    learning_rate= 0.002,
     batch_size=100,
     gamma=0.995,
     fill_buffer=8192,
@@ -638,7 +638,7 @@ algo = DOAL.create(
     policy_delay=2,
     alpha=0.3,
     delta=2.0,
-    exploration_noise=0.3,
+    exploration_noise=0.2,
     target_noise=0.2,
     target_noise_clip=0.5,
 )
