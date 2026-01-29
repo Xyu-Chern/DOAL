@@ -755,8 +755,8 @@ def custom_eval_callback(algo, train_state, rng):
 
 algo = DOALSARSA.create(
     env="brax/hopper",
-    total_timesteps=2000,
-    eval_freq=500,
+    total_timesteps=1000000,
+    eval_freq=50000,
     num_envs=1,
     learning_rate=0.00018789,
     batch_size=256,
