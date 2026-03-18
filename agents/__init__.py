@@ -11,9 +11,8 @@ from agents.dtrigflow import DTrigFQLAgent
 from agents.dmfql import DMFQLAgent
 from agents.mfql import MFQLAgent
 
-from agents.trigql import TrigQLAgent
-from agents.dtrigql import DTrigQLAgent
 from agents.dmfrebrac import DMFReBRACAgent
+from agents.dmfrebrac_jit import DMFReBRAC_jitAgent
 from agents.fac import FACAgent
 
 agents = dict(
@@ -25,10 +24,9 @@ agents = dict(
     dtrigflow = DTrigFQLAgent,
     fql=FQLAgent,
     fac=FACAgent,
+    dmfrebrac_jit=DMFReBRAC_jitAgent,
     rebrac=ReBRACAgent,
     dmfql=DMFQLAgent,
     mfql=MFQLAgent,
-    trigql=TrigQLAgent,
-    dtrigql = DTrigQLAgent,
     dmfrebrac = DMFReBRACAgent,
 )

@@ -56,6 +56,7 @@ flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
 flags.DEFINE_integer('balanced_sampling', 0, 'Whether to use balanced sampling for online fine-tuning.')
 import jax.numpy as jnp
+
 def main(_):   #num_samples
     # Set up logger.
 

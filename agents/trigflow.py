@@ -1,0 +1,353 @@
+import copy
+from typing import Any
+
+import flax
+import jax
+import jax.numpy as jnp
+import numpy as np
+import ml_collections
+import optax
+
+from utils.encoders import encoder_modules
+from utils.flax_utils import ModuleDict, TrainState, nonpytree_field,DOALAgent
+from agents.iql import IQLAgent
+from utils.networks import ActorVectorField, Value,TimeWeight
+from functools import partial
+import math
+
+
+class TrigFQLAgent(DOALAgent,IQLAgent):
+    """Flow Q-learning (FQL) agent."""
+
+    rng: Any
+    network: Any
+    config: Any = nonpytree_field()
+
+        
+    def actor_loss(self, batch, grad_params, rng=None,aux={}):
+        """Compute the FQL actor loss."""
+        batch_size, action_dim = batch['actions'].shape
+        rng, x_rng, t_rng = jax.random.split(rng, 3)
+
+        # BC flow loss.
+        z = jax.random.normal(x_rng, (batch_size, action_dim))
+        t = jax.random.uniform(t_rng, (batch_size, 1))  *math.pi / 2
+        x_t = jnp.cos(t)* batch['actions'] + jnp.sin(t) * z
+
+     #   vel =  jnp.cos(t)* z  - jnp.sin(t) * batch['actions']
+
+
+        F_theta = self.network.select('actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
+        pred_actions = x_t * jnp.cos(t) - F_theta * jnp.sin(t) 
+
+
+      #  v = jax.lax.stop_gradient(aux["v"])
+      #  q = jax.lax.stop_gradient(aux["q"])
+      #  adv = q - v
+
+     #   exp_a = jnp.exp(adv * self.config['vel_actor'])
+      #  exp_a = jnp.minimum(exp_a, 100.0)
+
+        if self.config["time_weight"]:
+            time_weight_logits = self.network.select("time_weight")(t, params=grad_params)
+
+            weight = jnp.exp(time_weight_logits) / action_dim
+            time_weight_logits = time_weight_logits - jax.lax.stop_gradient(time_weight_logits)
+        else:
+            weight = jnp.ones_like(t) 
+            time_weight_logits = jnp.zeros_like(t) 
+            
+
+
+
+        out = {
+                "weight":weight.mean(),
+            }
+        if self.config["use_q_loss"] :
+            qs = self.network.select('critic')(batch['observations'], actions=pred_actions)
+            if self.config['q_agg'] == 'min':
+                q = jnp.min(qs, axis=0)
+            else:
+                q = jnp.mean(qs, axis=0)
+
+            actor_loss = -q.mean()
+            # Total loss.
+            total_loss = actor_loss * self.config["alpha"] #call alpha_q
+            out["q"] =  q.mean()
+        else:
+            total_loss = 0
+            
+        if  self.config["loss_type"] == "action":
+            raw_zero_shot_loss = ( ( pred_actions- batch['actions'] ) ** 2)
+            bc_flow_loss = ( weight*  raw_zero_shot_loss -time_weight_logits).mean()   
+            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
+            out["bc_flow_loss"]  = raw_zero_shot_loss.mean()   
+        elif  self.config["loss_type"] ==  "vel":
+            vel =  jnp.cos(t)* z  - jnp.sin(t) * batch['actions']
+            raw_vel_loss = ( ( F_theta- vel ) ** 2)
+            bc_flow_loss = ( weight*  raw_vel_loss -time_weight_logits).mean()   
+            total_loss = total_loss  + self.config["alpha_actor"] *  bc_flow_loss 
+            out["bc_flow_loss"]  = raw_vel_loss.mean()   
+        else:
+            assert False, self.config["loss_type"]+" does not exist"
+    
+        out['total_loss'] = total_loss
+        return total_loss, out 
+
+
+    def target_update(self, network, module_name):
+        """Update the target network."""
+        new_target_params = jax.tree_util.tree_map(
+            lambda p, tp: p * self.config["tau"] + tp * (1 - self.config["tau"]),
+            self.network.params[f"modules_{module_name}"],
+            self.network.params[f"modules_target_{module_name}"],
+        )
+        network.params[f"modules_target_{module_name}"] = new_target_params
+
+    @jax.jit
+    def update(self, batch):
+        """Update the agent and return a new agent with information dictionary."""
+        new_rng, rng = jax.random.split(self.rng)
+
+        def loss_fn(grad_params):
+            return self.total_loss(batch, grad_params, rng=rng)
+
+        new_network, info = self.network.apply_loss_fn(loss_fn=loss_fn)
+        self.target_update(new_network, "critic")
+
+        return self.replace(network=new_network, rng=new_rng), info
+        
+    @jax.jit
+    def sample_actions(
+        self,
+        observations,
+        seed=None,
+        temperature=1.0,
+    ):
+        """Sample actions from the actor."""
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_flow_encoder')(observations)
+        action_seed, noise_seed = jax.random.split(seed)
+
+        # Sample `num_samples` noises and propagate them through the flow.
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[:-1],
+                self.config['num_samples'],
+                self.config['action_dim'],
+            ),
+        ) 
+        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), self.config['num_samples'], axis=0)
+        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), self.config['num_samples'], axis=0)
+        # Euler method.
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*observations.shape[:-1],self.config['num_samples'], 1), (1.0 - i / self.config['flow_steps']) *math.pi / 2)
+            vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
+            s = jnp.full((*observations.shape[:-1], self.config['num_samples'],1), (1.0 - (i+1) / self.config['flow_steps']) *math.pi / 2)
+            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) #* self.config["sigma"]
+
+        actions = jnp.clip(actions, -1, 1)
+        if self.config["test_guidance"]:
+            actions , adjustment,hd,g, q = self.get_guided_action( actions, actions,n_observations,alpha=self.config["test_alpha"],delta=self.config["delta"],params=self.network.params)
+        # Pick the action with the highest Q-value.
+        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
+
+                # --- MODIFIED ACTION SELECTION ---
+        # The following lines replace the deterministic argmax selection.
+        # We use a softmax distribution based on Q-values and temperature.
+        if self.config["sampling"]:
+            logits = q  / temperature
+            
+            # Use jax.random.categorical to sample an index from the logits distribution.
+            action_idx = jax.random.categorical(noise_seed, logits)
+
+            # Select the action corresponding to the sampled index.
+            actions = actions[action_idx]
+            
+            return actions
+
+        actions = actions[jnp.argmax(q)]
+        return actions
+
+        
+    @jax.jit
+    def get_stats(
+        self,
+        observations,
+        seed=None,
+        temperature=1.0,
+    ):
+        """Sample actions from the actor."""
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_flow_encoder')(observations)
+        action_seed, noise_seed = jax.random.split(seed)
+
+        # Sample `num_samples` noises and propagate them through the flow.
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[:-1],
+                self.config['num_samples'],
+                self.config['action_dim'],
+            ),
+        ) 
+        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), self.config['num_samples'], axis=0)
+        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), self.config['num_samples'], axis=0)
+        # Euler method.
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*observations.shape[:-1],self.config['num_samples'], 1), (1.0 - i / self.config['flow_steps']) *math.pi / 2)
+            vels = self.network.select('actor_bc_flow')(n_observations, actions, t, is_encoded=True)
+            s = jnp.full((*observations.shape[:-1], self.config['num_samples'],1), (1.0 - (i+1) / self.config['flow_steps']) *math.pi / 2)
+            actions = actions * jnp.cos(t-s) - vels * jnp.sin(t-s) #* self.config["sigma"]
+
+        actions = jnp.clip(actions, -1, 1)
+
+
+        # Pick the action with the highest Q-value.
+        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
+
+
+        out = {
+            'actions_std': jnp.std(actions,axis=0).mean(),
+            "q_std": jnp.std(q),
+            "q_mean": jnp.mean(q),
+            "q_max": jnp.max(q),
+            }
+        return out
+
+    @classmethod
+    def create(
+        cls,
+        seed,
+        ex_observations,
+        ex_actions,
+        config,
+    ):
+        """Create a new agent.
+
+        Args:
+            seed: Random seed.
+            ex_observations: Example batch of observations.
+            ex_actions: Example batch of actions.
+            config: Configuration dictionary.
+        """
+        rng = jax.random.PRNGKey(seed)
+        rng, init_rng = jax.random.split(rng, 2)
+
+        ex_times = ex_actions[..., :1]
+        ob_dims = ex_observations.shape[1:]
+        action_dim = ex_actions.shape[-1]
+
+        # Define encoders.
+        encoders = dict()
+        if config['encoder'] is not None:
+            encoder_module = encoder_modules[config['encoder']]
+            encoders['value'] = encoder_module()
+            encoders['critic'] = encoder_module()
+            encoders['actor_bc_flow'] = encoder_module()
+
+
+        # Define networks.
+        value_def = Value(
+            hidden_dims=config['value_hidden_dims'],
+            layer_norm=config['layer_norm'],
+            num_ensembles=1,
+            encoder=encoders.get('value'),
+        )
+        # Define networks.
+        critic_def = Value(
+            hidden_dims=config['value_hidden_dims'],
+            layer_norm=config['layer_norm'],
+            num_ensembles=config['num_ensembles'],
+            encoder=encoders.get('critic'),
+        )
+        actor_bc_flow_def = ActorVectorField(
+            hidden_dims=config['actor_hidden_dims'],
+            action_dim=action_dim,
+            layer_norm=config['actor_layer_norm'],
+            encoder=encoders.get('actor_bc_flow'),
+        )
+
+        time_weight_def = TimeWeight(
+            hidden_dims=config['time_hidden_dims'],
+            layer_norm=config['layer_norm'],
+        )
+        network_info = dict(
+            value=(value_def, (ex_observations,)),
+            critic=(critic_def, (ex_observations, ex_actions)),
+            target_critic=(copy.deepcopy(critic_def), (ex_observations, ex_actions)),
+            actor_bc_flow=(actor_bc_flow_def, (ex_observations, ex_actions, ex_times)),
+            time_weight = (time_weight_def, (ex_times)),
+        )
+        if encoders.get('actor_bc_flow') is not None:
+            # Add actor_bc_flow_encoder to ModuleDict to make it separately callable.
+            network_info['actor_bc_flow_encoder'] = (encoders.get('actor_bc_flow'), (ex_observations,))
+        networks = {k: v[0] for k, v in network_info.items()}
+        network_args = {k: v[1] for k, v in network_info.items()}
+        
+        network_def = ModuleDict(networks)
+        if config['gn'] > 0:
+            network_tx = optax.chain(
+                optax.clip_by_block_rms(config["gn"]),
+                optax.adam(learning_rate=config['lr'])
+            )
+        else:
+            network_tx = optax.adam(learning_rate=config['lr'])
+        network_params = network_def.init(init_rng, **network_args)['params']
+        network = TrainState.create(network_def, network_params, tx=network_tx)
+
+        params = network.params
+        params['modules_target_critic'] = params['modules_critic']
+
+        config['ob_dims'] = ob_dims
+        config['action_dim'] = action_dim
+        print ("delta is" , config["delta"])
+   #     config["sigma"] = jnp.std(ex_actions,axis=0,keepdims=True)
+      #  print ("in side config[alpha]",config["alpha"])
+        return cls(rng, network=network, config=flax.core.FrozenDict(**config))
+
+def get_config():
+    config = ml_collections.ConfigDict(
+        dict(
+            agent_name='trigflow',  # Agent name.
+            ob_dims=ml_collections.config_dict.placeholder(list),  # Observation dimensions (will be set automatically).
+            action_dim=ml_collections.config_dict.placeholder(int),  # Action dimension (will be set automatically).
+            lr=3e-4,  # Learning rate.
+            batch_size=256,  # Batch size.
+            actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
+            value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
+            time_hidden_dims=(32,),
+     #       sigma=ml_collections.config_dict.placeholder(jax.Array),
+            normalize_action=False,
+            layer_norm=True,  # Whether to use layer normalization.
+            actor_layer_norm=False,  # Whether to use layer normalization for the actor.
+            discount=0.99,  # Discount factor.
+            tau=0.005,  # Target network update rate.
+            q_agg='min',  # Aggregation method for target Q values.
+            test_guidance=False,
+            return_next_actions=True,
+            decode_type="ddim",
+            alpha_actor=10.0,  # BC coefficient (need to be tuned for each environment).
+            distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            loss_type="action",
+            time_weight=False,
+            num_ensembles=2,
+            expectile=0.9,  # IQL expectile.
+            sampling=False,
+            delta =2.0,
+            test_alpha=10.0,
+            alpha=1.0,
+            gn=200.0,
+            vel_actor = 0.0,
+            alpha_critic=0.0,  # Critic BC coefficient.
+            num_samples=8,  # Number of action samples for rejection sampling.
+            flow_steps=10,  # Number of flow steps.
+            use_q_loss=False,  # Whether to normalize the Q loss.
+            encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
+        )
+    )
+    return config
