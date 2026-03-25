@@ -333,7 +333,7 @@ def main(_):   #num_samples
                 agent, update_info = agent.update(batch)
 
         # Log metrics.
-            if i % FLAGS.log_interval == 0:
+            if i % 100000 == 0:
                 train_metrics = {f'training/{k}': v for k, v in update_info.items()}
                 if val_dataset is not None:
                     val_batch = val_dataset.sample(config['batch_size'])
@@ -343,11 +343,11 @@ def main(_):   #num_samples
                 train_metrics['time/total_time'] = time.time() - first_time
                 train_metrics.update(expl_metrics)
                 last_time = time.time()
-                wandb.log(train_metrics, step=i)
-                train_logger.log(train_metrics, step=i)
+                wandb.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                train_logger.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
 
         # Evaluate agent.
-            if i % log_interval == 0 or i == num_epochs:
+            if i % 100000 == 0 or i == num_epochs + FLAGS.online_steps:
                 eval_metrics = {}
                 if val_dataset is not None:
                     val_batch = val_dataset.sample(config['batch_size'])
@@ -370,8 +370,8 @@ def main(_):   #num_samples
                     video = get_wandb_video(renders=renders)
                     eval_metrics['video'] = video
 
-                wandb.log(eval_metrics, step=i)
-                eval_logger.log(eval_metrics, step=i)
+                wandb.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                eval_logger.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
                 pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
 
 
