@@ -35,7 +35,7 @@ flags.DEFINE_boolean('save_code', True, 'Restore path.')
 flags.DEFINE_integer('restore_epoch', 0, 'Restore epoch.')
 
 flags.DEFINE_integer('offline_steps', 1000000, 'Number of offline steps.')
-flags.DEFINE_integer('online_steps', 0, 'Number of online steps.')
+flags.DEFINE_integer('online_steps', 1000000, 'Number of online steps.')
 flags.DEFINE_integer('buffer_size', 2000000, 'Replay buffer size.')
 flags.DEFINE_integer('log_interval', 500, 'Logging interval.')
 flags.DEFINE_integer('eval_interval', 1000, 'Evaluation interval.')
@@ -180,7 +180,7 @@ def main(_):   #num_samples
             elif "evaluation/success" in eval_metrics:
                 print (num_samples, eval_metrics["evaluation/success"])
             eval_logger.log(eval_metrics, step=num_samples)
-        assert False 
+
     run = setup_wandb(project='doal', group=FLAGS.run_group, name=exp_name,config=flag_dict,save_code=FLAGS.save_code)
     train_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'train.csv'))
     eval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 'eval.csv'))
@@ -214,81 +214,174 @@ def main(_):   #num_samples
         agent, info = agent.update(batch)
         return agent, info
 
-    pbar = tqdm.tqdm(range(1, num_epochs + 1), smoothing=0.1, dynamic_ncols=True)
+    pbar = tqdm.tqdm(range(1, num_epochs + FLAGS.online_steps+ 1), smoothing=0.1, dynamic_ncols=True)
     #for i in tqdm.tqdm(range(1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
     rng = jax.random.PRNGKey(FLAGS.seed)
 
     train_time = 0
+    done = True
     for i in pbar:
+        if i <= num_epochs:
         # Generate new random key for shuffling
-        rng, subkey = jax.random.split(rng)
+            rng, subkey = jax.random.split(rng)
 
-        before_shuffle = time.time() 
-        
-        batches = train_dataset.sample(truncated_size)
-        
-        # Shuffle and reshape dataset into batches
-        batches = jax.tree_util.tree_map(
-            lambda x: x.reshape(-1, config['batch_size'], *x.shape[1:]),
-            batches
-        )
-        after_shuffle = time.time() 
-        # Perform updates using scan over all batches
-        agent, update_info = jax.jit(jax.lax.scan,static_argnums=(0,))(
-            scan_update,
-            agent,
-            batches
-        )
+            before_shuffle = time.time() 
+            
+            batches = train_dataset.sample(truncated_size)
+            
+            # Shuffle and reshape dataset into batches
+            batches = jax.tree_util.tree_map(
+                lambda x: x.reshape(-1, config['batch_size'], *x.shape[1:]),
+                batches
+            )
+            after_shuffle = time.time() 
+            # Perform updates using scan over all batches
+            agent, update_info = jax.jit(jax.lax.scan,static_argnums=(0,))(
+                scan_update,
+                agent,
+                batches
+            )
+            # Log metrics.
+            train_time = train_time + time.time() - after_shuffle
+
+            if i % log_interval == 0 or i == num_epochs:
+                eval_metrics = {}
+                if val_dataset is not None:
+                    val_batch = val_dataset.sample(config['batch_size'])
+                    _, val_info = agent.total_loss(val_batch, grad_params=None)
+                    eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                renders = []
+                eval_info, trajs, cur_renders = evaluate_parallel(
+                    agent=agent,
+                    envs = envs,
+                    config=config,
+                    num_eval_episodes=FLAGS.eval_episodes,
+                    num_video_episodes=FLAGS.video_episodes,
+                    video_frame_skip=FLAGS.video_frame_skip,
+                )
+                renders.extend(cur_renders)
+                for k, v in eval_info.items():
+                    eval_metrics[f'evaluation/{k}'] = v
+
+                if FLAGS.video_episodes > 0:
+                    video = get_wandb_video(renders=renders)
+                    eval_metrics['video'] = video
+
+                wandb.log(eval_metrics, step=i*n_complete_batches)
+                eval_logger.log(eval_metrics, step=i*n_complete_batches)
+                pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
+
+            if i % 100 == 0:
+                update_info = jax.tree_util.tree_map(
+                    lambda xs: jnp.mean(xs), 
+                    update_info
+                )
+                train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+                train_metrics['time/data_time'] = after_shuffle- before_shuffle
+                train_metrics['time/train_time'] = train_time
+                train_metrics['time/compute_time'] = time.time() - after_shuffle
+                train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
+                last_time = time.time()
+                wandb.log(train_metrics, step=i*n_complete_batches)
+                train_logger.log(train_metrics, step=i*n_complete_batches)
+                pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
+        else:
+            online_rng, key = jax.random.split(online_rng)
+
+            if done:
+                step = 0
+                ob, _ = env.reset()
+
+            action = agent.sample_actions(observations=ob, temperature=1, seed=key)
+            action = np.array(action)
+
+            next_ob, reward, terminated, truncated, info = env.step(action.copy())
+            done = terminated or truncated
+
+            if 'antmaze' in FLAGS.env_name and (
+                'diverse' in FLAGS.env_name or 'play' in FLAGS.env_name or 'umaze' in FLAGS.env_name
+            ):
+                # Adjust reward for D4RL antmaze.
+                reward = reward - 1.0
+
+            replay_buffer.add_transition(
+                dict(
+                    observations=ob,
+                    actions=action,
+                    rewards=reward,
+                    terminals=float(done),
+                    masks=1.0 - terminated,
+                    next_observations=next_ob,
+                )
+            )
+            ob = next_ob
+
+            if done:
+                expl_metrics = {f'exploration/{k}': np.mean(v) for k, v in flatten(info).items()}
+
+            if FLAGS.balanced_sampling:
+                # Half-and-half sampling from the training dataset and the replay buffer.
+                dataset_batch = train_dataset.sample(config['batch_size'] // 2)
+                replay_batch = replay_buffer.sample(config['batch_size'] // 2)
+                batch = {k: np.concatenate([dataset_batch[k], replay_batch[k]], axis=0) for k in dataset_batch}
+            else:
+                batch = replay_buffer.sample(config['batch_size'])
+
+            if config['agent_name'] == 'rebrac':
+                agent, update_info = agent.update(batch, full_update=(i % config['actor_freq'] == 0))
+            else:
+                agent, update_info = agent.update(batch)
+
         # Log metrics.
-        train_time = train_time + time.time() - after_shuffle
+            if i % FLAGS.log_interval == 0:
+                train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+                if val_dataset is not None:
+                    val_batch = val_dataset.sample(config['batch_size'])
+                    _, val_info = agent.total_loss(val_batch, grad_params=None)
+                    train_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                train_metrics['time/epoch_time'] = (time.time() - last_time) / FLAGS.log_interval
+                train_metrics['time/total_time'] = time.time() - first_time
+                train_metrics.update(expl_metrics)
+                last_time = time.time()
+                wandb.log(train_metrics, step=i)
+                train_logger.log(train_metrics, step=i)
 
-        if i % log_interval == 0 or i == num_epochs:
-            eval_metrics = {}
-            if val_dataset is not None:
-                val_batch = val_dataset.sample(config['batch_size'])
-                _, val_info = agent.total_loss(val_batch, grad_params=None)
-                eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
-            renders = []
-            eval_info, trajs, cur_renders = evaluate_parallel(
-                agent=agent,
-                envs = envs,
-                config=config,
-                num_eval_episodes=FLAGS.eval_episodes,
-                num_video_episodes=FLAGS.video_episodes,
-                video_frame_skip=FLAGS.video_frame_skip,
-            )
-            renders.extend(cur_renders)
-            for k, v in eval_info.items():
-                eval_metrics[f'evaluation/{k}'] = v
+        # Evaluate agent.
+            if i % log_interval == 0 or i == num_epochs:
+                eval_metrics = {}
+                if val_dataset is not None:
+                    val_batch = val_dataset.sample(config['batch_size'])
+                    _, val_info = agent.total_loss(val_batch, grad_params=None)
+                    eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                renders = []
+                eval_info, trajs, cur_renders = evaluate_parallel(
+                    agent=agent,
+                    envs = envs,
+                    config=config,
+                    num_eval_episodes=FLAGS.eval_episodes,
+                    num_video_episodes=FLAGS.video_episodes,
+                    video_frame_skip=FLAGS.video_frame_skip,
+                )
+                renders.extend(cur_renders)
+                for k, v in eval_info.items():
+                    eval_metrics[f'evaluation/{k}'] = v
 
-            if FLAGS.video_episodes > 0:
-                video = get_wandb_video(renders=renders)
-                eval_metrics['video'] = video
+                if FLAGS.video_episodes > 0:
+                    video = get_wandb_video(renders=renders)
+                    eval_metrics['video'] = video
 
-            wandb.log(eval_metrics, step=i*n_complete_batches)
-            eval_logger.log(eval_metrics, step=i*n_complete_batches)
-            pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
-        if i % 100 == 0:
-            update_info = jax.tree_util.tree_map(
-                lambda xs: jnp.mean(xs), 
-                update_info
-            )
-            train_metrics = {f'training/{k}': v for k, v in update_info.items()}
-            train_metrics['time/data_time'] = after_shuffle- before_shuffle
-            train_metrics['time/train_time'] = train_time
-            train_metrics['time/compute_time'] = time.time() - after_shuffle
-            train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
-            last_time = time.time()
-            wandb.log(train_metrics, step=i*n_complete_batches)
-            train_logger.log(train_metrics, step=i*n_complete_batches)
-            pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
+                wandb.log(eval_metrics, step=i)
+                eval_logger.log(eval_metrics, step=i)
+                pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
+
+
+
         # Save agent.
 
     save_agent(agent, FLAGS.save_dir, 0)
     train_logger.close()
     eval_logger.close()
 
-    #  jax.disable_jit()
     if FLAGS.retest:
         data = []
         reeval_logger = CsvLogger(os.path.join(FLAGS.save_dir, 're_eval.csv'))

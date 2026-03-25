@@ -28,8 +28,6 @@ class MeanFlowQL_Agent(flax.struct.PyTreeNode):
             history_window_size = self.config.get('loss_history_window_size', 5)
             object.__setattr__(self, 'loss_history', jnp.zeros(history_window_size))
 
-
-
     def sample_noise(self, rng, shape):
         # Choose your initial distributions. 
         noise_type = self.config.get('noise_type', 'gaussian')
@@ -95,6 +93,7 @@ class MeanFlowQL_Agent(flax.struct.PyTreeNode):
         v = e - actions
         # JVP to calculate dgdt
         gn = self.network.select('actor_bc_flow')
+        
         g, dgdt = jax.jvp(
             lambda args: gn(batch['observations'], args[0], args[1], params=grad_params),
             ((z, t),),
@@ -145,7 +144,7 @@ class MeanFlowQL_Agent(flax.struct.PyTreeNode):
         t_pred = jnp.ones((batch_size, 1))
         noises = self.sample_noise(noise_rng, (batch_size, action_dim))  
         
-        actions =  self.network.select('actor_bc_flow')(batch['observations'], noises, t = t_pred, params=grad_params)
+        actions =  self.network.select('actor_bc_flow')(batch['observations'], noises, t_pred, params=grad_params)
         
         # Add bound_loss
         upper_bound = jnp.ones_like(actions)
@@ -204,7 +203,7 @@ class MeanFlowQL_Agent(flax.struct.PyTreeNode):
 
 
     @jax.jit
-    def total_loss(self, batch, grad_params, rng, current_step=0):
+    def total_loss(self, batch, grad_params, rng=None, current_step=0):
         """Calculate total loss with alpha weight scheduling"""
         info = {}
         rng = rng if rng is not None else self.rng
@@ -269,6 +268,7 @@ class MeanFlowQL_Agent(flax.struct.PyTreeNode):
         # Log the current alpha weight for monitoring
         info["alpha_weight"] = alpha_weight
         info["total_loss"] = total_loss
+
         return total_loss, info
     
     def _calculate_cosine_alpha(self, current_step):
@@ -630,7 +630,8 @@ class MeanFlowQL_Agent(flax.struct.PyTreeNode):
             
             # Vectorized flow computation without encoder
             def generate_action(obs, noise, t):
-                return self.network.select('actor_bc_flow')(obs, noise, t)
+                actions = self.network.select('actor_bc_flow')(obs, noise, t)
+                return actions
             
             # Use vmap to process all candidates at once
             candidate_actions = jax.vmap(generate_action)(obs_expanded, all_noise, t_expanded)
@@ -743,6 +744,14 @@ class MeanFlowQL_Agent(flax.struct.PyTreeNode):
             tanh_squash = config['tanh_squash'],
             use_output_layernorm = config["use_output_layernorm"],
         )
+
+        
+        # actor_bc_flow_def = ActorVectorField(
+        #     hidden_dims=config['actor_inner_hidden_dims'],
+        #     action_dim=action_dim,
+        #     layer_norm=config['actor_layer_norm'],
+        #     encoder=encoders.get('actor_bc_flow'),
+        # )
     
         network_info = dict(
             critic=(critic_def, (ex_observations, ex_actions)),
@@ -973,6 +982,7 @@ def get_config():
 
             # critic config
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
+            actor_inner_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
 
             # actor config 

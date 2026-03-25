@@ -15,14 +15,13 @@ from agents import agents
 from envs.env_utils import make_env_and_datasets
 from utils.hps import hyperparameters
 from utils.datasets import Dataset, ReplayBuffer
-from utils.evaluation import evaluate, evaluate_parallel, flatten
+from utils.evaluation import evaluate, evaluate_parallel, flatten, mf_evaluate_parallel
 from utils.flax_utils import restore_agent, save_agent
 from utils.log_utils import CsvLogger, get_exp_name, get_flag_dict, get_wandb_video, setup_wandb
 import re
+import jax.numpy as jnp
 
 FLAGS = flags.FLAGS
-
-
 flags.DEFINE_string('run_group', 'Debug', 'Run group.')
 flags.DEFINE_integer('seed', 42, 'Random seed.')
 flags.DEFINE_string('env_name', 'cube-single-play-singletask-v0', 'Environment (dataset) name.')
@@ -44,7 +43,7 @@ flags.DEFINE_integer('save_interval', 100, 'Saving interval.')
 flags.DEFINE_integer('eval_episodes', 50, 'Number of evaluation episodes.')
 flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
-
+flags.DEFINE_float('pretrain_factor', 0.0, 'Fraction of offline steps used for pretraining')
 
 config_flags.DEFINE_config_file('agent', f'agents/dtrigflow.py', lock_config=False)
 
@@ -55,7 +54,7 @@ flags.DEFINE_integer('num_samples',None, 'coffeient for conservative')
 flags.DEFINE_float('p_aug', None, 'Probability of applying image augmentation.')
 flags.DEFINE_integer('frame_stack', None, 'Number of frames to stack.')
 flags.DEFINE_integer('balanced_sampling', 0, 'Whether to use balanced sampling for online fine-tuning.')
-import jax.numpy as jnp
+
 
 def main(_):   #num_samples
     # Set up logger.
@@ -64,7 +63,6 @@ def main(_):   #num_samples
         os.environ['JAX_PLATFORM_NAME'] = 'cpu'
     config = FLAGS.agent
 
-     
     pattern = r"-task\d-"
 
     # The replacement string
@@ -134,6 +132,11 @@ def main(_):   #num_samples
     example_batch = train_dataset.sample(1)
 
     agent_class = agents[config['agent_name']]
+    if config['agent_name'] == "meanflowql":
+        eval_func = mf_evaluate_parallel
+    else:
+        eval_func = evaluate_parallel
+
     flag_dict["agent_config"] = config
 
    # artifact = wandb.Artifact(name="agent", type="code")
@@ -163,7 +166,7 @@ def main(_):   #num_samples
             agent = agent.replace(config=config)
             eval_metrics = {}
             renders = []
-            eval_info, trajs, cur_renders = evaluate_parallel(
+            eval_info, trajs, cur_renders = eval_func(
                 agent=agent,
                 envs = envs,
                 config=config,
@@ -195,7 +198,7 @@ def main(_):   #num_samples
 
     dataset = train_dataset._dict
     data_size = dataset["masks"].shape[0] 
-    log_interval = 100000
+    log_interval = 10000
     n_complete_batches = 100000  // log_interval #data_size // config['batch_size']
     truncated_size = n_complete_batches * config['batch_size']
 
@@ -224,18 +227,20 @@ def main(_):   #num_samples
         batch = train_dataset.sample(config['batch_size'])
         after_shuffle = time.time()
         agent, update_info = agent.update(
-            batch, full_update=(i % config['actor_freq'] == 0)
+            batch, current_step=i
         )
         train_time = train_time + time.time() - after_shuffle
 
         if i % log_interval == 0 or i == num_epochs:
             eval_metrics = {}
+
             if val_dataset is not None:
                 val_batch = val_dataset.sample(config['batch_size'])
                 _, val_info = agent.total_loss(val_batch, grad_params=None)
                 eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+
             renders = []
-            eval_info, trajs, cur_renders = evaluate_parallel(
+            eval_info, trajs, cur_renders = eval_func(
                 agent=agent,
                 envs = envs,
                 config=config,
@@ -284,7 +289,7 @@ def main(_):   #num_samples
             agent = agent.replace(config=config)
             eval_metrics = {}
             renders = []
-            eval_info, trajs, cur_renders = evaluate_parallel(
+            eval_info, trajs, cur_renders = eval_func(
                 agent=agent,
                 envs = envs,
                 config=config,
