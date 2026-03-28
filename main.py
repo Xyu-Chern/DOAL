@@ -330,10 +330,10 @@ def main(_):   #num_samples
             if config['agent_name'] == 'rebrac':
                 agent, update_info = agent.update(batch, full_update=(i % config['actor_freq'] == 0))
             else:
-                agent, update_info = agent.update(batch)
+                agent, update_info = agent.update(batch, mode="online")
 
         # Log metrics.
-            if i % 100000 == 0:
+            if i % 2000 == 0:
                 train_metrics = {f'training/{k}': v for k, v in update_info.items()}
                 if val_dataset is not None:
                     val_batch = val_dataset.sample(config['batch_size'])
@@ -347,7 +347,7 @@ def main(_):   #num_samples
                 train_logger.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
 
         # Evaluate agent.
-            if i % 100000 == 0 or i == num_epochs + FLAGS.online_steps:
+            if i %  100000 == 0 or i == num_epochs + FLAGS.online_steps:
                 eval_metrics = {}
                 if val_dataset is not None:
                     val_batch = val_dataset.sample(config['batch_size'])

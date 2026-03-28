@@ -1,6 +1,7 @@
 
 import copy
 from typing import Any
+from functools import partial
 
 import flax
 import jax
@@ -117,8 +118,8 @@ class MFQLAgent(DOALAgent):
         )
         network.params[f'modules_target_{module_name}'] = new_target_params
 
-    @jax.jit
-    def update(self, batch):
+    @partial(jax.jit, static_argnames=('mode',))
+    def update(self, batch, mode="offline"):
         """Update the agent and return a new agent with information dictionary."""
         new_rng, rng = jax.random.split(self.rng)
 

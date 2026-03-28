@@ -36,7 +36,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         x_1 = batch['actions']
         
         alpha = self.config["alpha"] 
-        adjusted_actions , adjustment,hd,g, q = self.get_guided_action(  x_1, x_1,batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
+        adjusted_actions , adjustment, hd, g, q = self.get_guided_action(x_1, x_1, batch['observations'],alpha,delta=self.config["delta"],params=self.network.params)
         t = jax.random.uniform(t_rng, (batch_size, 1))
         x_t = (1 - t) * x_0 + t * adjusted_actions
         vel = adjusted_actions - x_0
@@ -63,7 +63,7 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
             "g_min": jnp.min(g),
         }
 
-    def critic_loss(self, batch, grad_params, rng):
+    def critic_loss(self, batch, grad_params, rng, mode="offline"):
         """Compute the ReBRAC critic loss."""
         rng, sample_rng = jax.random.split(rng)
 
@@ -84,7 +84,10 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         next_q = next_qs.mean(axis=0)
 
         mse = jnp.square(next_actions - batch['next_actions']).sum(axis=-1)
-        next_q = next_q - self.config['alpha_critic'] * mse
+        if mode=="offline":
+            next_q = next_q - self.config['alpha_critic'] * mse
+        else:
+            next_q = next_q 
 
         target_q = batch['rewards'] + self.config['discount'] * batch['masks'] * next_q
 
@@ -139,15 +142,15 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
             actions = actions[jnp.argmax(q)]
         return actions
         
-    @partial(jax.jit, static_argnames=('full_update',))
-    def total_loss(self, batch, grad_params, full_update=True, rng=None):
+    @partial(jax.jit, static_argnames=('full_update', "mode"))
+    def total_loss(self, batch, grad_params, full_update=True, rng=None, mode="offline"):
         """Compute the total loss."""
         info = {}
         rng = rng if rng is not None else self.rng
 
         rng, actor_flow_rng,actor_rng, critic_rng = jax.random.split(rng, 4)
 
-        critic_loss, critic_info,aux = self.critic_loss(batch, grad_params, critic_rng)
+        critic_loss, critic_info,aux = self.critic_loss(batch, grad_params, critic_rng, mode)
         for k, v in critic_info.items():
             info[f'critic/{k}'] = v
 
@@ -167,13 +170,13 @@ class DMFReBRACAgent(ReBRACAgent,DMFQLAgent):
         )
         network.params[f'modules_target_{module_name}'] = new_target_params
 
-    @partial(jax.jit, static_argnames=('full_update',))
-    def update(self, batch, full_update=True):
+    @partial(jax.jit, static_argnames=('full_update', 'mode',))
+    def update(self, batch, full_update=True, mode="offline"):
         """Update the agent and return a new agent with information dictionary."""
         new_rng, rng = jax.random.split(self.rng)
 
         def loss_fn(grad_params):
-            return self.total_loss(batch, grad_params, full_update, rng=rng)
+            return self.total_loss(batch, grad_params, full_update, rng=rng, mode=mode)
 
         new_network, info = self.network.apply_loss_fn(loss_fn=loss_fn)
         if full_update:

@@ -141,32 +141,69 @@ class DOALAgent(flax.struct.PyTreeNode):
 
         return _get_guided_action(q_action, action,observation,alpha,params)
 
+    # @jax.jit
+    # def auto(self,q_action, action, observation, alpha, delta,params):
+
+    #     def bc_loss_wrt_q_action(q_action):
+    #         qs = self.network.select('critic')(observation, q_action, params=params)
+    #         q = jnp.mean(qs, axis=0)
+    #         return  jnp.sum(q) 
+    
+    #     v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
+    #     q, g = v_grad_q(q_action)  # return Q and \nabla a Q
+
+    #     norm = jnp.linalg.norm(g, axis=-1, keepdims=True) + 1e-3
+    #     norm_mean = jnp.mean(norm)
+    #     norm_std = jnp.std(norm)
+
+    #     max_grad_threshold = 10.0 
+    #     norm_up = jnp.minimum(norm_mean + delta * norm_std, max_grad_threshold)
+
+    #     clipped_g = jnp.where(norm > norm_up,  g * norm_up / norm,   g)
+    #     dx =   (alpha / norm_mean ) * clipped_g 
+    #     adjusted_actions = q_action + dx
+    #     if self.config["clip"]:
+    #         adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
+            
+    #     adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
+    #     dx = jax.lax.stop_gradient(adjusted_actions - action)
+    #     q =  jax.lax.stop_gradient(q)
+    #     return adjusted_actions, dx, (norm_mean/alpha)*jnp.ones(q_action.shape[0], dtype=q_action.dtype), g, q
+
+
     @jax.jit
-    def auto(self,q_action, action,observation,alpha,delta,params):
+    def auto(self,q_action, action, observation, alpha, delta,params):
 
         def bc_loss_wrt_q_action(q_action):
             qs = self.network.select('critic')(observation, q_action, params=params)
-            q = jnp.mean(qs,axis=0)
+            q = jnp.mean(qs, axis=0)
             return  jnp.sum(q) 
     
         v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
-        q, g = v_grad_q(q_action)
+        q, g = v_grad_q(q_action)  # return Q and \nabla a Q
 
-        norm = jnp.linalg.norm(g,axis=-1,keepdims=True) + 1e-5
+        norm = jnp.linalg.norm(g, axis=-1, keepdims=True) + 1e-3
         norm_mean = jnp.mean(norm)
         norm_std = jnp.std(norm)
-        norm_up = norm_mean + delta * norm_std
 
-        clipped_g = jnp.where(norm > norm_up,  g * norm_up / norm,   g)
-        dx =   (alpha / norm_mean ) * clipped_g 
+        # max_grad_threshold = 10.0 
+        # norm_up = jnp.minimum(norm_mean + delta * norm_std, max_grad_threshold)
+        # clipped_g = jnp.where(norm > norm_up,  g * norm_up / norm,   g)
+
+        max_norm = 5.0
+        scale = jnp.minimum(max_norm / norm, 1.0)
+        clipped_g = g * scale
+
+        dx =   (alpha / norm_mean ) * clipped_g
         adjusted_actions = q_action + dx
+        
         if self.config["clip"]:
             adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
             
         adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
         dx = jax.lax.stop_gradient(adjusted_actions - action)
         q =  jax.lax.stop_gradient(q)
-        return adjusted_actions,dx, ( norm_mean / alpha) *  jnp.ones(q_action.shape[0], dtype=q_action.dtype),g,q
+        return adjusted_actions, dx, (norm_mean/alpha)*jnp.ones(q_action.shape[0], dtype=q_action.dtype), g, q
 
     @jax.jit
     def mpt_auto(self,q_action, action,observation,alpha,delta,params):
