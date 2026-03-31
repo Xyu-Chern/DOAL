@@ -997,7 +997,7 @@ def get_config():
             alpha=10.0,  # BC coefficient (need to be tuned for each environment). # hyper_paper 2: most important
             tanh_squash=False,  # Whether to use tanh activation for the actor.
             use_output_layernorm=False,
-            time_steps =  10000,  # Discrete time steps.  
+            time_steps =  50,  # Discrete time steps.  
             
             # meanflow loss
             adaptive_gamma=0.8,  # This parameter is used for controlling the loss function of meanflow.

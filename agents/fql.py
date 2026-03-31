@@ -1,5 +1,6 @@
 import copy
 from typing import Any
+from functools import partial
 
 import flax
 import jax
@@ -122,8 +123,9 @@ class FQLAgent(flax.struct.PyTreeNode):
         )
         network.params[f'modules_target_{module_name}'] = new_target_params
 
-    @jax.jit
-    def update(self, batch, current_step=None, total_steps=None, pretrain_factor=0.05,Taylor= False, flag_flowornot = False):
+        
+    @partial(jax.jit, static_argnames=('total_steps', "pretrain_factor","Taylor","flag_flowornot","mode"))
+    def update(self, batch, current_step=None, total_steps=None, pretrain_factor=0.05,Taylor= False, flag_flowornot = False, mode="offline"):
         """Update the agent and return a new agent with information dictionary."""
         new_rng, rng = jax.random.split(self.rng)
 

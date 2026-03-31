@@ -15,7 +15,7 @@ from agents import agents
 from envs.env_utils import make_env_and_datasets
 from utils.hps import hyperparameters
 from utils.datasets import Dataset, ReplayBuffer
-from utils.evaluation import evaluate, evaluate_parallel, flatten
+from utils.evaluation import evaluate, evaluate_parallel, flatten, mf_evaluate_parallel
 from utils.flax_utils import restore_agent, save_agent
 from utils.log_utils import CsvLogger, get_exp_name, get_flag_dict, get_wandb_video, setup_wandb
 import re
@@ -45,6 +45,8 @@ flags.DEFINE_integer('eval_episodes', 50, 'Number of evaluation episodes.')
 flags.DEFINE_integer('video_episodes', 0, 'Number of video episodes for each task.')
 flags.DEFINE_integer('video_frame_skip', 3, 'Frame skip for videos.')
 
+flags.DEFINE_boolean('use_observation_normalization', True, 'Whether to normalize observations')
+flags.DEFINE_float('pretrain_factor', 0.0, 'Fraction of offline steps used for pretraining')
 
 config_flags.DEFINE_config_file('agent', f'agents/dtrigflow.py', lock_config=False)
 
@@ -130,6 +132,23 @@ def main(_):   #num_samples
             if 'rebrac' in config['agent_name'] or ('return_next_actions' in config and config['return_next_actions'] ):
                 dataset.return_next_actions = True
 
+    if FLAGS.use_observation_normalization:
+        print("Computing observation normalization statistics...")
+        if train_dataset is not None:
+            train_dataset.compute_normalization_stats()
+            train_dataset.enable_normalization(True)
+        if val_dataset is not None and train_dataset is not None:
+            val_dataset.obs_mean = train_dataset.obs_mean
+            val_dataset.obs_std = train_dataset.obs_std
+            val_dataset.enable_normalization(True)
+        if replay_buffer is not None and train_dataset is not None and replay_buffer != train_dataset:
+            replay_buffer.obs_mean = train_dataset.obs_mean
+            replay_buffer.obs_std = train_dataset.obs_std
+            replay_buffer.enable_normalization(True)
+    else:
+        print("Observation normalization disabled")
+    print("Observation normalization setup complete.")
+
     # Create agent.
     example_batch = train_dataset.sample(1)
 
@@ -202,9 +221,7 @@ def main(_):   #num_samples
     print (f"Dataset size: {data_size}")
     print (f"Truncated dataset size: {truncated_size}")
     print (f"Num complete batches per epoch: {n_complete_batches}")
-    num_epochs = FLAGS.offline_steps // n_complete_batches
-    print (f"Num epochs: {num_epochs}")
-    print (f"Num effective training steps: {num_epochs * n_complete_batches}")
+
 
     @jax.jit
     def scan_update(agent, batch):
@@ -213,6 +230,14 @@ def main(_):   #num_samples
     #    jax.debug.print("after {bar}", bar=str(jax.tree_util.tree_map(lambda x: x.dtype, batch)))
         agent, info = agent.update(batch)
         return agent, info
+    
+    if config['agent_name'] == 'meanflowql':
+        num_epochs = FLAGS.offline_steps
+        n_complete_batches = 1
+    else:
+        num_epochs = FLAGS.offline_steps // n_complete_batches
+        print (f"Num epochs: {num_epochs}")
+        print (f"Num effective training steps: {num_epochs * n_complete_batches}")
 
     pbar = tqdm.tqdm(range(1, num_epochs + FLAGS.online_steps+ 1), smoothing=0.1, dynamic_ncols=True)
     #for i in tqdm.tqdm(range(1, FLAGS.offline_steps + FLAGS.online_steps + 1), smoothing=0.1, dynamic_ncols=True):
@@ -220,71 +245,120 @@ def main(_):   #num_samples
 
     train_time = 0
     done = True
+
     for i in pbar:
         if i <= num_epochs:
         # Generate new random key for shuffling
             rng, subkey = jax.random.split(rng)
 
             before_shuffle = time.time() 
-            
-            batches = train_dataset.sample(truncated_size)
-            
-            # Shuffle and reshape dataset into batches
-            batches = jax.tree_util.tree_map(
-                lambda x: x.reshape(-1, config['batch_size'], *x.shape[1:]),
-                batches
-            )
-            after_shuffle = time.time() 
-            # Perform updates using scan over all batches
-            agent, update_info = jax.jit(jax.lax.scan,static_argnums=(0,))(
-                scan_update,
-                agent,
-                batches
-            )
-            # Log metrics.
-            train_time = train_time + time.time() - after_shuffle
 
-            if i % log_interval == 0 or i == num_epochs:
-                eval_metrics = {}
-                if val_dataset is not None:
-                    val_batch = val_dataset.sample(config['batch_size'])
-                    _, val_info = agent.total_loss(val_batch, grad_params=None)
-                    eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
-                renders = []
-                eval_info, trajs, cur_renders = evaluate_parallel(
-                    agent=agent,
-                    envs = envs,
-                    config=config,
-                    num_eval_episodes=FLAGS.eval_episodes,
-                    num_video_episodes=FLAGS.video_episodes,
-                    video_frame_skip=FLAGS.video_frame_skip,
+            if config['agent_name'] == 'meanflowql':
+                batch = train_dataset.sample(config['batch_size'])
+                agent, update_info = agent.update(
+                    batch, current_step=i
                 )
-                renders.extend(cur_renders)
-                for k, v in eval_info.items():
-                    eval_metrics[f'evaluation/{k}'] = v
 
-                if FLAGS.video_episodes > 0:
-                    video = get_wandb_video(renders=renders)
-                    eval_metrics['video'] = video
+                if i % 2000 == 0:
+                    train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+                    if val_dataset is not None:
+                        val_batch = val_dataset.sample(config['batch_size'])
+                        _, val_info = agent.total_loss(val_batch, grad_params=None)
+                        train_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                    train_metrics['time/epoch_time'] = (time.time() - last_time) / FLAGS.log_interval
+                    train_metrics['time/total_time'] = time.time() - first_time
+                    train_metrics.update(expl_metrics)
+                    last_time = time.time()
+                    wandb.log(train_metrics, step= i)
+                    train_logger.log(train_metrics, step= i)
 
-                wandb.log(eval_metrics, step=i*n_complete_batches)
-                eval_logger.log(eval_metrics, step=i*n_complete_batches)
-                pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
+                if i %  100000 == 0 or i == num_epochs:
+                    eval_metrics = {}
+                    if val_dataset is not None:
+                        val_batch = val_dataset.sample(config['batch_size'])
+                        _, val_info = agent.total_loss(val_batch, grad_params=None)
+                        eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                    renders = []
+                    eval_info, trajs, cur_renders = mf_evaluate_parallel(
+                        agent=agent,
+                        envs = envs,
+                        config=config,
+                        num_eval_episodes=FLAGS.eval_episodes,
+                        num_video_episodes=FLAGS.video_episodes,
+                        video_frame_skip=FLAGS.video_frame_skip,
+                    )
+                    renders.extend(cur_renders)
+                    for k, v in eval_info.items():
+                        eval_metrics[f'evaluation/{k}'] = v
 
-            if i % 100 == 0:
-                update_info = jax.tree_util.tree_map(
-                    lambda xs: jnp.mean(xs), 
-                    update_info
+                    if FLAGS.video_episodes > 0:
+                        video = get_wandb_video(renders=renders)
+                        eval_metrics['video'] = video
+
+                    wandb.log(eval_metrics, step= i)
+                    eval_logger.log(eval_metrics, step= i)
+                    pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
+            
+            else:
+                batches = train_dataset.sample(truncated_size)
+                
+                # Shuffle and reshape dataset into batches
+                batches = jax.tree_util.tree_map(
+                    lambda x: x.reshape(-1, config['batch_size'], *x.shape[1:]),
+                    batches
                 )
-                train_metrics = {f'training/{k}': v for k, v in update_info.items()}
-                train_metrics['time/data_time'] = after_shuffle- before_shuffle
-                train_metrics['time/train_time'] = train_time
-                train_metrics['time/compute_time'] = time.time() - after_shuffle
-                train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
-                last_time = time.time()
-                wandb.log(train_metrics, step=i*n_complete_batches)
-                train_logger.log(train_metrics, step=i*n_complete_batches)
-                pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
+                after_shuffle = time.time() 
+                # Perform updates using scan over all batches
+                agent, update_info = jax.jit(jax.lax.scan,static_argnums=(0,))(
+                    scan_update,
+                    agent,
+                    batches
+                )
+                # Log metrics.
+                train_time = train_time + time.time() - after_shuffle
+
+                if i % log_interval == 0 or i == num_epochs:
+                    eval_metrics = {}
+                    if val_dataset is not None:
+                        val_batch = val_dataset.sample(config['batch_size'])
+                        _, val_info = agent.total_loss(val_batch, grad_params=None)
+                        eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                    renders = []
+                    eval_info, trajs, cur_renders = evaluate_parallel(
+                        agent=agent,
+                        envs = envs,
+                        train_dataset = train_dataset,
+                        config=config,
+                        num_eval_episodes=FLAGS.eval_episodes,
+                        num_video_episodes=FLAGS.video_episodes,
+                        video_frame_skip=FLAGS.video_frame_skip,
+                    )
+                    renders.extend(cur_renders)
+                    for k, v in eval_info.items():
+                        eval_metrics[f'evaluation/{k}'] = v
+
+                    if FLAGS.video_episodes > 0:
+                        video = get_wandb_video(renders=renders)
+                        eval_metrics['video'] = video
+
+                    wandb.log(eval_metrics, step=i*n_complete_batches)
+                    eval_logger.log(eval_metrics, step=i*n_complete_batches)
+                    pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
+
+                if i % 100 == 0:
+                    update_info = jax.tree_util.tree_map(
+                        lambda xs: jnp.mean(xs), 
+                        update_info
+                    )
+                    train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+                    train_metrics['time/data_time'] = after_shuffle- before_shuffle
+                    train_metrics['time/train_time'] = train_time
+                    train_metrics['time/compute_time'] = time.time() - after_shuffle
+                    train_metrics['time/total_time'] = (time.time() - last_time) / log_interval
+                    last_time = time.time()
+                    wandb.log(train_metrics, step=i*n_complete_batches)
+                    train_logger.log(train_metrics, step=i*n_complete_batches)
+                    pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in train_metrics.items()})
         else:
             online_rng, key = jax.random.split(online_rng)
 
@@ -292,8 +366,19 @@ def main(_):   #num_samples
                 step = 0
                 ob, _ = env.reset()
 
+            if len(ob.shape) == 1:
+                ob_batch = ob[None, :]  # Add batch dimension
+            else:
+                ob_batch = ob
+
+            if FLAGS.use_observation_normalization and train_dataset is not None and hasattr(train_dataset, 'normalize_obs') and train_dataset.  normalize_obs:
+                ob_batch = (ob_batch - train_dataset.obs_mean) / train_dataset.obs_std
+
             action = agent.sample_actions(observations=ob, temperature=1, seed=key)
             action = np.array(action)
+
+            if action.ndim > 1 and action.shape[0] == 1:
+                action = action[0]  # Remove batch dimension: (1, 8) -> (8,)
 
             next_ob, reward, terminated, truncated, info = env.step(action.copy())
             done = terminated or truncated
@@ -327,52 +412,94 @@ def main(_):   #num_samples
             else:
                 batch = replay_buffer.sample(config['batch_size'])
 
-            if config['agent_name'] == 'rebrac':
-                agent, update_info = agent.update(batch, full_update=(i % config['actor_freq'] == 0))
+            if config['agent_name'] == 'meanflowql':
+                agent, update_info = agent.update(batch, current_step=i)
+                # Log metrics.
+                if i % 2000 == 0:
+                    train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+                    if val_dataset is not None:
+                        val_batch = val_dataset.sample(config['batch_size'])
+                        _, val_info = agent.total_loss(val_batch, grad_params=None)
+                        train_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                    train_metrics['time/epoch_time'] = (time.time() - last_time) / FLAGS.log_interval
+                    train_metrics['time/total_time'] = time.time() - first_time
+                    train_metrics.update(expl_metrics)
+                    last_time = time.time()
+                    wandb.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                    train_logger.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+
+            # Evaluate agent.
+                if i %  100000 == 0 or i == num_epochs + FLAGS.online_steps:
+                    eval_metrics = {}
+                    if val_dataset is not None:
+                        val_batch = val_dataset.sample(config['batch_size'])
+                        _, val_info = agent.total_loss(val_batch, grad_params=None)
+                        eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                    renders = []
+                    eval_info, trajs, cur_renders = mf_evaluate_parallel(
+                        agent=agent,
+                        envs = envs,
+                        config=config,
+                        num_eval_episodes=FLAGS.eval_episodes,
+                        num_video_episodes=FLAGS.video_episodes,
+                        video_frame_skip=FLAGS.video_frame_skip,
+                    )
+                    renders.extend(cur_renders)
+                    for k, v in eval_info.items():
+                        eval_metrics[f'evaluation/{k}'] = v
+
+                    if FLAGS.video_episodes > 0:
+                        video = get_wandb_video(renders=renders)
+                        eval_metrics['video'] = video
+
+                    wandb.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                    eval_logger.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                    pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
             else:
                 agent, update_info = agent.update(batch, mode="online")
 
-        # Log metrics.
-            if i % 2000 == 0:
-                train_metrics = {f'training/{k}': v for k, v in update_info.items()}
-                if val_dataset is not None:
-                    val_batch = val_dataset.sample(config['batch_size'])
-                    _, val_info = agent.total_loss(val_batch, grad_params=None)
-                    train_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
-                train_metrics['time/epoch_time'] = (time.time() - last_time) / FLAGS.log_interval
-                train_metrics['time/total_time'] = time.time() - first_time
-                train_metrics.update(expl_metrics)
-                last_time = time.time()
-                wandb.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
-                train_logger.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+            # Log metrics.
+                if i % 2000 == 0:
+                    train_metrics = {f'training/{k}': v for k, v in update_info.items()}
+                    if val_dataset is not None:
+                        val_batch = val_dataset.sample(config['batch_size'])
+                        _, val_info = agent.total_loss(val_batch, grad_params=None)
+                        train_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                    train_metrics['time/epoch_time'] = (time.time() - last_time) / FLAGS.log_interval
+                    train_metrics['time/total_time'] = time.time() - first_time
+                    train_metrics.update(expl_metrics)
+                    last_time = time.time()
+                    wandb.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                    train_logger.log(train_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
 
-        # Evaluate agent.
-            if i %  100000 == 0 or i == num_epochs + FLAGS.online_steps:
-                eval_metrics = {}
-                if val_dataset is not None:
-                    val_batch = val_dataset.sample(config['batch_size'])
-                    _, val_info = agent.total_loss(val_batch, grad_params=None)
-                    eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
-                renders = []
-                eval_info, trajs, cur_renders = evaluate_parallel(
-                    agent=agent,
-                    envs = envs,
-                    config=config,
-                    num_eval_episodes=FLAGS.eval_episodes,
-                    num_video_episodes=FLAGS.video_episodes,
-                    video_frame_skip=FLAGS.video_frame_skip,
-                )
-                renders.extend(cur_renders)
-                for k, v in eval_info.items():
-                    eval_metrics[f'evaluation/{k}'] = v
+            # Evaluate agent.
+                if i %  100000 == 0 or i == num_epochs + FLAGS.online_steps:
+                    eval_metrics = {}
+                    if val_dataset is not None:
+                        val_batch = val_dataset.sample(config['batch_size'])
+                        _, val_info = agent.total_loss(val_batch, grad_params=None)
+                        eval_metrics.update({f'validation/{k}': v for k, v in val_info.items()})
+                    renders = []
+                    eval_info, trajs, cur_renders = evaluate_parallel(
+                        agent=agent,
+                        envs = envs,
+                        train_dataset = train_dataset,
+                        config=config,
+                        num_eval_episodes=FLAGS.eval_episodes,
+                        num_video_episodes=FLAGS.video_episodes,
+                        video_frame_skip=FLAGS.video_frame_skip,
+                    )
+                    renders.extend(cur_renders)
+                    for k, v in eval_info.items():
+                        eval_metrics[f'evaluation/{k}'] = v
 
-                if FLAGS.video_episodes > 0:
-                    video = get_wandb_video(renders=renders)
-                    eval_metrics['video'] = video
+                    if FLAGS.video_episodes > 0:
+                        video = get_wandb_video(renders=renders)
+                        eval_metrics['video'] = video
 
-                wandb.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
-                eval_logger.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
-                pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
+                    wandb.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                    eval_logger.log(eval_metrics, step= i-num_epochs + num_epochs* n_complete_batches)
+                    pbar.set_postfix({k.split('/')[-1]: f"{v:.1f}" for k, v in eval_metrics.items()})
 
 
 
@@ -393,6 +520,7 @@ def main(_):   #num_samples
             eval_info, trajs, cur_renders = evaluate_parallel(
                 agent=agent,
                 envs = envs,
+                train_dataset = train_dataset,
                 config=config,
                 num_eval_episodes=500,
                 num_video_episodes=FLAGS.video_episodes,

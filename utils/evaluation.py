@@ -128,6 +128,7 @@ def unnorm_act(act, act_statistics):
 def evaluate_parallel(
     agent,
     envs, # this is a list now
+    train_dataset,
     config=None,
     num_eval_episodes=50,
     num_video_episodes=0,
@@ -138,6 +139,7 @@ def evaluate_parallel(
     fix_seed =False,
 ):
     actor_fn = jax.vmap(agent.sample_actions,in_axes =(0,0,None))
+    
     total_episodes = num_eval_episodes + num_video_episodes
 
     trajs = []
@@ -147,7 +149,17 @@ def evaluate_parallel(
         outs = [env.reset(seed = i % 50) for i, env in enumerate(envs)]
     else:
         outs = [env.reset() for env in envs]
+    
+    normalize_obs = False
+    if train_dataset is not None and hasattr(train_dataset, 'normalize_obs') and train_dataset.normalize_obs:
+        normalize_obs = True
+        obs_mean = train_dataset.obs_mean
+        obs_std = train_dataset.obs_std
+
     next_observations = [obs for obs, _ in outs]
+    if normalize_obs:
+        next_observations = (next_observations - obs_mean) / obs_std
+
     rewards = [ 0.0 for i in range(total_episodes)]
     step = 0
 
@@ -161,6 +173,8 @@ def evaluate_parallel(
     while len(envs)>0:
 
         observations = np.stack(next_observations, axis=0)
+        if normalize_obs:
+                observations = (observations - obs_mean) / obs_std
         # print("obs shape :", observations.shape)
         # observations = norm_obs(observations , obs_statistics)
         # print("observations :", observations )
@@ -223,6 +237,8 @@ def evaluate_parallel(
         stats[k] = np.mean(v)
 
     return stats, trajs, renders
+
+
 
 def mf_evaluate_parallel(
     agent,
