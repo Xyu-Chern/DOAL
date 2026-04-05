@@ -94,7 +94,7 @@ class DNAgent(flax.struct.PyTreeNode):
         rng, sample_rng = jax.random.split(rng)
 
         if self.config["flow_only"] :
-            next_actions = self.sample_actions(batch['next_observations'], seed=sample_rng)
+            next_actions = self.sample_actions(batch['next_observations'], seed=sample_rng, num_samples=self.config["target_num_samples"])
             next_actions = jnp.clip(next_actions, -1, 1)
         else:
             next_dist = self.network.select('target_actor')(batch['next_observations'])
@@ -132,22 +132,19 @@ class DNAgent(flax.struct.PyTreeNode):
             'q_min': q.min(),
         }, aux
 
-    @jax.jit
+    @partial(jax.jit, static_argnames=("num_samples", "temperature"))
     def sample_actions(
         self,
         observations,
         seed=None,
+        num_samples=4,
         temperature=1.0,
     ):
         orig_observations = observations
         if self.config['encoder'] is not None:
             observations = self.network.select('actor_flow_encoder')(observations)
         action_seed, noise_seed = jax.random.split(seed)
-        if temperature==0:
-            num_samples = self.config["num_samples"] 
-        else:
-            num_samples = self.config["target_num_samples"] 
-        # Sample `num_samples` noises and propagate them through the flow.
+
         n_observations = jnp.repeat(jnp.expand_dims(observations, 0), num_samples, axis=0)
         n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), num_samples, axis=0)
         actions = jax.random.normal(

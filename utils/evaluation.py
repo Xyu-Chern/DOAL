@@ -138,7 +138,8 @@ def evaluate_parallel(
     act_statistics=None,
     fix_seed =False,
 ):
-    actor_fn = jax.vmap(agent.sample_actions,in_axes =(0,0,None))
+    actor_fn = jax.vmap(agent.sample_actions,in_axes =(0,0,None,None))
+    num_samples = agent.config["num_samples"]
     
     total_episodes = num_eval_episodes + num_video_episodes
 
@@ -181,7 +182,7 @@ def evaluate_parallel(
 
         key,random_key = random.split(key)
         random_keys = random.split(random_key,len(envs))
-        actions = actor_fn(observations, random_keys, eval_temperature)
+        actions = actor_fn(observations, random_keys, num_samples, eval_temperature)
         # print("act shape :", actions.shape)
         actions = np.array(actions)
         actions = np.clip(actions, -1, 1)
