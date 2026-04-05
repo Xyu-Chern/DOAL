@@ -13,13 +13,14 @@ from agents.mfql import MFQLAgent
 
 from agents.dmfrebrac import DMFReBRACAgent
 from agents.meanflowql import MeanFlowQL_Agent
-from agents.dmfrebrac_jit import DMFReBRAC_jitAgent
 from agents.fac import FACAgent
 from agents.dfr import DFRAgent
+from agents.dn import DNAgent
 
 agents = dict(
     iql=IQLAgent,
     diql=DIQLAgent,
+    dn=DNAgent,
     ifql=IFQLAgent,
     dfr=DFRAgent,
     difql=DIFQLAgent,
@@ -28,7 +29,6 @@ agents = dict(
     fql=FQLAgent,
     fac=FACAgent,
     meanflowql=MeanFlowQL_Agent,
-    dmfrebrac_jit=DMFReBRAC_jitAgent,
     rebrac=ReBRACAgent,
     dmfql=DMFQLAgent,
     mfql=MFQLAgent,

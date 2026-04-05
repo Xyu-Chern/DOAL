@@ -1,4 +1,3 @@
-
 import copy
 from functools import partial
 from typing import Any
@@ -14,14 +13,84 @@ from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import Actor, Value, ActorVectorField
 
 
-class DFRAgent(flax.struct.PyTreeNode):
+class DNAgent(flax.struct.PyTreeNode):
+    """Revisited behavior-regularized actor-critic (ReBRAC) agent.
+
+    ReBRAC is a variant of TD3+BC with layer normalization and separate actor and critic penalization.
+    """
 
     rng: Any
     network: Any
     config: Any = nonpytree_field()
+
+    @jax.jit
+    def auto(self, q_action, observation, alpha,params):
+
+        def bc_loss_wrt_q_action(q_action):
+            qs = self.network.select('critic')(observation, q_action, params=params)
+            q = jnp.mean(qs, axis=0)
+            return  jnp.sum(q) 
     
-    @partial(jax.jit, static_argnames=("mode",))
+        v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
+        q, g = v_grad_q(q_action)  # return Q and \nabla a Q
+
+        norm = jnp.linalg.norm(g, axis=-1, keepdims=True) + 1e-3
+        norm_mean = jnp.mean(norm)
+        norm_std = jnp.std(norm)
+
+        max_norm = 5.0
+        scale = jnp.minimum(max_norm / norm, 1.0)
+        clipped_g = g * scale
+
+        dx =   (alpha / norm_mean ) * clipped_g
+        adjusted_actions = q_action + dx
+        
+        adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
+            
+        adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
+        dx = jax.lax.stop_gradient(dx)
+        q =  jax.lax.stop_gradient(q)
+        return adjusted_actions, dx, (norm_mean/alpha)*jnp.ones(q_action.shape[0], dtype=q_action.dtype), g, q
+
+
+    def dmf_actor_loss(self, batch, grad_params, rng=None,aux={}):
+        """Compute the behavioral flow-matching actor loss."""
+        batch_size, action_dim = batch['actions'].shape
+        rng, x_rng, t_rng = jax.random.split(rng, 3)
+
+        x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
+        x_1 = batch['actions']
+        
+        alpha = self.config["alpha"] 
+        adjusted_actions , adjustment, hd, g, q = self.auto(x_1, batch['observations'],alpha,params=self.network.params)
+        t = jax.random.uniform(t_rng, (batch_size, 1))
+        x_t = (1 - t) * x_0 + t * adjusted_actions
+        vel = adjusted_actions - x_0
+
+        pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
+
+        raw_actor_loss = (pred - vel) ** 2
+        actor_loss =  jnp.mean(raw_actor_loss) * self.config['alpha_actor']
+
+        return actor_loss, {
+            "raw_actor_loss":jnp.mean(raw_actor_loss),
+            'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
+            'adj': jnp.mean(jnp.abs(adjustment)),
+            "q":jnp.mean(q),
+            "hd": jnp.mean(hd),
+            "hd_abs": jnp.mean(jnp.abs(hd)),
+            "hd_std": jnp.std(hd),
+            "hd_max": jnp.max(hd),
+            "hd_min": jnp.min(hd),
+            "g": jnp.mean(g),
+            "g_std": jnp.std(g),
+            "g_abs": jnp.mean(jnp.abs(g)),
+            "g_max": jnp.max(g),
+            "g_min": jnp.min(g),
+        }
+
     def critic_loss(self, batch, grad_params, rng, mode="offline"):
+        """Compute the ReBRAC critic loss."""
         rng, sample_rng = jax.random.split(rng)
 
         if self.config["flow_only"] :
@@ -38,21 +107,11 @@ class DFRAgent(flax.struct.PyTreeNode):
             next_actions = jnp.clip(next_actions + noise, -1, 1)
 
         next_qs = self.network.select('target_critic')(batch['next_observations'], actions=next_actions)
-
-        if self.config['q_agg'] == 'min':
-            next_q = next_qs.min(axis=0)
-        elif self.config['q_agg'] == 'max':
-            next_q = next_qs.max(axis=0)
-        else:
-            next_q = next_qs.mean(axis=0)
+        next_q = next_qs.mean(axis=0)
 
         mse = jnp.square(next_actions - batch['next_actions']).sum(axis=-1)
-
-        if mode == "offline":
-            q_std = jnp.std(next_qs, axis=0) 
-            mse_scale = jax.lax.stop_gradient(mse.mean() + 1e-6)
-            # next_q = next_q - q_std / mse_scale * mse
-            next_q = next_q - 0.01 * mse
+        if mode=="offline":
+            next_q = next_q - self.config['alpha_critic'] * mse
         else:
             next_q = next_q 
 
@@ -74,107 +133,45 @@ class DFRAgent(flax.struct.PyTreeNode):
         }, aux
 
     @jax.jit
-    def get_guided_action(self, q_action, observation, delta, params):
-
-        def bc_loss_wrt_q_action(q_action):
-            qs = self.network.select('critic')(observation, q_action, params=params)
-            q = jnp.mean(qs, axis=0)
-            return  jnp.sum(q) 
-    
-        v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
-        q_sum, g = v_grad_q(q_action) 
-
-        norm = jnp.linalg.norm(g, axis=-1, keepdims=True) + 1e-6  # batch * 1
-        norm_mean = jnp.mean(norm)
-        norm_std = jnp.std(norm)
-
-        if self.config["use_batch_nrom"]:
-            # dx = delta / (norm_mean + norm_std) * g
-
-            max_norm = 5.0
-            scale = jnp.minimum( max_norm / norm, 1.0)
-            clipped_g = g * scale
-            dx =   (delta / norm_mean ) * clipped_g
+    def sample_actions(
+        self,
+        observations,
+        seed=None,
+        temperature=1.0,
+    ):
+        orig_observations = observations
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_flow_encoder')(observations)
+        action_seed, noise_seed = jax.random.split(seed)
+        if temperature==0:
+            num_samples = self.config["num_samples"] 
         else:
-            dx = delta * g
+            num_samples = self.config["target_num_samples"] 
+        # Sample `num_samples` noises and propagate them through the flow.
+        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), num_samples, axis=0)
+        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), num_samples, axis=0)
+        actions = jax.random.normal(
+            action_seed,
+            (
+                *n_observations.shape[:-1],
+                self.config['action_dim'],
+            ),
+        )
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*n_observations.shape[:-1], 1), i / self.config['flow_steps'])
+            vels = self.network.select('actor_flow')(n_observations, actions, t, is_encoded=True)
+            actions = actions + vels / self.config['flow_steps']
+        actions = jnp.clip(actions, -1, 1)
 
-        target_action = jnp.clip(q_action + dx, -1.0, 1.0)  
-        target_action = jax.lax.stop_gradient(target_action)
-        dx = jax.lax.stop_gradient(dx)
-        q_sum =  jax.lax.stop_gradient(q_sum)
-
-        return target_action, dx, ( norm_mean / delta ) * jnp.ones(q_action.shape[0], dtype=q_action.dtype), g, q_sum
-    
-    @jax.jit
-    def actor_loss(self, batch, grad_params, rng=None,aux={}):
-        """Compute the behavioral flow-matching actor loss."""
-        batch_size, action_dim = batch['actions'].shape
-        rng, x_rng, t_rng = jax.random.split(rng, 3)
-
-        x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
-        x_1 = batch['actions']
+        # Pick the action with the highest Q-value.
+        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
+        if len(actions.shape) == 3:
+            b = orig_observations.shape[0]
+            actions = actions[jnp.argmax(q,axis=0),jnp.arange(b)]
+        else:
+            actions = actions[jnp.argmax(q)]
+        return actions
         
-        adjusted_actions , adjustment, hd, g, q = self.get_guided_action(x_1, batch['observations'], delta=self.config["delta"],params=self.network.params)
-
-        t = jax.random.uniform(t_rng, (batch_size, 1))
-        x_t = (1 - t) * x_0 + t * adjusted_actions
-        vel = adjusted_actions - x_0
-
-        pred = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
-
-        raw_actor_loss = (pred - vel) ** 2
-        actor_loss =  jnp.mean(raw_actor_loss) *30
-
-        return actor_loss, {
-            "raw_actor_loss":jnp.mean(raw_actor_loss),
-            'adj_norm': jnp.mean(jnp.linalg.vector_norm(adjustment,axis=-1)),
-            'adj': jnp.mean(jnp.abs(adjustment)),
-            "q":jnp.mean(q),
-            "hd": jnp.mean(hd),
-            "hd_abs": jnp.mean(jnp.abs(hd)),
-            "hd_std": jnp.std(hd),
-            "hd_max": jnp.max(hd),
-            "hd_min": jnp.min(hd),
-            "g": jnp.mean(g),
-            "g_std": jnp.std(g),
-            "g_abs": jnp.mean(jnp.abs(g)),
-            "g_max": jnp.max(g),
-            "g_min": jnp.min(g),
-        }
-
-    # @jax.jit
-    # def actor_loss(self, batch, grad_params, rng=None, aux={}):
-    #     batch_size, action_dim = batch['actions'].shape
-    #     rng, x_rng, t_rng = jax.random.split(rng, 3)
-
-    #     x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
-    #     x_1 = batch['actions'] 
-
-    #     t = jax.random.uniform(t_rng, (batch_size, 1))
-    #     x_t = (1 - t) * x_0 + t * x_1
-    #     vel = x_1 - x_0 
-    #     v1 = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
-
-    #     flow_loss = jnp.mean((v1 - vel) ** 2)
-
-    #     target_action = jax.lax.stop_gradient(x_t + (1 - t) * v1) 
-    #     target_action = jnp.clip(target_action, -1.0, 1.0)
-
-    #     qs = self.network.select('critic')(batch['observations'], actions=target_action)
-    #     q = jnp.min(qs, axis=0)
-
-    #     if self.config['normalize_q_loss']:
-    #         q_loss = -(aux["lam"] * q).mean()
-    #     else:
-    #         q_loss = - q.mean()
-
-    #     actor_loss = flow_loss + q_loss
-
-    #     return actor_loss, {
-    #         "actor_loss":jnp.mean(actor_loss),
-    #     }
-
-      
     @partial(jax.jit, static_argnames=('full_update', "mode"))
     def total_loss(self, batch, grad_params, full_update=True, rng=None, mode="offline"):
         """Compute the total loss."""
@@ -187,11 +184,11 @@ class DFRAgent(flax.struct.PyTreeNode):
         for k, v in critic_info.items():
             info[f'critic/{k}'] = v
 
-        actor_loss, actor_info = self.actor_loss(batch, grad_params, actor_flow_rng,aux)
+        dmf_actor_loss, actor_info = self.dmf_actor_loss(batch, grad_params, actor_flow_rng,aux)
         for k, v in actor_info.items():
             info[f'dmf_actor/{k}'] = v
 
-        loss = critic_loss + actor_loss
+        loss = critic_loss + dmf_actor_loss
         return loss, info
 
     def target_update(self, network, module_name):
@@ -219,44 +216,6 @@ class DFRAgent(flax.struct.PyTreeNode):
 
         return self.replace(network=new_network, rng=new_rng), info
 
-    @jax.jit
-    def sample_actions(
-        self,
-        observations,
-        seed=None,
-        temperature=1.0,
-    ):
-        orig_observations = observations
-        if self.config['encoder'] is not None:
-            observations = self.network.select('actor_flow_encoder')(observations)
-        action_seed, noise_seed = jax.random.split(seed)
-
-        num_candidates = self.config['num_candidates']
-
-        n_observations = jnp.repeat(jnp.expand_dims(observations, 0), num_candidates, axis=0)
-        n_orig_observations = jnp.repeat(jnp.expand_dims(orig_observations, 0), num_candidates, axis=0)
-        actions = jax.random.normal(
-            action_seed,
-            (
-                *n_observations.shape[:-1],
-                self.config['action_dim'],
-            ),
-        )
-        for i in range(self.config['flow_steps']):
-            t = jnp.full((*n_observations.shape[:-1], 1), i / self.config['flow_steps'])
-            vels = self.network.select('actor_flow')(n_observations, actions, t, is_encoded=True)
-            actions = actions + vels / self.config['flow_steps']
-        actions = jnp.clip(actions, -1, 1)
-
-        q = self.network.select('critic')(n_orig_observations, actions=actions).min(axis=0)
-        if len(actions.shape) == 3:
-            b = orig_observations.shape[0]
-            actions = actions[jnp.argmax(q, axis=0), jnp.arange(b)]
-        else:
-            actions = actions[jnp.argmax(q)]
-        return actions
-
-
     @classmethod
     def create(
         cls,
@@ -265,6 +224,14 @@ class DFRAgent(flax.struct.PyTreeNode):
         ex_actions,
         config,
     ):
+        """Create a new agent.
+
+        Args:
+            seed: Random seed.
+            ex_observations: Example batch of observations.
+            ex_actions: Example batch of actions.
+            config: Configuration dictionary.
+        """
         rng = jax.random.PRNGKey(seed)
         rng, init_rng = jax.random.split(rng, 2)
 
@@ -316,6 +283,7 @@ class DFRAgent(flax.struct.PyTreeNode):
 
         network_def = ModuleDict(networks)
         network_tx = optax.chain(
+     #        optax.clip_by_global_norm(max_norm=config["gn"]),
             optax.adam(learning_rate=config['lr'])
         )
         network_params = network_def.init(init_rng, **network_args)['params']
@@ -331,28 +299,33 @@ class DFRAgent(flax.struct.PyTreeNode):
 def get_config():
     config = ml_collections.ConfigDict(
         dict(
-            agent_name='dfr',  # Agent name.
+            agent_name='dn',  # Agent name.
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.
             value_hidden_dims=(512, 512, 512, 512),  # Value network hidden dimensions.
             layer_norm=True,  # Whether to use layer normalization.
             actor_layer_norm=False,  # Whether to use layer normalization for the actor.
-            normalize_q_loss= False,  # Whether to normalize the Q loss.
-            num_candidates = 4,
-            delta= 0.1,  
-            q_agg="mean",
-            use_batch_nrom = True,
-            max_norm = 5.0,
+            normalize_q_loss=False,  # Whether to normalize the Q loss.
+            distill_from_target=False,  # BC coefficient (need to be tuned for each environment).
+            target_num_samples = 4,
             discount=0.99,  # Discount factor.
             tau=0.005,  # Target network update rate.
-            tanh_squash = True,  # Whether to squash actions with tanh.
-            flow_steps = 10,  # Number of flow steps.
+            tanh_squash=True,  # Whether to squash actions with tanh.
+            num_samples = 4,
+            flow_steps=10,  # Number of flow steps.
             flow_only=True,
-            actor_fc_scale = 0.01,  # Final layer initialization scale for actor.
+            gn=100.0,
+            actor_fc_scale=0.01,  # Final layer initialization scale for actor.
+            alpha=0.0,  # Actor BC coefficient.
+            delta=2.0,  # Actor BC coefficient.
+            solver="auto",  # Actor BC coefficient.
+            alpha_actor=0.0,  # Actor BC coefficient.
+            alpha_critic=0.0,  # Critic BC coefficient.
+            clip=True,
             actor_freq=2,  # Actor update frequency.
-            actor_noise = 0.5,  # Actor noise scale.
-            actor_noise_clip = 0.001,  # Actor noise clipping threshold.
+            actor_noise=0.2,  # Actor noise scale.
+            actor_noise_clip=0.5,  # Actor noise clipping threshold.
             encoder=ml_collections.config_dict.placeholder(str),  # Visual encoder name (None, 'impala_small', etc.).
         )
     )

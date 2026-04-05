@@ -13,6 +13,7 @@ matplotlib
 moviepy
 wandb
 d4rl
+mujoco == 3.1.6
 gymnasium == 0.29.1  # We can't use gymnasium >= 1.0.0 because it breaks d4rl.
 gym == 0.23.1  # For d4rl.
 numpy == 1.26.4  # For d4rl.
