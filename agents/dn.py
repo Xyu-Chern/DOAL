@@ -39,10 +39,10 @@ class DNAgent(flax.struct.PyTreeNode):
         norm_std = jnp.std(norm)
 
         max_norm = 5.0
-        scale = jnp.minimum(max_norm / norm, 1.0)
+        scale = jnp.minimum(1 / norm, 1.0)
         clipped_g = g * scale
 
-        dx =   (alpha / norm_mean ) * clipped_g
+        dx =  alpha / (norm_mean+norm_std) * clipped_g
         adjusted_actions = q_action + dx
         
         adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
