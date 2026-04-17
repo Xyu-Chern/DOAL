@@ -16,11 +16,13 @@ from agents.meanflowql import MeanFlowQL_Agent
 from agents.fac import FACAgent
 from agents.dfr import DFRAgent
 from agents.dn import DNAgent
+from agents.nrebrac import NReBRACAgent
 
 agents = dict(
     iql=IQLAgent,
     diql=DIQLAgent,
     dn=DNAgent,
+    nrebrac=NReBRACAgent,
     ifql=IFQLAgent,
     dfr=DFRAgent,
     difql=DIFQLAgent,
