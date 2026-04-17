@@ -23,6 +23,34 @@ class FQLAgent(flax.struct.PyTreeNode):
     network: Any
     config: Any = nonpytree_field()
 
+    @jax.jit
+    def auto(self, q_action, observation, alpha,params):
+
+        def bc_loss_wrt_q_action(q_action):
+            qs = self.network.select('critic')(observation, q_action, params=params)
+            q = jnp.mean(qs, axis=0)
+            return  jnp.sum(q) 
+    
+        v_grad_q = jax.value_and_grad(bc_loss_wrt_q_action) 
+        q, g = v_grad_q(q_action)  # return Q and \nabla a Q
+
+        norm = jnp.linalg.norm(g, axis=-1, keepdims=True) + 1e-3
+        norm_mean = jnp.mean(norm)
+        norm_std = jnp.std(norm)
+
+        scale = jnp.minimum(1 / norm, 1.0)
+        clipped_g = g * scale
+
+        dx =  alpha / (norm_mean+norm_std) * clipped_g
+        adjusted_actions = q_action + dx
+        
+        adjusted_actions = jnp.clip(adjusted_actions, -1.0, 1.0)
+            
+        adjusted_actions = jax.lax.stop_gradient(adjusted_actions)
+        dx = jax.lax.stop_gradient(dx)
+        q =  jax.lax.stop_gradient(q)
+        return adjusted_actions, dx, (norm_mean/alpha)*jnp.ones(q_action.shape[0], dtype=q_action.dtype), g, q
+
     def critic_loss(self, batch, grad_params, rng):
         """Compute the FQL critic loss."""
         rng, sample_rng = jax.random.split(rng)
@@ -95,6 +123,57 @@ class FQLAgent(flax.struct.PyTreeNode):
             'mse': mse,
         }
 
+    def doal_actor_loss(self, batch, grad_params, rng):
+        """Compute the FQL actor loss."""
+        batch_size, action_dim = batch['actions'].shape
+        rng, x_rng, t_rng = jax.random.split(rng, 3)
+
+        adjusted_actions , adjustment, hd, g, q = self.auto( batch['actions'], batch['observations'], 0.01, params=self.network.params)
+
+        # BC flow loss.
+        x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
+        # x_1 = batch['actions']
+        t = jax.random.uniform(t_rng, (batch_size, 1))
+        x_t = (1 - t) * x_0 + t * adjusted_actions
+        vel = adjusted_actions - x_0
+
+        pred = self.network.select('doal_actor_bc_flow')(batch['observations'], x_t, t, params=grad_params)
+        bc_flow_loss = jnp.mean((pred - vel) ** 2)
+
+        # Distillation loss.
+        rng, noise_rng = jax.random.split(rng)
+        noises = jax.random.normal(noise_rng, (batch_size, action_dim))
+        target_flow_actions = self.doal_compute_flow_actions(batch['observations'], noises=noises)
+        actor_actions = self.network.select('doal_actor_onestep_flow')(batch['observations'], noises, params=grad_params)
+        distill_loss = jnp.mean((actor_actions - target_flow_actions) ** 2)
+
+        # Q loss.
+        actor_actions = jnp.clip(actor_actions, -1, 1)
+        qs = self.network.select('critic')(batch['observations'], actions=actor_actions)
+        q = jnp.mean(qs, axis=0)
+
+        q_loss = -q.mean()
+        if self.config['normalize_q_loss']:
+            lam = jax.lax.stop_gradient(1 / jnp.abs(q).mean())
+            q_loss = lam * q_loss
+
+        # Total loss.
+        actor_loss = bc_flow_loss + self.config['alpha'] * distill_loss + q_loss
+
+        # Additional metrics for logging.
+        actions = self.sample_actions(batch['observations'], seed=rng)
+        mse = jnp.mean((actions - batch['actions']) ** 2)
+
+        return actor_loss, {
+            'actor_loss': actor_loss,
+            'bc_flow_loss': bc_flow_loss,
+            'distill_loss': distill_loss,
+            'q_loss': q_loss,
+            'q': q.mean(),
+            'mse': mse,
+        }
+
+
     @jax.jit
     def total_loss(self, batch, grad_params, rng=None):
         """Compute the total loss."""
@@ -111,7 +190,11 @@ class FQLAgent(flax.struct.PyTreeNode):
         for k, v in actor_info.items():
             info[f'actor/{k}'] = v
 
-        loss = critic_loss + actor_loss
+        doal_actor_loss, doal_actor_info = self.doal_actor_loss(batch, grad_params, actor_rng)
+        for k, v in doal_actor_info.items():
+            info[f'doal_actor/{k}'] = v
+
+        loss = critic_loss + actor_loss + doal_actor_loss
         return loss, info
 
     def target_update(self, network, module_name):
@@ -160,6 +243,29 @@ class FQLAgent(flax.struct.PyTreeNode):
         return actions
 
     @jax.jit
+    def doal_sample_actions(
+        self,
+        observations,
+        seed=None,
+        temperature=1.0,
+    ):
+        """Sample actions from the one-step policy."""
+        action_seed, noise_seed = jax.random.split(seed)
+        noises = jax.random.normal(
+            action_seed,
+            (
+                *observations.shape[: -len(self.config['ob_dims'])],
+                self.config['action_dim'],
+            ),
+        )
+        actions = self.network.select('doal_actor_onestep_flow')(observations, noises)
+        
+        actions = jnp.clip(actions, -1, 1)
+        
+        return actions
+
+
+    @jax.jit
     def compute_flow_actions(
         self,
         observations,
@@ -173,6 +279,25 @@ class FQLAgent(flax.struct.PyTreeNode):
         for i in range(self.config['flow_steps']):
             t = jnp.full((*observations.shape[:-1], 1), i / self.config['flow_steps'])
             vels = self.network.select('actor_bc_flow')(observations, actions, t, is_encoded=True)
+            actions = actions + vels / self.config['flow_steps']
+        actions = jnp.clip(actions, -1, 1)
+        return actions
+
+    
+    @jax.jit
+    def doal_compute_flow_actions(
+        self,
+        observations,
+        noises,
+    ):
+        """Compute actions from the BC flow model using the Euler method."""
+        if self.config['encoder'] is not None:
+            observations = self.network.select('actor_bc_flow_encoder')(observations)
+        actions = noises
+        # Euler method.
+        for i in range(self.config['flow_steps']):
+            t = jnp.full((*observations.shape[:-1], 1), i / self.config['flow_steps'])
+            vels = self.network.select('doal_actor_bc_flow')(observations, actions, t, is_encoded=True)
             actions = actions + vels / self.config['flow_steps']
         actions = jnp.clip(actions, -1, 1)
         return actions
@@ -248,6 +373,8 @@ class FQLAgent(flax.struct.PyTreeNode):
             encoders['critic'] = encoder_module()
             encoders['actor_bc_flow'] = encoder_module()
             encoders['actor_onestep_flow'] = encoder_module()
+            encoders['doal_actor_bc_flow'] = encoder_module()
+            encoders['doal_actor_onestep_flow'] = encoder_module()
 
         # Define networks.
         critic_def = Value(
@@ -269,15 +396,34 @@ class FQLAgent(flax.struct.PyTreeNode):
             encoder=encoders.get('actor_onestep_flow'),
         )
 
+        doal_actor_bc_flow_def = ActorVectorField(
+            hidden_dims=config['actor_hidden_dims'],
+            action_dim=action_dim,
+            layer_norm=config['actor_layer_norm'],
+            encoder=encoders.get('doal_actor_bc_flow'),
+        )
+        doal_actor_onestep_flow_def = ActorVectorField(
+            hidden_dims=config['actor_hidden_dims'],
+            action_dim=action_dim,
+            layer_norm=config['actor_layer_norm'],
+            encoder=encoders.get('doal_actor_onestep_flow'),
+        )
+
+
         network_info = dict(
             critic=(critic_def, (ex_observations, ex_actions)),
             target_critic=(copy.deepcopy(critic_def), (ex_observations, ex_actions)),
             actor_bc_flow=(actor_bc_flow_def, (ex_observations, ex_actions, ex_times)),
             actor_onestep_flow=(actor_onestep_flow_def, (ex_observations, ex_actions)),
+            doal_actor_bc_flow=(doal_actor_bc_flow_def, (ex_observations, ex_actions, ex_times)),
+            doal_actor_onestep_flow=(doal_actor_onestep_flow_def, (ex_observations, ex_actions)),
         )
         if encoders.get('actor_bc_flow') is not None:
             # Add actor_bc_flow_encoder to ModuleDict to make it separately callable.
             network_info['actor_bc_flow_encoder'] = (encoders.get('actor_bc_flow'), (ex_observations,))
+        if encoders.get('doal_actor_bc_flow') is not None:
+            # Add actor_bc_flow_encoder to ModuleDict to make it separately callable.
+            network_info['doal_actor_bc_flow_encoder'] = (encoders.get('doal_actor_bc_flow'), (ex_observations,))
         networks = {k: v[0] for k, v in network_info.items()}
         network_args = {k: v[1] for k, v in network_info.items()}
 

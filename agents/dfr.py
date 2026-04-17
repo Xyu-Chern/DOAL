@@ -107,7 +107,7 @@ class DFRAgent(flax.struct.PyTreeNode):
     
     @jax.jit
     def actor_loss(self, batch, grad_params, rng=None,aux={}):
-        """Compute the behavioral flow-matching actor loss."""
+        """Compute the behavioral flow-matching actor loss."""   
         batch_size, action_dim = batch['actions'].shape
         rng, x_rng, t_rng = jax.random.split(rng, 3)
 
@@ -142,37 +142,37 @@ class DFRAgent(flax.struct.PyTreeNode):
             "g_min": jnp.min(g),
         }
 
-    # @jax.jit
-    # def actor_loss(self, batch, grad_params, rng=None, aux={}):
-    #     batch_size, action_dim = batch['actions'].shape
-    #     rng, x_rng, t_rng = jax.random.split(rng, 3)
+    @jax.jit
+    def actor_loss(self, batch, grad_params, rng=None, aux={}):
+        batch_size, action_dim = batch['actions'].shape
+        rng, x_rng, t_rng = jax.random.split(rng, 3)
 
-    #     x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
-    #     x_1 = batch['actions'] 
+        x_0 = jax.random.normal(x_rng, (batch_size, action_dim))
+        x_1 = batch['actions'] 
 
-    #     t = jax.random.uniform(t_rng, (batch_size, 1))
-    #     x_t = (1 - t) * x_0 + t * x_1
-    #     vel = x_1 - x_0 
-    #     v1 = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
+        t = jax.random.uniform(t_rng, (batch_size, 1))
+        x_t = (1 - t) * x_0 + t * x_1
+        vel = x_1 - x_0 
+        v1 = self.network.select('actor_flow')(batch['observations'], x_t, t, params=grad_params)
 
-    #     flow_loss = jnp.mean((v1 - vel) ** 2)
+        flow_loss = jnp.mean((v1 - vel) ** 2)
 
-    #     target_action = jax.lax.stop_gradient(x_t + (1 - t) * v1) 
-    #     target_action = jnp.clip(target_action, -1.0, 1.0)
+        target_action = jax.lax.stop_gradient(x_t + (1 - t) * v1) 
+        target_action = jnp.clip(target_action, -1.0, 1.0)
 
-    #     qs = self.network.select('critic')(batch['observations'], actions=target_action)
-    #     q = jnp.min(qs, axis=0)
+        qs = self.network.select('critic')(batch['observations'], actions=target_action)
+        q = jnp.min(qs, axis=0)
 
-    #     if self.config['normalize_q_loss']:
-    #         q_loss = -(aux["lam"] * q).mean()
-    #     else:
-    #         q_loss = - q.mean()
+        if self.config['normalize_q_loss']:
+            q_loss = -(aux["lam"] * q).mean()
+        else:
+            q_loss = - q.mean()
 
-    #     actor_loss = flow_loss + q_loss
+        actor_loss = flow_loss + q_loss
 
-    #     return actor_loss, {
-    #         "actor_loss":jnp.mean(actor_loss),
-    #     }
+        return actor_loss, {
+            "actor_loss":jnp.mean(actor_loss),
+        }
 
       
     @partial(jax.jit, static_argnames=('full_update', "mode"))
