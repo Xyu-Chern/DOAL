@@ -13,7 +13,6 @@ from utils.flax_utils import ModuleDict, TrainState, nonpytree_field
 from utils.networks import Actor, Value
 
 
-
 class ReBRACAgent(flax.struct.PyTreeNode):
     """Revisited behavior-regularized actor-critic (ReBRAC) agent.
 
@@ -193,7 +192,7 @@ class ReBRACAgent(flax.struct.PyTreeNode):
         critic_def = Value(
             hidden_dims=config['value_hidden_dims'],
             layer_norm=config['layer_norm'],
-            num_ensembles=2,
+            num_ensembles=16,
             encoder=encoders.get('critic'),
         )
         actor_def = Actor(

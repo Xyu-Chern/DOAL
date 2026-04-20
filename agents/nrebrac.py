@@ -72,6 +72,7 @@ class NReBRACAgent(flax.struct.PyTreeNode):
             qs = self.network.select('critic')(batch['observations'], actions=actions)
 
         q = jnp.min(qs, axis=0)
+        q_mean = jnp.mean(qs, axis=0)
 
         # BC loss.
         mse = jnp.square(actions - batch['actions']).sum(axis=-1)
@@ -80,7 +81,7 @@ class NReBRACAgent(flax.struct.PyTreeNode):
         actor_loss = -(aux["lam"] * q).mean()
         bc_loss = (self.config['alpha_actor'] * mse).mean()
 
-        q_mse = jnp.mean(jnp.square(q - qs), axis=0)
+        q_mse = jnp.mean(jnp.square(q_mean - qs))
         n_ensemble_loss = self.config['n_ensemble_lamda'] * q_mse
 
         total_loss = actor_loss + bc_loss + n_ensemble_loss
@@ -92,6 +93,7 @@ class NReBRACAgent(flax.struct.PyTreeNode):
 
         return total_loss, {
             'total_loss': total_loss,
+            "q_ensemble_loss": n_ensemble_loss,
             'actor_loss': actor_loss,
             'bc_loss': bc_loss,
             'std': action_std.mean(),
@@ -239,8 +241,8 @@ def get_config():
     config = ml_collections.ConfigDict(
         dict(
             agent_name='nrebrac',  # Agent name.
-            num_ensembles = 16,
-            n_ensemble_lamda = 1.0 ,
+            num_ensembles = 2,
+            n_ensemble_lamda = 0.01,
             lr=3e-4,  # Learning rate.
             batch_size=256,  # Batch size.
             actor_hidden_dims=(512, 512, 512, 512),  # Actor network hidden dimensions.

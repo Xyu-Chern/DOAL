@@ -17,9 +17,11 @@ from agents.fac import FACAgent
 from agents.dfr import DFRAgent
 from agents.dn import DNAgent
 from agents.nrebrac import NReBRACAgent
+from agents.ndfrebrac import NDFReRACAgent
 
 agents = dict(
     iql=IQLAgent,
+    ndfrebrac=NDFReRACAgent,
     diql=DIQLAgent,
     dn=DNAgent,
     nrebrac=NReBRACAgent,
