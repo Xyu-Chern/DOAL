@@ -119,7 +119,7 @@ def main(_):
             # Offline RL.
             batch = train_dataset.sample(config['batch_size'])
 
-            if config['agent_name'] == 'rebrac':
+            if config['agent_name'] == 'rebrac' or config['agent_name'] == 'nrebrac':
                 agent, update_info = agent.update(batch, full_update=(i % config['actor_freq'] == 0))
             else:
                 agent, update_info = agent.update(batch)
@@ -169,7 +169,7 @@ def main(_):
             else:
                 batch = replay_buffer.sample(config['batch_size'])
 
-            if config['agent_name'] == 'rebrac':
+            if config['agent_name'] == 'rebrac' or config['agent_name'] == 'nrebrac':
                 agent, update_info = agent.update(batch, full_update=(i % config['actor_freq'] == 0))
             else:
                 agent, update_info = agent.update(batch)
